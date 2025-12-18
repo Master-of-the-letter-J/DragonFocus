@@ -3,5 +3,13 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "cSpell.words": [
+    "dragonfocus",
+    "mult",
+    "Pressable",
+    "regen",
+    "Wyrm",
+    "outgoingness"
+  ]
 }
