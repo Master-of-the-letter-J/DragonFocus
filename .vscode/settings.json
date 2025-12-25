@@ -11,5 +11,6 @@
     "regen",
     "Wyrm",
     "outgoingness"
-  ]
+  ],
+  "editor.formatOnSave": true
 }
