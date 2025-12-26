@@ -66,8 +66,10 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	const today = new Date().toISOString().split('T')[0];
 
 	const resetDailySurveys = () => {
+		// This logic handles resetting the "Complete" status when a new day starts
 		if (lastMorningSurveyDate !== today) {
 			setMorningSurveyCompleted(false);
+			// We also clear saved progress from previous days here
 			setSavedMorning(null);
 		}
 		if (lastNightSurveyDate !== today) {
@@ -79,11 +81,15 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	const completeMorningSurvey = () => {
 		setMorningSurveyCompleted(true);
 		setLastMorningSurveyDate(today);
+		// Note: We DO NOT clear savedMorning here.
+		// We keep it so that if the user clicks "Retake", the survey page can load the completed answers.
 	};
 
 	const completeNightSurvey = () => {
 		setNightSurveyCompleted(true);
 		setLastNightSurveyDate(today);
+		// Note: We DO NOT clear savedNight here.
+		// We keep it for retakes.
 	};
 
 	const saveProgress = (type: 'morning' | 'night', payload: any) => {
@@ -93,6 +99,7 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	};
 
 	const loadProgress = (type: 'morning' | 'night') => {
+		// Returns saved data (whether in-progress or completed)
 		return type === 'morning' ? savedMorning : savedNight;
 	};
 
@@ -102,19 +109,24 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	};
 
 	const recordNightSnapshot = (snapshot: { habitIds: string[]; todoIds: string[] }) => {
+		// We store the snapshot in the savedNight state so it persists during the session
+		// This snapshot tells us which goals were rewarded so we don't reward them again on retake
 		setSavedNight((prev: any) => ({ ...(prev || {}), lastSnapshot: snapshot }));
 	};
 
 	const getNightSnapshot = () => savedNight?.lastSnapshot || null;
 
 	const canTakeMorningSurvey = (): boolean => {
-		// Can take if not completed today
-		return lastMorningSurveyDate !== today;
+		// You can always take the survey for the current day,
+		// even if completed (Retake mode).
+		// We only prevent it if it was somehow taking a future/past survey not handled by reset logic.
+		return true;
 	};
 
 	const canTakeNightSurvey = (): boolean => {
-		// Can take if not completed today
-		return lastNightSurveyDate !== today;
+		// You can always take the survey for the current day,
+		// even if completed (Retake mode).
+		return true;
 	};
 
 	const getMorningProgress = (): number => {

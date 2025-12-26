@@ -325,7 +325,7 @@ export default function DragonLair() {
 					<View style={styles.graveyardContainer}>
 						{sortedGraveyard.map(entry => (
 							<View key={entry.id} style={styles.graveItem}>
-								<Image source={require('@/assets/grave-placeholder.png')} style={styles.graveImage} />
+								<Image source={require('@/assets/images/grave-placeholder.png')} style={styles.graveImage} />
 								<View style={styles.graveOverlay}>
 									<Text style={styles.graveName}>{entry.name}</Text>
 									<Text style={styles.graveInfo}>Age: {entry.age}</Text>

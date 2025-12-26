@@ -2,17 +2,26 @@ import ProgressBar from '@/components/ProgressBar';
 import { Text, View } from '@/components/Themed';
 import TopHeader from '@/components/TopHeader';
 import { HabitEditor, TodoEditor } from '@/components/goalEditor';
-import { ADVICE, PROMPTS, QUOTES } from '@/constants/prompts';
+import { ADVICE, PROMPTS, QUOTES, TRIVIA } from '@/constants/prompts';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useGoals, type HabitGoal, type TodoGoal } from '@/context/GoalsProvider';
+import { useJournal } from '@/context/JournalProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';
+import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+
+function isYesterday(dateStr: string) {
+	const d = new Date(dateStr);
+	const y = new Date();
+	y.setDate(y.getDate() - 1);
+	return d.toISOString().split('T')[0] === y.toISOString().split('T')[0];
+}
 
 interface SurveyAnswers {
 	[key: string]: any;
@@ -33,13 +42,14 @@ const moodOptions = [
 	{ emoji: '😡', label: 'Angry', fury: +9 },
 ];
 
-export default function SurveyMorningPage() {
+export default function SurveyNightPage() {
 	const survey = useSurvey();
 	const coins = useDragonCoins();
 	const shards = useShards();
 	const dragon = useDragon();
 	const scarLevel = useScarLevel();
 	const fury = useFury();
+	const journal = useJournal();
 	const goals = useGoals();
 	const router = useRouter();
 
@@ -50,6 +60,10 @@ export default function SurveyMorningPage() {
 	const [randomAdviceIndex, setRandomAdviceIndex] = useState<number | null>(null);
 	const [randomPromptIndex, setRandomPromptIndex] = useState<number | null>(null);
 	const [randomQuoteIndex, setRandomQuoteIndex] = useState<number | null>(null);
+	const [randomTriviaIndex, setRandomTriviaIndex] = useState<number | null>(null);
+	// Holds the randomized answers and the pointer to the correct answer in that specific random order
+	const [triviaOptions, setTriviaOptions] = useState<{ answers: string[]; correctLocalIndex: number } | null>(null);
+
 	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
 	const [showResults, setShowResults] = useState(false);
 	const [results, setResults] = useState<any>(null);
@@ -66,6 +80,7 @@ export default function SurveyMorningPage() {
 		{ key: 'dayGoals', label: 'Day Goals' },
 		{ key: 'todoGoals', label: 'To-Do Goals' },
 		{ key: 'prompt', label: 'Prompt' },
+		{ key: 'trivia', label: 'Trivia' },
 		{ key: 'journal', label: 'Journal' },
 		{ key: 'quote', label: 'Quote' },
 	];
@@ -91,27 +106,61 @@ export default function SurveyMorningPage() {
 		}
 	}, [showSurveyLabel]);
 
-	// Initialize survey on mount
+	// Initialize on mount (load saved progress if exists, allow retake)
 	useEffect(() => {
-		// Load saved progress if any
-		const saved = survey.loadProgress('morning');
+		const saved = survey.loadProgress('night');
 		const todayStr = new Date().toISOString().split('T')[0];
+
 		if (saved && saved.savedAt === todayStr) {
 			if (saved.answers) setAnswers(saved.answers);
 			if (saved.journalText) setJournalText(saved.journalText);
 			if (typeof saved.section === 'number') setCurrentSection(saved.section);
-		}
 
-		// Alert only if there is a reason (kept for backward compatibility)
-		// allow retake with saved responses
+			// Load indices
+			if (saved.indices) {
+				if (typeof saved.indices.trivia === 'number') setRandomTriviaIndex(saved.indices.trivia);
+				if (typeof saved.indices.advice === 'number') setRandomAdviceIndex(saved.indices.advice);
+				if (typeof saved.indices.prompt === 'number') setRandomPromptIndex(saved.indices.prompt);
+				if (typeof saved.indices.quote === 'number') setRandomQuoteIndex(saved.indices.quote);
+			}
+
+			// Important: Load the randomized trivia order if it was saved
+			if (saved.triviaOptions) {
+				setTriviaOptions(saved.triviaOptions);
+			}
+		}
 
 		setShowSurveyLabel(true);
 
-		// Pick random values
-		if (ADVICE.length > 0) setRandomAdviceIndex(Math.floor(Math.random() * ADVICE.length));
-		if (PROMPTS.length > 0) setRandomPromptIndex(Math.floor(Math.random() * PROMPTS.length));
-		if (QUOTES.length > 0 && scarLevel.currentScarLevel >= 1) setRandomQuoteIndex(Math.floor(Math.random() * QUOTES.length));
+		// Pick random values if not set by saved progress
+		if (ADVICE.length > 0 && randomAdviceIndex === null) setRandomAdviceIndex(Math.floor(Math.random() * ADVICE.length));
+		if (PROMPTS.length > 0 && randomPromptIndex === null) setRandomPromptIndex(Math.floor(Math.random() * PROMPTS.length));
+		if (TRIVIA.length > 0 && randomTriviaIndex === null) setRandomTriviaIndex(Math.floor(Math.random() * TRIVIA.length));
+		if (QUOTES.length > 0 && scarLevel.currentScarLevel >= 1 && randomQuoteIndex === null) setRandomQuoteIndex(Math.floor(Math.random() * QUOTES.length));
 	}, []);
+
+	// Randomize Trivia Answers
+	// This effect runs when the index changes. If we loaded triviaOptions from save, we skip this to preserve order.
+	useEffect(() => {
+		if (randomTriviaIndex !== null && TRIVIA[randomTriviaIndex] && !triviaOptions) {
+			const original = TRIVIA[randomTriviaIndex];
+			const source = original.answers.map((a, i) => ({ a, i }));
+
+			// Fisher-Yates Shuffle
+			for (let i = source.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[source[i], source[j]] = [source[j], source[i]];
+			}
+
+			const answersList = source.map(s => s.a);
+			const correctLocalIndex = source.findIndex(s => s.i === original.correctIndex);
+
+			setTriviaOptions({ answers: answersList, correctLocalIndex });
+
+			// Store the correct index in answers for easy grading later
+			setAnswers(prev => ({ ...prev, _triviaCorrectLocalIndex: correctLocalIndex }));
+		}
+	}, [randomTriviaIndex]);
 
 	const goNext = () => {
 		if (currentSection === totalSections - 1) {
@@ -121,54 +170,148 @@ export default function SurveyMorningPage() {
 		}
 	};
 
+	const goBack = () => {
+		if (currentSection > 0) {
+			setCurrentSection(currentSection - 1);
+		}
+	};
+
 	const handleSaveForLater = () => {
-		const percent = Math.round(((currentSection + 1) / totalSections) * 100);
-		survey.saveProgress('morning', { answers, journalText, section: currentSection, progressPercent: percent });
+		// Construct the save object
+		const saveState = {
+			savedAt: new Date().toISOString().split('T')[0],
+			section: currentSection,
+			answers: answers,
+			journalText: journalText,
+			triviaOptions: triviaOptions, // Save the randomized order
+			indices: {
+				trivia: randomTriviaIndex,
+				advice: randomAdviceIndex,
+				prompt: randomPromptIndex,
+				quote: randomQuoteIndex,
+			},
+		};
+
+		// Call the provider's save method
+		survey.saveProgress('night', saveState);
+
 		Alert.alert('Survey Saved', 'Your progress has been saved. You can continue later.', [{ text: 'OK', onPress: () => router.back() }]);
 	};
 
 	const submitSurvey = () => {
 		const today = new Date().toISOString().split('T')[0];
-		const alreadyDoneToday = survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted;
-		let totalCoinsEarned = 0;
+		const alreadyDoneToday = survey.lastNightSurveyDate === today && survey.nightSurveyCompleted;
+		let totalCoinsEarned = 0; // base awarded only if first completion
 		let furyDelta = 0;
-
-		// If this is the first completion today, give base rewards
-		if (!alreadyDoneToday) totalCoinsEarned = 10; // base
 
 		// Mood affects fury
 		const mood = answers.mood as number | undefined;
 		if (typeof mood === 'number') furyDelta = moodOptions[mood].fury || 0;
 
 		if (!alreadyDoneToday) {
+			totalCoinsEarned = 10;
 			coins.addCoins(totalCoinsEarned);
 			shards.addShards(1);
-			if (typeof fury.addFury === 'function') {
-				fury.addFury(furyDelta);
+			if (typeof fury.addFury === 'function') fury.addFury(furyDelta);
+		}
+
+		// Mark survey complete BEFORE calculating goal rewards
+		survey.completeNightSurvey();
+
+		// Goal rewards (only in evening survey). For retakes, only award for newly completed goals.
+		let totalGoalCoins = 0;
+		let totalGoalsCompleted = 0;
+
+		const todayStr = new Date().toISOString().split('T')[0];
+		const habitCompletedIds = goals.habits.filter(h => h.lastCompletedDate === todayStr).map(h => h.id);
+		const todoCompletedIds = goals.todos.filter(t => t.completedDate === todayStr).map(t => t.id);
+		const habitCompletedCount = habitCompletedIds.length;
+		const todoCompletedCount = todoCompletedIds.length;
+		totalGoalsCompleted = habitCompletedCount + todoCompletedCount;
+
+		if (habitCompletedCount > 0) {
+			const habitCoins = 5 * habitCompletedCount + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
+			if (!alreadyDoneToday) {
+				coins.addCoins(habitCoins);
+				totalGoalCoins += habitCoins;
+				dragon.addHealthFromGoal(habitCompletedCount * 2);
+			} else {
+				const snap = survey.getNightSnapshot() || { habitIds: [], todoIds: [] };
+				const newHabits = habitCompletedIds.filter(id => !snap.habitIds.includes(id));
+				if (newHabits.length > 0) {
+					const newCoins = 5 * newHabits.length + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
+					coins.addCoins(newCoins);
+					totalGoalCoins += newCoins;
+					dragon.addHealthFromGoal(newHabits.length * 2);
+				}
+			}
+		}
+		if (todoCompletedCount > 0) {
+			const todoCoins = 10 * todoCompletedCount;
+			if (!alreadyDoneToday) {
+				coins.addCoins(todoCoins);
+				totalGoalCoins += todoCoins;
+				dragon.addHealthFromGoal(todoCompletedCount * 2);
+			} else {
+				const snap = survey.getNightSnapshot() || { habitIds: [], todoIds: [] };
+				const newTodos = todoCompletedIds.filter(id => !snap.todoIds.includes(id));
+				if (newTodos.length > 0) {
+					const newCoins = 10 * newTodos.length;
+					coins.addCoins(newCoins);
+					totalGoalCoins += newCoins;
+					dragon.addHealthFromGoal(newTodos.length * 2);
+				}
 			}
 		}
 
-		// Prompt reward
-		if (answers.promptText && answers.promptText.trim() && !alreadyDoneToday) {
-			coins.addCoins(2);
-			totalCoinsEarned += 2;
+		if (dragon.hp <= 0) {
+			dragon.die();
 		}
 
-		const fireXPFromCoins = totalCoinsEarned * 10;
+		// Prompt and trivia rewards only for first nightly completion
+		if (!alreadyDoneToday) {
+			if (answers.promptText && answers.promptText.trim()) {
+				coins.addCoins(2);
+				totalCoinsEarned += 2;
+			}
+			// Trivia reward: answers._triviaCorrectLocalIndex is used when we shuffled answers
+			if (answers.triviaAnswer !== undefined && typeof answers._triviaCorrectLocalIndex === 'number') {
+				if (answers.triviaAnswer === answers._triviaCorrectLocalIndex) {
+					coins.addCoins(2);
+					totalCoinsEarned += 2;
+				}
+			}
+		}
+
+		const totalCoins = totalCoinsEarned + totalGoalCoins;
+		const fireXPFromCoins = totalCoins * 10;
 		const bonusFireXP = dragon.age * 10;
 		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
 
-		// Mark complete
-		// mark complete (allow retake but record last date)
-		survey.completeMorningSurvey();
-		survey.clearProgress('morning');
+		// Journal entry
+		journal.addEntry({
+			id: `entry_${today}_night_${Date.now()}`,
+			date: today,
+			surveyType: 'night',
+			goalsCompleted: totalGoalsCompleted,
+			schedulePercent: 0,
+			text: journalText,
+			rewards: { coins: totalCoins, xp: fireXPFromCoins + bonusFireXP, fury: furyDelta },
+		});
+
+		// Save snapshot for future retakes (store which goals were completed now)
+		survey.recordNightSnapshot({ habitIds: habitCompletedIds, todoIds: todoCompletedIds });
+
+		// Clear saved progress
+		survey.clearProgress('night');
 
 		// Show results
 		setResults({
-			coinsEarned: totalCoinsEarned,
+			coinsEarned: totalCoinsEarned + totalGoalCoins,
 			shardsEarned: 1,
 			xpEarned: fireXPFromCoins + bonusFireXP,
 			furyDelta,
+			goalsCompleted: totalGoalsCompleted,
 		});
 		setShowResults(true);
 	};
@@ -178,7 +321,7 @@ export default function SurveyMorningPage() {
 			<View style={styles.container}>
 				<TopHeader isHomePage={false} />
 				<View style={styles.content}>
-					<Text style={styles.title}>🌅 Survey Complete!</Text>
+					<Text style={styles.title}>🌙 Survey Complete!</Text>
 					<View style={styles.resultsCard}>
 						<Text style={styles.resultText}>💰 Coins Earned: +{results.coinsEarned}</Text>
 						<Text style={styles.resultText}>💎 Shards Earned: +{results.shardsEarned}</Text>
@@ -187,6 +330,7 @@ export default function SurveyMorningPage() {
 							😈 Fury: {results.furyDelta > 0 ? '+' : ''}
 							{results.furyDelta}
 						</Text>
+						<Text style={styles.resultText}>🎯 Goals Completed Today: {results.goalsCompleted}</Text>
 					</View>
 					<Pressable style={styles.finishButton} onPress={() => router.back()}>
 						<Text style={styles.finishButtonText}>Return to Home</Text>
@@ -221,12 +365,12 @@ export default function SurveyMorningPage() {
 
 			{/* Survey Label Animation */}
 			<Animated.View style={[styles.surveyLabelContainer, { transform: [{ translateY: slideAnim }] }]}>
-				<Text style={styles.surveyLabelText}>🌅 Morning Survey</Text>
+				<Text style={styles.surveyLabelText}>🌙 Night Survey</Text>
 			</Animated.View>
 
 			{/* Progress bar */}
 			<View style={styles.progressContainer}>
-				<ProgressBar progress={Math.round(((currentSection + 1) / totalSections) * 100)} outerStyle={{}} innerStyle={{}} />
+				<ProgressBar progress={Math.round(((currentSection + 1) / totalSections) * 100)} />
 				<Text style={styles.progressText}>
 					{currentSection + 1}/{totalSections}
 				</Text>
@@ -234,7 +378,7 @@ export default function SurveyMorningPage() {
 
 			{/* Survey content */}
 			<ScrollView style={styles.surveyContent} contentContainerStyle={styles.surveyContentInner}>
-				<Text style={styles.surveyType}>🌅 Morning Survey</Text>
+				<Text style={styles.surveyType}>🌙 Night Survey</Text>
 
 				{/* ADVICE */}
 				{section.key === 'advice' && (
@@ -274,60 +418,35 @@ export default function SurveyMorningPage() {
 				{section.key === 'dayGoals' && (
 					<View>
 						<Text style={styles.question}>Day / Habit Goals</Text>
-						<Text style={{ marginBottom: 8 }}>Add or edit your daily habit goals.</Text>
+						<Text style={{ marginBottom: 8 }}>Check off completed goals today. You can uncheck until you submit.</Text>
 						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled={true}>
 							{goals.habits
 								.filter(h => h.title.trim())
-								.map(h => (
-									<View key={h.id} style={[styles.habitRow, h.importance === 'Important+' ? styles.habitImportantPlus : h.importance === 'Important' ? styles.habitImportant : null]}>
-										<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-											<View style={{ flex: 1 }}>
+								.map(h => {
+									const today = new Date().toISOString().split('T')[0];
+									const isCompleted = answers[`habit_${h.id}`];
+									const missedStreak = h.streak > 0 && h.lastCompletedDate && h.lastCompletedDate !== today && !isYesterday(h.lastCompletedDate);
+
+									return (
+										<View key={h.id}>
+											<View style={[styles.habitRow, isCompleted ? styles.habitCompleted : null, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
 												<Text selectable={false} style={styles.habitTitle}>
 													{h.title}
 												</Text>
-												<Text selectable={false} style={styles.habitMeta}>
-													{h.category ? `${h.category}` : ''} • Streak: {h.streak}
-												</Text>
+												<Checkbox value={!!isCompleted} onValueChange={v => setAnswers({ ...answers, [`habit_${h.id}`]: v })} />
 											</View>
-											<Pressable style={[styles.miniButton, styles.miniEditButton]} onPress={() => setEditingHabit(h)}>
-												<Text selectable={false} style={styles.miniButtonText}>
-													✏️
-												</Text>
-											</Pressable>
+											{missedStreak && !isCompleted && (
+												<View style={{ marginTop: 6 }}>
+													<Text selectable={false} style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+														Why didn't you complete this goal?
+													</Text>
+													<TextInput value={answers[`missed_${h.id}`] || ''} onChangeText={t => setAnswers({ ...answers, [`missed_${h.id}`]: t })} placeholder="Brief note..." style={[styles.textInputArea, { minHeight: 60 }]} multiline />
+												</View>
+											)}
 										</View>
-									</View>
-								))}
+									);
+								})}
 						</ScrollView>
-						<Pressable style={styles.smallButton} onPress={() => goals.addHabit({ title: 'New Habit' })}>
-							<Text selectable={false} style={styles.smallButtonText}>
-								+ Add Habit
-							</Text>
-						</Pressable>
-
-						{/* Suggested goals with reroll */}
-						{goals.suggestedGoals.length > 0 && (
-							<>
-								<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Suggested Goals</Text>
-								<ScrollView style={styles.suggestedScrollView} nestedScrollEnabled={true}>
-									{goals.suggestedGoals.map(s => (
-										<Pressable
-											key={s}
-											style={styles.suggestedItem}
-											onPress={() => {
-												goals.addHabit({ title: s, daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] });
-												goals.rerollSuggested();
-											}}>
-											<Text selectable={false}>+ {s}</Text>
-										</Pressable>
-									))}
-								</ScrollView>
-								<Pressable style={styles.rerollButton} onPress={() => goals.rerollSuggested()}>
-									<Text selectable={false} style={styles.rerollButtonText}>
-										🔄 Re-Roll Suggestions
-									</Text>
-								</Pressable>
-							</>
-						)}
 					</View>
 				)}
 
@@ -335,46 +454,46 @@ export default function SurveyMorningPage() {
 				{section.key === 'todoGoals' && (
 					<View>
 						<Text style={styles.question}>To-Do Goals</Text>
-						<Text style={{ marginBottom: 8 }}>Add or edit your to-do goals.</Text>
+						<Text style={{ marginBottom: 8 }}>Check off completed to-dos and their sub-goals. You can uncheck until you submit.</Text>
 						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled={true}>
 							{goals.todos
 								.filter(t => t.title.trim())
-								.map(t => (
-									<View key={t.id} style={[styles.todoItem, t.importance === 'Important+' ? styles.todoImportantPlus : t.importance === 'Important' ? styles.todoImportant : null]}>
-										<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-											<View style={{ flex: 1 }}>
-												<Text selectable={false} style={styles.habitTitle}>
+								.map(t => {
+									const today = new Date().toISOString().split('T')[0];
+									const isCompleted = answers[`todo_${t.id}`];
+									const created = new Date(t.createdAt);
+									const now = new Date();
+									const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+									const canComplete = diffDays >= 1;
+
+									return (
+										<View key={t.id} style={[styles.todoItem, isCompleted ? styles.todoCompleted : null]}>
+											<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+												<Text selectable={false} style={[styles.habitTitle, { textDecorationLine: isCompleted ? 'line-through' : 'none', opacity: canComplete ? 1 : 0.6 }]}>
 													{t.title}
 												</Text>
-												<Text selectable={false} style={styles.habitMeta}>
-													{t.importance} {t.category && `• ${t.category}`}
-												</Text>
+												<Checkbox disabled={!canComplete} value={!!isCompleted} onValueChange={v => setAnswers({ ...answers, [`todo_${t.id}`]: v })} />
 											</View>
-											<Pressable style={[styles.miniButton, styles.miniEditButton]} onPress={() => setEditingTodo(t)}>
-												<Text selectable={false} style={styles.miniButtonText}>
-													✏️
+											{!canComplete && (
+												<Text selectable={false} style={{ fontSize: 11, color: '#999', fontStyle: 'italic', marginTop: 4 }}>
+													(Can complete after 1 day)
 												</Text>
-											</Pressable>
+											)}
+											{isCompleted && t.subGoals.length > 0 && (
+												<View style={{ marginTop: 8 }}>
+													{t.subGoals.map(sg => (
+														<Pressable key={sg.id} style={styles.subGoalRow} onPress={() => goals.toggleSubGoal(t.id, sg.id)}>
+															<Text selectable={false} style={{ textDecorationLine: sg.completed ? 'line-through' : 'none' }}>
+																{sg.completed ? '✓' : '○'} {sg.title}
+															</Text>
+														</Pressable>
+													))}
+												</View>
+											)}
 										</View>
-										{t.subGoals.length > 0 && (
-											<View style={{ marginTop: 8 }}>
-												{t.subGoals.map(sg => (
-													<View key={sg.id} style={styles.subGoalRow}>
-														<Text selectable={false} style={{ textDecorationLine: sg.completed ? 'line-through' : 'none' }}>
-															• {sg.title}
-														</Text>
-													</View>
-												))}
-											</View>
-										)}
-									</View>
-								))}
+									);
+								})}
 						</ScrollView>
-						<Pressable style={styles.smallButton} onPress={() => goals.addTodo({ title: 'New To-Do' })}>
-							<Text selectable={false} style={styles.smallButtonText}>
-								+ Add To-Do
-							</Text>
-						</Pressable>
 					</View>
 				)}
 
@@ -386,6 +505,52 @@ export default function SurveyMorningPage() {
 							{randomPromptIndex !== null && PROMPTS[randomPromptIndex] ? PROMPTS[randomPromptIndex].text : 'Write a short response'}
 						</Text>
 						<TextInput value={answers.promptText || ''} onChangeText={t => setAnswers({ ...answers, promptText: t })} placeholder="Your response..." multiline style={styles.textInputArea} />
+					</View>
+				)}
+
+				{/* TRIVIA */}
+				{section.key === 'trivia' && randomTriviaIndex !== null && TRIVIA[randomTriviaIndex] && (
+					<View>
+						<Text style={styles.question}>Quick Trivia</Text>
+						<Text selectable={false} style={{ marginBottom: 12 }}>
+							{TRIVIA[randomTriviaIndex].text}
+						</Text>
+						<Text selectable={false} style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
+							Select your answer:
+						</Text>
+						{(triviaOptions ? triviaOptions.answers : TRIVIA[randomTriviaIndex].answers).map((answer, i) => {
+							const isSelected = answers.triviaAnswer === i;
+							const submitted = answers.triviaSubmitted;
+							const isCorrect = triviaOptions ? i === triviaOptions.correctLocalIndex : i === TRIVIA[randomTriviaIndex].correctIndex;
+
+							return (
+								<Pressable key={`${randomTriviaIndex}-${i}`} style={[styles.mcOption, isSelected && styles.mcSelected, submitted && isCorrect && styles.mcCorrect, submitted && isSelected && !isCorrect && styles.mcIncorrect]} onPress={() => !submitted && setAnswers({ ...answers, triviaAnswer: i })}>
+									<Text selectable={false}>{answer}</Text>
+									{submitted && isCorrect && (
+										<Text selectable={false} style={{ marginLeft: 8 }}>
+											✓
+										</Text>
+									)}
+									{submitted && isSelected && !isCorrect && (
+										<Text selectable={false} style={{ marginLeft: 8 }}>
+											✗
+										</Text>
+									)}
+								</Pressable>
+							);
+						})}
+						{!answers.triviaSubmitted && (
+							<Pressable style={[styles.smallButton, { marginTop: 12 }]} onPress={() => setAnswers({ ...answers, triviaSubmitted: true })}>
+								<Text selectable={false} style={styles.smallButtonText}>
+									Submit Answer
+								</Text>
+							</Pressable>
+						)}
+						{answers.triviaSubmitted && (
+							<Text selectable={false} style={{ marginTop: 12, fontSize: 13, color: '#666' }}>
+								Correct answer: {triviaOptions ? triviaOptions.answers[triviaOptions.correctLocalIndex] : TRIVIA[randomTriviaIndex].answers[TRIVIA[randomTriviaIndex].correctIndex]}
+							</Text>
+						)}
 					</View>
 				)}
 
@@ -419,14 +584,24 @@ export default function SurveyMorningPage() {
 
 			{/* Button controls */}
 			<View style={styles.buttonContainer}>
+				{/* Save for Later Button */}
 				<Pressable style={styles.buttonSmall} onPress={handleSaveForLater}>
 					<Text selectable={false} style={styles.buttonText}>
 						Save for Later
 					</Text>
 				</Pressable>
+
+				{/* Previous Button */}
+				<Pressable style={[styles.buttonSmall, { opacity: currentSection === 0 ? 0.5 : 1 }]} onPress={goBack} disabled={currentSection === 0}>
+					<Text selectable={false} style={styles.buttonText}>
+						Previous
+					</Text>
+				</Pressable>
+
+				{/* Next/Submit Button */}
 				<Pressable style={styles.buttonNext} onPress={goNext}>
 					<Text selectable={false} style={styles.buttonTextPrimary}>
-						{currentSection === totalSections - 1 ? 'Submit' : 'Next'}
+						{answers.triviaSubmitted && section.key === 'trivia' ? 'Next' : currentSection === totalSections - 1 ? 'Submit' : 'Next'}
 					</Text>
 				</Pressable>
 			</View>
@@ -459,8 +634,6 @@ const styles = StyleSheet.create({
 	buttonTextPrimary: { fontSize: 14, fontWeight: '600', color: '#fff' },
 	smallButton: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#eee', borderRadius: 8, alignSelf: 'flex-start', marginTop: 8 },
 	smallButtonText: { fontSize: 13, fontWeight: '600', color: '#333' },
-	rerollButton: { paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#e3f2fd', borderRadius: 8, alignSelf: 'flex-start', marginTop: 12 },
-	rerollButtonText: { fontSize: 13, fontWeight: '600', color: '#1976d2' },
 	miniButton: { width: 32, height: 32, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
 	miniEditButton: { backgroundColor: '#2196F3' },
 	miniButtonText: { fontSize: 14, color: '#fff' },
@@ -470,17 +643,18 @@ const styles = StyleSheet.create({
 	moodEmoji: { fontSize: 24, marginBottom: 6 },
 	moodLabel: { fontSize: 12, textAlign: 'center' },
 	habitRow: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#eee', marginBottom: 8 },
-	habitImportant: { borderColor: '#FFB74D', backgroundColor: '#FFF8E1' },
-	habitImportantPlus: { borderColor: '#FF8A65', backgroundColor: '#FFF3E0' },
+	habitCompleted: { borderColor: '#4CAF50', backgroundColor: '#E8F5E9' },
 	habitTitle: { fontSize: 16, fontWeight: '600' },
 	habitMeta: { fontSize: 12, color: '#666', marginTop: 4 },
 	goalsScrollView: { maxHeight: 250, borderRadius: 8, marginVertical: 8 },
 	suggestedScrollView: { maxHeight: 150, borderRadius: 8, borderWidth: 1, borderColor: '#f0f0f0' },
-	suggestedItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
 	todoItem: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#eee', marginBottom: 8 },
-	todoImportant: { borderColor: '#FFB74D', backgroundColor: '#FFF8E1' },
-	todoImportantPlus: { borderColor: '#FF8A65', backgroundColor: '#FFF3E0' },
+	todoCompleted: { borderColor: '#4CAF50', backgroundColor: '#E8F5E9' },
 	subGoalRow: { paddingLeft: 12, paddingVertical: 6 },
+	mcOption: { padding: 12, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+	mcSelected: { borderColor: '#4CAF50', backgroundColor: '#eefaf0' },
+	mcCorrect: { borderColor: '#4CAF50', backgroundColor: '#E8F5E9' },
+	mcIncorrect: { borderColor: '#f44336', backgroundColor: '#FFEBEE' },
 	resultsCard: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 20, marginVertical: 16 },
 	resultText: { fontSize: 16, fontWeight: '600', marginVertical: 8 },
 	finishButton: { paddingVertical: 12, backgroundColor: '#4CAF50', borderRadius: 8, alignItems: 'center', marginTop: 20 },

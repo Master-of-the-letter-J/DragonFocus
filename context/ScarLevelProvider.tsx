@@ -107,19 +107,16 @@ const SCAR_LEVELS: ScarLevelInfo[] = [
 interface ScarLevelContextType {
 	currentScarLevel: number;
 	currentXP: number;
-
 	addXP: (amount: number) => void;
 	levelUp: () => void;
-
 	getCurrentLevelInfo: () => ScarLevelInfo;
 	getNextLevelInfo: () => ScarLevelInfo | null;
 	getXPToNextLevel: () => number;
-
 	getMultiplier: (isPremium: boolean) => number;
 	hasFeature: (feature: string) => boolean;
-
 	setScarLevel: (level: number) => void;
 	setXP: (xp: number) => void;
+	resetScarLevel: () => void; // Added reset function
 }
 
 const ScarLevelContext = createContext<ScarLevelContextType | undefined>(undefined);
@@ -153,9 +150,7 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 		const newXP = currentXP + amount;
 		setCurrentXP(newXP);
 
-		// Auto-level-up if XP passes thresholds
 		let newLevel = currentScarLevel;
-
 		for (let i = currentScarLevel + 1; i < SCAR_LEVELS.length; i++) {
 			if (newXP >= SCAR_LEVELS[i].requiredXP) newLevel = i;
 			else break;
@@ -186,7 +181,7 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const hasFeature = (feature: string) => getCurrentLevelInfo().features.includes(feature);
 
 	// -----------------------------
-	// MANUAL SETTERS
+	// MANUAL SETTERS & RESET
 	// -----------------------------
 
 	const setScarLevelValue = (level: number) => {
@@ -197,6 +192,11 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 
 	const setXPValue = (xp: number) => {
 		setCurrentXP(Math.max(0, xp));
+	};
+
+	const resetScarLevel = () => {
+		setCurrentScarLevel(0);
+		setCurrentXP(0);
 	};
 
 	// -----------------------------
@@ -217,6 +217,7 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 				hasFeature,
 				setScarLevel: setScarLevelValue,
 				setXP: setXPValue,
+				resetScarLevel, // Exported reset
 			}}>
 			{children}
 		</ScarLevelContext.Provider>
