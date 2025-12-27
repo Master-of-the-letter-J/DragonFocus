@@ -7,10 +7,11 @@ import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useGoals, type HabitGoal, type TodoGoal } from '@/context/GoalsProvider';
+import { useJournal } from '@/context/JournalProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -42,9 +43,9 @@ export default function SurveyMorningPage() {
 	const scarLevel = useScarLevel();
 	const fury = useFury();
 	const goals = useGoals();
+	const journal = useJournal();
 	const router = useRouter();
 
-	// Survey state
 	const [currentSection, setCurrentSection] = useState(0);
 	const [answers, setAnswers] = useState<SurveyAnswers>({});
 	const [journalText, setJournalText] = useState('');
@@ -54,17 +55,14 @@ export default function SurveyMorningPage() {
 	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
 	const [showResults, setShowResults] = useState(false);
 	const [results, setResults] = useState<any>(null);
-	const slideAnim = React.useRef(new Animated.Value(-100)).current;
+	const slideAnim = useRef(new Animated.Value(-100)).current;
 
-	// Local state for draggable lists
 	const [localHabits, setLocalHabits] = useState<HabitGoal[]>([]);
 	const [localTodos, setLocalTodos] = useState<TodoGoal[]>([]);
 
-	// Goal editor modals
 	const [editingHabit, setEditingHabit] = useState<HabitGoal | null>(null);
 	const [editingTodo, setEditingTodo] = useState<TodoGoal | null>(null);
 
-	// Sections
 	const sections = [
 		{ key: 'advice', label: 'Advice' },
 		{ key: 'mood', label: 'Mood' },
@@ -77,7 +75,6 @@ export default function SurveyMorningPage() {
 
 	const totalSections = sections.length;
 
-	// Sync local draggable state with global state on mount or change
 	useEffect(() => {
 		setLocalHabits(goals.habits);
 	}, [goals.habits]);
@@ -86,7 +83,6 @@ export default function SurveyMorningPage() {
 		setLocalTodos(goals.todos);
 	}, [goals.todos]);
 
-	// Survey label animation
 	useEffect(() => {
 		if (showSurveyLabel) {
 			Animated.sequence([
@@ -105,20 +101,24 @@ export default function SurveyMorningPage() {
 		}
 	}, [showSurveyLabel]);
 
-	// Initialize survey on mount
 	useEffect(() => {
-		if (!survey.canTakeMorningSurvey()) {
-			Alert.alert('Survey Unavailable', 'You have already completed the morning survey today.');
-			router.back();
-			return;
+		const saved = survey.loadProgress('morning');
+		const todayStr = new Date().toISOString().split('T')[0];
+
+		if (saved && saved.savedAt === todayStr) {
+			if (saved.answers) setAnswers(saved.answers);
+			if (saved.journalText) setJournalText(saved.journalText);
+			if (typeof saved.section === 'number') setCurrentSection(saved.section);
+			if (typeof saved.indices?.advice === 'number') setRandomAdviceIndex(saved.indices.advice);
+			if (typeof saved.indices?.prompt === 'number') setRandomPromptIndex(saved.indices.prompt);
+			if (typeof saved.indices?.quote === 'number') setRandomQuoteIndex(saved.indices.quote);
 		}
 
 		setShowSurveyLabel(true);
 
-		// Pick random values
-		if (ADVICE.length > 0) setRandomAdviceIndex(Math.floor(Math.random() * ADVICE.length));
-		if (PROMPTS.length > 0) setRandomPromptIndex(Math.floor(Math.random() * PROMPTS.length));
-		if (QUOTES.length > 0 && scarLevel.currentScarLevel >= 1) setRandomQuoteIndex(Math.floor(Math.random() * QUOTES.length));
+		if (ADVICE.length > 0 && randomAdviceIndex === null) setRandomAdviceIndex(Math.floor(Math.random() * ADVICE.length));
+		if (PROMPTS.length > 0 && randomPromptIndex === null) setRandomPromptIndex(Math.floor(Math.random() * PROMPTS.length));
+		if (QUOTES.length > 0 && scarLevel.currentScarLevel >= 1 && randomQuoteIndex === null) setRandomQuoteIndex(Math.floor(Math.random() * QUOTES.length));
 	}, []);
 
 	const goNext = () => {
@@ -136,29 +136,34 @@ export default function SurveyMorningPage() {
 	};
 
 	const handleSaveForLater = () => {
-		Alert.alert('Save & Exit', 'Your progress will be saved. Do you want to leave?', [
-			{ text: 'Cancel', style: 'cancel' },
-			{ text: 'Save & Exit', onPress: () => router.back() },
-		]);
+		const saveState = {
+			savedAt: new Date().toISOString().split('T')[0],
+			section: currentSection,
+			answers: answers,
+			journalText: journalText,
+			indices: {
+				advice: randomAdviceIndex,
+				prompt: randomPromptIndex,
+				quote: randomQuoteIndex,
+			},
+		};
+		survey.saveProgress('morning', saveState);
+		Alert.alert('Saved', 'Progress saved. You can continue later.', [{ text: 'OK', onPress: () => router.back() }]);
 	};
 
 	const submitSurvey = () => {
 		const today = new Date().toISOString().split('T')[0];
-		let totalCoinsEarned = 10; // base
+		let totalCoinsEarned = 10;
 		let furyDelta = 0;
 
-		// Mood affects fury
 		const mood = answers.mood as number | undefined;
+		const moodLabel = typeof mood === 'number' ? moodOptions[mood].label : '';
 		if (typeof mood === 'number') furyDelta = moodOptions[mood].fury || 0;
 
 		coins.addCoins(totalCoinsEarned);
 		shards.addShards(1);
+		if (typeof fury.addFury === 'function') fury.addFury(furyDelta);
 
-		if (typeof fury.addFury === 'function') {
-			fury.addFury(furyDelta);
-		}
-
-		// Prompt reward
 		if (answers.promptText && answers.promptText.trim()) {
 			coins.addCoins(2);
 			totalCoinsEarned += 2;
@@ -168,10 +173,20 @@ export default function SurveyMorningPage() {
 		const bonusFireXP = dragon.age * 10;
 		scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
 
-		// Mark complete
 		survey.completeMorningSurvey();
 
-		// Show results
+		// Add journal entry
+		journal.addEntry({
+			id: `morning-${today}-${Date.now()}`,
+			date: today,
+			surveyType: 'morning',
+			goalsCompleted: localHabits.length,
+			schedulePercent: 100,
+			rewards: { coins: totalCoinsEarned, xp: fireXPFromCoins + bonusFireXP, fury: furyDelta },
+			text: journalText,
+			moodMorning: moodLabel,
+		});
+
 		setResults({
 			coinsEarned: totalCoinsEarned,
 			shardsEarned: 1,
@@ -278,7 +293,6 @@ export default function SurveyMorningPage() {
 			<View style={styles.container}>
 				<TopHeader isHomePage={false} />
 
-				{/* Goal editor modals */}
 				{editingHabit && (
 					<Modal visible={!!editingHabit} transparent={true} animationType="slide">
 						<View style={styles.modalOverlay}>
@@ -295,12 +309,10 @@ export default function SurveyMorningPage() {
 					</Modal>
 				)}
 
-				{/* Survey Label Animation */}
 				<Animated.View style={[styles.surveyLabelContainer, { transform: [{ translateY: slideAnim }] }]}>
 					<Text style={styles.surveyLabelText}>🌅 Morning Survey</Text>
 				</Animated.View>
 
-				{/* Progress bar */}
 				<View style={styles.progressContainer}>
 					<View style={styles.progressBar}>
 						<View style={[styles.progressFill, { width: `${((currentSection + 1) / totalSections) * 100}%` }]} />
@@ -310,11 +322,7 @@ export default function SurveyMorningPage() {
 					</Text>
 				</View>
 
-				<Text style={styles.surveyType}>🌅 Morning Survey</Text>
-
-				{/* Survey content - Switched to View container with conditional rendering to support DraggableFlatList */}
 				<View style={styles.contentArea}>
-					{/* DAY GOALS (Draggable) */}
 					{section.key === 'dayGoals' && (
 						<DraggableFlatList
 							data={localHabits}
@@ -325,7 +333,7 @@ export default function SurveyMorningPage() {
 							ListHeaderComponent={
 								<View>
 									<Text style={styles.question}>Day / Habit Goals</Text>
-									<Text style={{ marginBottom: 8 }}>Hold to drag and reorder your daily habit goals.</Text>
+									<Text style={{ marginBottom: 8 }}>Hold to drag and reorder your daily habits.</Text>
 								</View>
 							}
 							ListFooterComponent={
@@ -336,26 +344,25 @@ export default function SurveyMorningPage() {
 										</Text>
 									</Pressable>
 
-									{/* Suggested goals */}
-									{goals.suggestedGoals.length > 0 && (
+									{goals.suggestedHabitGoals.length > 0 && (
 										<>
-											<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Suggested Goals</Text>
+											<Text style={[styles.label, { marginTop: 16, marginBottom: 8 }]}>Suggested Habits</Text>
 											<ScrollView style={styles.suggestedScrollView} nestedScrollEnabled={true}>
-												{goals.suggestedGoals.map(s => (
+												{goals.suggestedHabitGoals.map(s => (
 													<Pressable
 														key={s}
 														style={styles.suggestedItem}
 														onPress={() => {
 															goals.addHabit({ title: s, daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] });
-															goals.rerollSuggested();
+															goals.rerollSuggestedHabits();
 														}}>
 														<Text selectable={false}>+ {s}</Text>
 													</Pressable>
 												))}
 											</ScrollView>
-											<Pressable style={styles.rerollButton} onPress={() => goals.rerollSuggested()}>
+											<Pressable style={styles.rerollButton} onPress={() => goals.rerollSuggestedHabits()}>
 												<Text selectable={false} style={styles.rerollButtonText}>
-													🔄 Re-Roll Suggestions
+													🔄 Re-Roll Habit Suggestions
 												</Text>
 											</Pressable>
 										</>
@@ -365,7 +372,6 @@ export default function SurveyMorningPage() {
 						/>
 					)}
 
-					{/* TODO GOALS (Draggable) */}
 					{section.key === 'todoGoals' && (
 						<DraggableFlatList
 							data={localTodos}
@@ -376,7 +382,7 @@ export default function SurveyMorningPage() {
 							ListHeaderComponent={
 								<View>
 									<Text style={styles.question}>To-Do Goals</Text>
-									<Text style={{ marginBottom: 8 }}>Hold to drag and reorder your to-do goals.</Text>
+									<Text style={{ marginBottom: 8 }}>Hold to drag and reorder your to-dos.</Text>
 								</View>
 							}
 							ListFooterComponent={
@@ -391,10 +397,8 @@ export default function SurveyMorningPage() {
 						/>
 					)}
 
-					{/* NON-LIST SECTIONS (Standard ScrollView) */}
 					{!['dayGoals', 'todoGoals'].includes(section.key) && (
 						<ScrollView style={styles.surveyContent} contentContainerStyle={styles.surveyContentInner}>
-							{/* ADVICE */}
 							{section.key === 'advice' && (
 								<View>
 									<Text style={styles.question}>🐉 Dragon Inhales...</Text>
@@ -409,7 +413,6 @@ export default function SurveyMorningPage() {
 								</View>
 							)}
 
-							{/* MOOD */}
 							{section.key === 'mood' && (
 								<View>
 									<Text style={styles.question}>How are you feeling?</Text>
@@ -428,7 +431,6 @@ export default function SurveyMorningPage() {
 								</View>
 							)}
 
-							{/* PROMPT */}
 							{section.key === 'prompt' && (
 								<View>
 									<Text style={styles.question}>Random Prompt</Text>
@@ -439,15 +441,13 @@ export default function SurveyMorningPage() {
 								</View>
 							)}
 
-							{/* JOURNAL */}
 							{section.key === 'journal' && (
 								<View>
 									<Text style={styles.question}>Journal Entry</Text>
-									<TextInput value={journalText} onChangeText={setJournalText} placeholder="Write anything about your day..." multiline style={styles.textInputArea} />
+									<TextInput value={journalText} onChangeText={setJournalText} placeholder="Write about your day..." multiline style={styles.textInputArea} />
 								</View>
 							)}
 
-							{/* QUOTE */}
 							{section.key === 'quote' && (
 								<View>
 									<Text style={styles.question}>🐉 Dragon Exhales...</Text>
@@ -461,7 +461,7 @@ export default function SurveyMorningPage() {
 											</Text>
 										</>
 									) : (
-										<Text style={{ marginBottom: 12 }}>A inspiring thought for you.</Text>
+										<Text style={{ marginBottom: 12 }}>An inspiring thought for you.</Text>
 									)}
 								</View>
 							)}
@@ -469,7 +469,6 @@ export default function SurveyMorningPage() {
 					)}
 				</View>
 
-				{/* Button controls */}
 				<View style={styles.buttonContainer}>
 					<Pressable style={styles.buttonSmall} onPress={handleSaveForLater}>
 						<Text selectable={false} style={styles.buttonText}>
@@ -499,7 +498,7 @@ export default function SurveyMorningPage() {
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#fff' },
 	content: { flex: 1, padding: 16 },
-	contentArea: { flex: 1 }, // Used as container for FlatList vs ScrollView
+	contentArea: { flex: 1 },
 	title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
 	progressContainer: { paddingHorizontal: 16, marginBottom: 8 },
 	progressBar: { height: 8, backgroundColor: '#e0e0e0', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
@@ -510,7 +509,6 @@ const styles = StyleSheet.create({
 	surveyContent: { flex: 1, paddingHorizontal: 16 },
 	surveyContentInner: { paddingVertical: 20 },
 	listContentContainer: { paddingHorizontal: 16, paddingVertical: 20 },
-	surveyType: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', marginTop: 10 },
 	question: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
 	adviceText: { fontSize: 16, lineHeight: 24, color: '#333', marginBottom: 8 },
 	adviceLabel: { fontSize: 13, color: '#999', fontStyle: 'italic' },

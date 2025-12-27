@@ -25,9 +25,30 @@ export default function TutorialPage() {
 				<Text style={styles.paragraph}>- Shards: Rare currency used for special generators and upgrades. Earned by certain achievements and by selling generators.</Text>
 				<Text style={styles.paragraph}>- Fury / Mood / HP: Fury is your mood meter; it can be changed by snacks, surveys, and events. HP is your dragon's health — keep it high to avoid penalties.</Text>
 
-				<Text style={styles.sectionTitle}>Scar Levels</Text>
-				<Text style={styles.paragraph}>Scar Levels unlock features as you gain XP. Each level raises your multipliers and unlocks new shop items, dragon upgrades, and game modes. Check the Scar screen for exact unlocks.</Text>
+				<Text style={styles.sectionTitle}>Revivals</Text>
+				<Text style={styles.paragraph}>When your dragon's HP reaches 0, it enters the "dead" state. You can pay respects to your fallen dragon, which allows you to revive it as a new generation (Dragon Jr.). Each revival increases the generation counter and adds 1 million to the world population. Your dragon revives with full health and a small 2-day death debuff.</Text>
 
+				<Text style={styles.sectionTitle}>Snacks</Text>
+				<Text style={styles.paragraph}>- Health Snacks: Restore your dragon's HP immediately (small, medium, large tiers available).</Text>
+				<Text style={styles.paragraph}>- Regeneration Snacks: Provide daily HP recovery for multiple days (great for long-term health).</Text>
+				<Text style={styles.paragraph}>- Mood Snacks: Reduce your Fury meter (Nugget, Bar, Feast with varying potency).</Text>
+				<Text style={styles.paragraph}>- Coin Boosters: Double, triple, or quadruple coin gains for 1 day (powerful temporary multipliers).</Text>
+				<Text style={styles.paragraph}>- Double Jeopardy: Double both gains AND losses for a day (high risk, high reward).</Text>
+
+				<Text style={styles.sectionTitle}>Idlers & Generators</Text>
+				<Text style={styles.paragraph}>Generators passively produce coins every day based on your multipliers. Each has unique scaling:</Text>
+				<Text style={styles.paragraph}>- Treasury: +1 coins/day (basic generator).</Text>
+				<Text style={styles.paragraph}>- Forge: +2 + (Yang/50) coins/day (scales with yang stat).</Text>
+				<Text style={styles.paragraph}>- Freezer: +2 + (Yin/50) coins/day (scales with yin stat).</Text>
+				<Text style={styles.paragraph}>- Dragon NFT: +3 + (Streak/30) coins/day (scales with streak).</Text>
+				<Text style={styles.paragraph}>- Advanced Generators: Anti-Treasury, Black Hole, Golden Saddle, etc., unlock at higher Scar Levels with exponential growth.</Text>
+
+				<Text style={styles.sectionTitle}>Dragon Clickers</Text>
+				<Text style={styles.paragraph}>Clicker upgrades enhance your dragon click rewards:</Text>
+				<Text style={styles.paragraph}>- Dragon Clicks: Each click +0.01 coins (foundational upgrade).</Text>
+				<Text style={styles.paragraph}>- Age Multiplier: Click gains × 0.01 × Age (scales with dragon age).</Text>
+				<Text style={styles.paragraph}>- Demonic Clicks: Each click +0.001% of daily generation (percentage-based).</Text>
+				<Text style={styles.paragraph}>- Mega-Dragon Clicks: Each click +0.1 coins (powerful endgame clicker).</Text>
 				<Text style={styles.sectionTitle}>Invincible Dragon</Text>
 				<Text style={styles.paragraph}>Invincible mode prevents your dragon from dying. It becomes available at higher Scar Levels and is intended as a safety toggle rather than a gameplay exploit.</Text>
 

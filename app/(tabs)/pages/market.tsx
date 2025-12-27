@@ -10,13 +10,15 @@ export default function ShopPage() {
 	const { shopItems, purchaseItem, ownedItems, useItem, sellItem } = useItems();
 	const coins = useDragonCoins();
 	const scarLevel = useScarLevel();
-	const [filterType, setFilterType] = useState<'all' | 'snack' | 'generator' | 'cosmetic' | 'clicker'>('all');
+	const [filterType, setFilterType] = useState<'all' | 'snack' | 'generator' | 'cosmetic' | 'clicker' | 'theme'>('all');
 	const [sortPriceAsc, setSortPriceAsc] = useState(true);
 
 	const filteredItems = shopItems
 		.filter(item => {
 			const isClicker = item.id.startsWith('click_');
+			const isTheme = item.id.startsWith('theme_');
 			if (filterType === 'clicker') return isClicker;
+			if (filterType === 'theme') return isTheme;
 			if (filterType !== 'all' && item.type !== filterType) return false;
 			return true;
 		})
@@ -87,6 +89,9 @@ export default function ShopPage() {
 				<Pressable style={[styles.filterButton, filterType === 'cosmetic' && styles.filterActive]} onPress={() => setFilterType('cosmetic')}>
 					<Text style={[styles.filterText, filterType === 'cosmetic' && styles.filterTextActive]}>Cosmetics</Text>
 				</Pressable>
+				<Pressable style={[styles.filterButton, filterType === 'theme' && styles.filterActive]} onPress={() => setFilterType('theme')}>
+					<Text style={[styles.filterText, filterType === 'theme' && styles.filterTextActive]}>Themes</Text>
+				</Pressable>
 				<Pressable style={[styles.filterButton, styles.sortButton]} onPress={() => setSortPriceAsc(s => !s)}>
 					<Text style={styles.filterText}>{sortPriceAsc ? 'Price ↑' : 'Price ↓'}</Text>
 				</Pressable>
@@ -105,6 +110,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		marginBottom: 12,
 		gap: 8,
+		flexWrap: 'wrap',
 	},
 	filterButton: {
 		paddingVertical: 6,

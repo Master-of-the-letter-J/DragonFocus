@@ -1,3 +1,4 @@
+import { SUGGESTED_HABIT_GOALS, SUGGESTED_TODO_GOALS } from '@/constants/suggestgoals';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 // Simple uid generator to avoid extra dependency in prototype
@@ -59,8 +60,10 @@ interface GoalsContextType {
 	toggleSubGoal: (todoId: string, subId: string) => void;
 	completeTodo: (id: string) => boolean;
 	failTodo: (id: string, fail: boolean) => void;
-	suggestedGoals: string[];
-	rerollSuggested: () => void;
+	suggestedHabitGoals: string[];
+	suggestedTodoGoals: { title: string; coins: number }[];
+	rerollSuggestedHabits: () => void;
+	rerollSuggestedTodos: () => void;
 	goalTemplates: string[];
 	createGoalFromTemplate: (template: string, type: 'habit' | 'todo') => void;
 	resetGoals?: () => void;
@@ -74,21 +77,30 @@ const PRESET_HABITS: HabitGoal[] = [
 	{ id: uid(), title: '10 minute meditation', importance: 'Important+', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
 ];
 
-const SUGGESTED = ['Read 10 pages', 'Run 1 mile', 'Practice instrument 30 min', 'Write 100 words', 'Cold shower', 'Stretch for 10 minutes'];
+const SUGGESTED = ['Read 10 pages', 'Run 1 mile', 'Practice instrument 30 min', 'Write 100 words', 'Cold shower', 'Stretch for 10 minutes', 'Do 20 push-ups', 'Meditate 15 minutes', 'Take a walk', 'Learn something new', 'Journal about your day', 'Drink 8 glasses of water', 'Tidy your space', 'Call a friend or family', 'Exercise for 30 minutes', 'Cook a healthy meal', 'Do yoga for 20 minutes', 'Take a cold bath', 'Study for 1 hour', 'Plan your day ahead'];
 
 const GOAL_TEMPLATES = ['Run for (Time) minutes', 'Do (Amount) push-ups', 'Walk for (Time) minutes', 'Practice (Activity) for (Time) minutes', 'Read for (Time) minutes', 'Write (Amount) words', 'Stretch for (Time) minutes', 'Meditate for (Time) minutes', 'Drink (Amount) glasses of water', 'Do (Amount) squats'];
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
 	const [habits, setHabits] = useState<HabitGoal[]>(PRESET_HABITS);
 	const [todos, setTodos] = useState<TodoGoal[]>([]);
-	const [suggestedGoals, setSuggestedGoals] = useState<string[]>(() => {
-		const shuffled = [...SUGGESTED].sort(() => Math.random() - 0.5);
-		return shuffled.slice(0, 6);
+	const [suggestedHabitGoals, setSuggestedHabitGoals] = useState<string[]>(() => {
+		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
+		return shuffled.slice(0, 6).map(g => g.title);
+	});
+	const [suggestedTodoGoals, setSuggestedTodoGoals] = useState<{ title: string; coins: number }[]>(() => {
+		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
+		return shuffled.slice(0, 6).map(g => ({ title: g.title, coins: g.coins }));
 	});
 
-	const rerollSuggested = () => {
-		const shuffled = [...SUGGESTED].sort(() => Math.random() - 0.5);
-		setSuggestedGoals(shuffled.slice(0, 6));
+	const rerollSuggestedHabits = () => {
+		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
+		setSuggestedHabitGoals(shuffled.slice(0, 6).map(g => g.title));
+	};
+
+	const rerollSuggestedTodos = () => {
+		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
+		setSuggestedTodoGoals(shuffled.slice(0, 6).map(g => ({ title: g.title, coins: g.coins })));
 	};
 
 	const addHabit = (h: Partial<HabitGoal>) => {
@@ -214,15 +226,19 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 				toggleSubGoal,
 				completeTodo,
 				failTodo,
-				suggestedGoals,
-				rerollSuggested,
+				suggestedHabitGoals,
+				suggestedTodoGoals,
+				rerollSuggestedHabits,
+				rerollSuggestedTodos,
 				goalTemplates: GOAL_TEMPLATES,
 				createGoalFromTemplate,
 				resetGoals: () => {
 					setHabits(PRESET_HABITS);
 					setTodos([]);
-					const shuffled = [...SUGGESTED].sort(() => Math.random() - 0.5);
-					setSuggestedGoals(shuffled.slice(0, 6));
+					const shuffled1 = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
+					setSuggestedHabitGoals(shuffled1.slice(0, 6).map(g => g.title));
+					const shuffled2 = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
+					setSuggestedTodoGoals(shuffled2.slice(0, 6).map(g => ({ title: g.title, coins: g.coins })));
 				},
 			}}>
 			{children}

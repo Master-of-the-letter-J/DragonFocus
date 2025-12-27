@@ -8,36 +8,45 @@ import { GoalsProvider } from './GoalsProvider';
 import { GraveyardProvider } from './GraveyardProvider';
 import ItemsProvider from './ItemsProvider';
 import { JournalProvider } from './JournalProvider';
+import { PopulationProvider } from './PopulationProvider';
 import { ScarLevelProvider } from './ScarLevelProvider';
 import { StreakProvider } from './StreakProvider';
 import { SurveyProvider } from './SurveyProvider';
+import { ThemeProvider } from './ThemeProvider';
+import { WeatherProvider } from './WeatherProvider';
 
 export default function ParentProvider({ children }: { children: React.ReactNode }) {
 	return (
-		<FuryProvider>
-			<StreakProvider>
-				<DragonCoinsProvider>
-					<DragonShardsProvider>
-						<GraveyardProvider>
-							<DragonProvider>
-								<ScarLevelProvider>
-									<DragonClickingProvider>
-										<ItemsProvider>
-											<SurveyProvider>
-												<GoalsProvider>
-													<JournalProvider>
-														<DragonAlarmProvider>{children}</DragonAlarmProvider>
-													</JournalProvider>
-												</GoalsProvider>
-											</SurveyProvider>
-										</ItemsProvider>
-									</DragonClickingProvider>
-								</ScarLevelProvider>
-							</DragonProvider>
-						</GraveyardProvider>
-					</DragonShardsProvider>
-				</DragonCoinsProvider>
-			</StreakProvider>
-		</FuryProvider>
+		<ThemeProvider>
+			<FuryProvider>
+				<StreakProvider>
+					<DragonCoinsProvider>
+						<DragonShardsProvider>
+							<PopulationProvider>
+								<GraveyardProvider>
+									<DragonProvider>
+										<WeatherProvider>
+											<ScarLevelProvider>
+												<DragonClickingProvider>
+													<ItemsProvider>
+														<SurveyProvider>
+															<GoalsProvider>
+																<JournalProvider>
+																	<DragonAlarmProvider>{children}</DragonAlarmProvider>
+																</JournalProvider>
+															</GoalsProvider>
+														</SurveyProvider>
+													</ItemsProvider>
+												</DragonClickingProvider>
+											</ScarLevelProvider>
+										</WeatherProvider>
+									</DragonProvider>
+								</GraveyardProvider>
+							</PopulationProvider>
+						</DragonShardsProvider>
+					</DragonCoinsProvider>
+				</StreakProvider>
+			</FuryProvider>
+		</ThemeProvider>
 	);
 }

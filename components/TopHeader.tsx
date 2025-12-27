@@ -94,7 +94,7 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 				{/* COINS */}
 				<View style={styles.statWrapperSmall}>
 					<Pressable style={styles.stat} onPress={() => setActiveStat('Coins')}>
-						<MaterialIcons name="attach-money" size={18} color="#27ae60" />
+						<Text style={styles.coinIcon}>💰</Text>
 						<Text style={styles.statText}>{Number(coins.coins).toFixed(2)}</Text>
 					</Pressable>
 					{activeStat === 'Coins' && <Tooltip text="Coins" />}
@@ -131,7 +131,8 @@ const styles = StyleSheet.create({
 	textLight: { color: '#fff' },
 	stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 	statText: { fontSize: 12, fontWeight: '700', color: '#333' },
-	tooltipBox: { position: 'absolute', top: '100%', marginTop: 4, backgroundColor: '#333', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'center', zIndex: 10 },
+	coinIcon: { fontSize: 16 },
+	tooltipBox: { position: 'absolute', bottom: 'auto', top: 'auto', marginTop: 4, backgroundColor: '#333', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'center', zIndex: 10, maxWidth: 120 },
 	tooltipText: { color: '#fff', fontSize: 11, fontWeight: '600' },
 	dangerBarOutline: { borderWidth: 1, borderColor: '#e53935', shadowColor: '#e53935', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
 });

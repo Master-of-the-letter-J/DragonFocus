@@ -8,6 +8,7 @@ import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useItems } from '@/context/ItemsProvider';
+import { usePopulation } from '@/context/PopulationProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
@@ -26,6 +27,7 @@ export default function HomePage() {
 	const dragonClicking = useDragonClicking();
 	const router = useRouter();
 	const survey = useSurvey();
+	const population = usePopulation();
 
 	const today = new Date().toISOString().split('T')[0];
 
@@ -72,13 +74,19 @@ export default function HomePage() {
 	const nightStatus = getSurveyButtonState('night');
 
 	// Helper to ensure button is clickable if we want to Retake or Continue
-	const isMorningClickable = survey.canTakeMorningSurvey() || morningStatus === 'Retake' || !!savedMorning;
-	const isNightClickable = survey.canTakeNightSurvey() || nightStatus === 'Retake' || !!savedNight;
+	const isMorningClickable = (survey.canTakeMorningSurvey() || morningStatus === 'Retake' || !!savedMorning) && dragon.dragonState === 'alive';
+	const isNightClickable = (survey.canTakeNightSurvey() || nightStatus === 'Retake' || !!savedNight) && dragon.dragonState === 'alive';
 
 	return (
 		<View style={styles.container}>
 			<TopHeader isHomePage={true} />
 			<ScrollView contentContainerStyle={styles.scrollContent}>
+				{/* Population Stat */}
+				<View style={styles.statContainer}>
+					<Text style={styles.statLabel}>Population</Text>
+					<Text style={styles.statValue}>{(population.population / 1_000_000_000).toFixed(2)}B</Text>
+				</View>
+
 				{/* Active Effects Section */}
 				{activeSnackTimers.length > 0 && (
 					<View style={styles.timerContainer}>
@@ -117,25 +125,26 @@ export default function HomePage() {
 					)}
 
 					<View style={styles.surveySection}>
-						<Text style={styles.surveyLabel}>Daily Tasks</Text>
+						<Text style={styles.surveyLabel}>📋 Daily Surveys</Text>
+						<View style={styles.surveysContainer}>
+							{/* Morning Survey */}
+							<Pressable style={[styles.largeButton, styles.surveyButton, isMorningClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyMorning' as any)} disabled={!isMorningClickable}>
+								<View style={styles.buttonTop}>
+									<Text style={styles.largeButtonTitle}>🌅 Morning Survey</Text>
+									<Text style={styles.statusBadge}>{morningStatus}</Text>
+								</View>
+								<ProgressBar progress={morningPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
+							</Pressable>
 
-						{/* Morning Survey */}
-						<Pressable style={[styles.largeButton, isMorningClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('../survey/surveyMorning')} disabled={!isMorningClickable}>
-							<View style={styles.buttonTop}>
-								<Text style={styles.largeButtonTitle}>🌅 Morning Survey</Text>
-								<Text style={styles.statusBadge}>{morningStatus}</Text>
-							</View>
-							<ProgressBar progress={morningPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
-						</Pressable>
-
-						{/* Night Survey */}
-						<Pressable style={[styles.largeButton, isNightClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('../survey/surveyNight')} disabled={!isNightClickable}>
-							<View style={styles.buttonTop}>
-								<Text style={styles.largeButtonTitle}>🌙 Night Survey</Text>
-								<Text style={styles.statusBadge}>{nightStatus}</Text>
-							</View>
-							<ProgressBar progress={nightPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
-						</Pressable>
+							{/* Night Survey */}
+							<Pressable style={[styles.largeButton, styles.surveyButton, isNightClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyNight' as any)} disabled={!isNightClickable}>
+								<View style={styles.buttonTop}>
+									<Text style={styles.largeButtonTitle}>🌙 Night Survey</Text>
+									<Text style={styles.statusBadge}>{nightStatus}</Text>
+								</View>
+								<ProgressBar progress={nightPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
+							</Pressable>
+						</View>
 					</View>
 				</View>
 			</ScrollView>
@@ -146,6 +155,9 @@ export default function HomePage() {
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#fff' },
 	scrollContent: { paddingBottom: 40, paddingHorizontal: 16 },
+	statContainer: { alignItems: 'center', marginTop: 12, padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, marginBottom: 12 },
+	statLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 4 },
+	statValue: { fontSize: 20, fontWeight: '800', color: '#333' },
 	timerContainer: { marginTop: 10, alignItems: 'flex-end' },
 	timerText: { fontSize: 12, color: '#4CAF50', fontWeight: '600' },
 	dragonArea: { alignItems: 'center', marginTop: 20 },
@@ -155,6 +167,8 @@ const styles = StyleSheet.create({
 	deadText: { color: '#999', fontSize: 14, fontStyle: 'italic' },
 	surveySection: { width: '100%', marginTop: 20 },
 	surveyLabel: { fontSize: 18, fontWeight: '700', marginBottom: 12, color: '#333' },
+	surveysContainer: { flexDirection: 'row', gap: 12 },
+	surveyButton: { flex: 1, marginBottom: 0 },
 	largeButton: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1.5 },
 	buttonActive: { borderColor: '#4CAF50', backgroundColor: '#F0F9F1' },
 	buttonDisabled: { borderColor: '#E0E0E0', backgroundColor: '#FAFAFA', opacity: 0.6 },

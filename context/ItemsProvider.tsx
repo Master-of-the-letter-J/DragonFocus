@@ -5,7 +5,7 @@ import { useFury } from '@/context/FuryProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import React, { ReactNode, useContext, useMemo, useState } from 'react';
 
-export type ItemType = 'snack' | 'cosmetic' | 'generator';
+export type ItemType = 'snack' | 'cosmetic' | 'generator' | 'theme';
 
 export interface ShopItem {
 	id: string;
@@ -201,6 +201,18 @@ function buildInitialShopItems(): ShopItem[] {
 		{ id: 'cosmetic_midnight_crown', name: 'Midnight Crown', type: 'cosmetic', price: 1100, description: 'A dark crown adorned with midnight blue gems' },
 		{ id: 'cosmetic_mystic_wings', name: 'Mystic Wings', type: 'cosmetic', price: 2600, description: 'Wings swirling with arcane magical energy' },
 		{ id: 'cosmetic_rose_gold_scales', name: 'Rose Gold Scales', type: 'cosmetic', price: 1350, description: 'Elegant rose gold scales with a warm glow', scarLevelRequired: 2 },
+
+		// Background & Theme Items
+		{ id: 'theme_dungeon', name: 'Dungeon Theme', type: 'theme', price: 500, description: 'Dark stone walls and torch-lit dungeon atmosphere' },
+		{ id: 'theme_castle', name: 'Castle & Plains Theme', type: 'theme', price: 600, description: 'Majestic castle with rolling green plains' },
+		{ id: 'theme_space', name: 'Space Theme', type: 'theme', price: 800, description: 'Vast cosmic void with stars and nebulas' },
+		{ id: 'theme_volcano', name: 'Volcano Theme', type: 'theme', price: 700, description: 'Fiery volcanic landscape with flowing lava' },
+		{ id: 'theme_forest', name: 'Enchanted Forest Theme', type: 'theme', price: 650, description: 'Mystical forest with ancient trees and glowing flora' },
+		{ id: 'theme_ocean', name: 'Ocean Depths Theme', type: 'theme', price: 700, description: 'Underwater kingdom with coral and bioluminescent creatures' },
+		{ id: 'theme_sky', name: 'Sky Kingdom Theme', type: 'theme', price: 750, description: 'Floating islands among the clouds', scarLevelRequired: 3 },
+		{ id: 'theme_neon', name: 'Neon Cyberpunk Theme', type: 'theme', price: 900, description: 'Futuristic neon-lit cyberpunk cityscape', scarLevelRequired: 4 },
+		{ id: 'theme_zen', name: 'Zen Garden Theme', type: 'theme', price: 550, description: 'Peaceful zen garden with koi ponds and bamboo' },
+		{ id: 'theme_hellscape', name: 'Hellscape Theme', type: 'theme', price: 1000, description: 'Infernal realm with flames and darkness', scarLevelRequired: 5 },
 	];
 }
 

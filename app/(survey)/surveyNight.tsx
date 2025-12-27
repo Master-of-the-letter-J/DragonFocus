@@ -289,6 +289,7 @@ export default function SurveyNightPage() {
 		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
 
 		// Journal entry
+		const moodLabel = typeof mood === 'number' ? moodOptions[mood].label : '';
 		journal.addEntry({
 			id: `entry_${today}_night_${Date.now()}`,
 			date: today,
@@ -296,6 +297,7 @@ export default function SurveyNightPage() {
 			goalsCompleted: totalGoalsCompleted,
 			schedulePercent: 0,
 			text: journalText,
+			moodEvening: moodLabel,
 			rewards: { coins: totalCoins, xp: fireXPFromCoins + bonusFireXP, fury: furyDelta },
 		});
 
@@ -455,6 +457,29 @@ export default function SurveyNightPage() {
 					<View>
 						<Text style={styles.question}>To-Do Goals</Text>
 						<Text style={{ marginBottom: 8 }}>Check off completed to-dos and their sub-goals. You can uncheck until you submit.</Text>
+
+						{/* Suggested To‑Dos */}
+						{goals.suggestedTodoGoals && goals.suggestedTodoGoals.length > 0 && (
+							<>
+								<Text style={{ marginTop: 8, marginBottom: 6, fontWeight: '700' }}>💡 Suggested To‑Dos</Text>
+								{goals.suggestedTodoGoals.map(s => (
+									<Pressable
+										key={s.title}
+										style={{ padding: 8, backgroundColor: '#fafafa', borderRadius: 8, marginBottom: 6 }}
+										onPress={() => {
+											goals.addTodo({ title: s.title });
+											goals.rerollSuggestedTodos();
+										}}>
+										<Text>
+											+ {s.title} — 💰 {s.coins} coins
+										</Text>
+									</Pressable>
+								))}
+								<Pressable style={{ padding: 8, backgroundColor: '#eee', borderRadius: 8, alignItems: 'center' }} onPress={() => goals.rerollSuggestedTodos()}>
+									<Text>🔄 Re‑Roll To‑Do Suggestions</Text>
+								</Pressable>
+							</>
+						)}
 						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled={true}>
 							{goals.todos
 								.filter(t => t.title.trim())
