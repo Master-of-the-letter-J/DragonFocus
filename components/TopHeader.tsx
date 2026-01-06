@@ -36,8 +36,8 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	// XP
 	const currentLevel = scarLevel.getCurrentLevelInfo();
 	const nextLevel = scarLevel.getNextLevelInfo() ?? currentLevel;
-	const xpForNextLevel = Math.max(1, nextLevel.requiredXP - currentLevel.requiredXP);
-	const xpInCurrentLevel = scarLevel.currentXP - currentLevel.requiredXP;
+	const xpForNextLevel = Math.max(1, nextLevel.levelUpRequiredXP - currentLevel.levelUpRequiredXP);
+	const xpInCurrentLevel = scarLevel.currentXP - currentLevel.levelUpRequiredXP;
 	const xpPercent = Math.min(1, xpInCurrentLevel / xpForNextLevel) * 100;
 
 	// FURY
@@ -123,7 +123,7 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 }
 
 const styles = StyleSheet.create({
-	container: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ddd', flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', gap: 10, overflow: 'hidden' },
+	container: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ddd', flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', gap: 10, overflow: 'visible' },
 	statWrapper: { flexShrink: 1, minWidth: 120, maxWidth: 180 },
 	statWrapperSmall: { flexShrink: 1, minWidth: 60 },
 	progressOuter: { height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: '#ecf0f1' },

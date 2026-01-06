@@ -1,4 +1,3 @@
-import TopHeader from '@/components/TopHeader';
 import { useJournal } from '@/context/JournalProvider';
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +8,6 @@ export default function TableView() {
 
 	return (
 		<View style={{ flex: 1 }}>
-			<TopHeader isHomePage={false} />
 			<Text style={styles.header}>📊 Logs — Table View</Text>
 
 			<ScrollView horizontal>
@@ -26,7 +24,7 @@ export default function TableView() {
 						<Text style={styles.cell}># To‑Do F.</Text>
 						<Text style={styles.cell}># To‑Do Rem</Text>
 						<Text style={[styles.cell, { minWidth: 160 }]}>Rewards</Text>
-						<Text style={[styles.cell, { minWidth: 80 }]}>VIEW</Text>
+						<Text style={[styles.cell, { minWidth: 80 }]}>Journal Info</Text>
 					</View>
 
 					{entries.map(e => (
@@ -42,7 +40,7 @@ export default function TableView() {
 							<Text style={styles.cell}>{Math.max(0, (e.todoCount || 0) - (e.todoCompleted || 0) - (e.todoFailed || 0))}</Text>
 							<Text style={[styles.cell, { minWidth: 160 }]}>{`💰 ${e.rewards?.coins || 0}, ✨ ${e.rewards?.xp || 0}, 🔥 ${e.rewards?.fury || 0}`}</Text>
 							<Pressable style={styles.viewButton} onPress={() => setOpen(e)}>
-								<Text>View</Text>
+								<Text>View Journal Info</Text>
 							</Pressable>
 						</View>
 					))}

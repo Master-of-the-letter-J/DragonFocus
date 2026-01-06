@@ -5,11 +5,14 @@ interface DragonCoinsContextType {
 	addCoins: (amount: number) => void;
 	spendCoins: (amount: number) => boolean;
 	getCoins: () => number;
-	calculateSurveyCoins: (isMorningOrNight: boolean, streak: number, scarLevel: number, isPremium: boolean) => number;
-	addMorningSurveyCoins: (streak: number, scarLevel: number, isPremium: boolean) => void;
-	addNightSurveyCoins: (streak: number, scarLevel: number, isPremium: boolean) => void;
-	addAdditionalSurveyCoins: (streak: number, scarLevel: number, isPremium: boolean) => void;
-	addClickingCoins: (yinValue: number, scarLevel: number, isPremium: boolean) => void;
+	// Coin Multiplier System: (1 - Yang * 0.005) * (Dragon Shards * 0.01) * (1 + 0.1 * Scar Level) * (Snack Multipliers) * (2 if Premium)
+	calculateCoinMultiplier: (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => number;
+	calculateSurveyCoins: (isMorningOrNight: boolean, streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => number;
+	calculateFireXP: (coins: number) => number; // XP earned is 1/10 of coins earned, also multiplied by coin multiplier
+	addMorningSurveyCoins: (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
+	addNightSurveyCoins: (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
+	addAdditionalSurveyCoins: (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
+	addClickingCoins: (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
 	resetCoins?: () => void;
 }
 
@@ -34,49 +37,56 @@ export function DragonCoinsProvider({ children }: { children: ReactNode }) {
 
 	const resetCoins = () => setCoins(0);
 
-	const calculateSurveyCoins = (isMorningOrNight: boolean, streak: number, scarLevel: number, isPremium: boolean): number => {
-		let baseCoins = isMorningOrNight ? 10 : 10; // +10 Morning/Night
-		let streakBonus = streak >= 1 ? 1 * streak : 0; // +1 * Streak
-		let multiplier = scarLevel * 0.1 + 1; // Scar level multiplier: 1.0 + (level * 0.1)
+	// Calculate the comprehensive coin multiplier
+	// Formula: (1 - Yang * 0.005) * (Dragon Shards * 0.01) * (1 + 0.1 * Scar Level) * (Snack Multipliers) * (2 if Premium)
+	const calculateCoinMultiplier = (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false): number => {
+		// Ensure yangValue is between 0 and 100
+		const clampedYang = Math.max(0, Math.min(100, yangValue));
 
-		if (isPremium) {
-			multiplier *= 2; // Premium 2x multiplier
-		}
+		const yangMultiplier = 1 - clampedYang * 0.005; // (1 - Yang * 0.005)
+		const shardMultiplier = dragonShards * 0.01; // (Dragon Shards * 0.01)
+		const scarMultiplier = 1 + 0.1 * scarLevel; // (1 + 0.1 * Scar Level)
+		const premiumMultiplier = isPremium ? 2 : 1; // (2 if Premium)
+
+		// Final multiplier = all components multiplied together
+		return yangMultiplier * shardMultiplier * scarMultiplier * snackMultipliers * premiumMultiplier;
+	};
+
+	const calculateSurveyCoins = (isMorningOrNight: boolean, streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false): number => {
+		let baseCoins = 10; // +10 Morning/Night
+		let streakBonus = streak >= 1 ? 1 * streak : 0; // +1 * Streak
+		const multiplier = calculateCoinMultiplier(yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
 
 		return Math.floor((baseCoins + streakBonus) * multiplier);
 	};
 
-	const addMorningSurveyCoins = (streak: number, scarLevel: number, isPremium: boolean) => {
-		const coins = calculateSurveyCoins(true, streak, scarLevel, isPremium);
+	const calculateFireXP = (coins: number): number => {
+		// XP earned is 1/10 of coins earned
+		return Math.floor(coins / 10);
+	};
+
+	const addMorningSurveyCoins = (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false) => {
+		const coins = calculateSurveyCoins(true, streak, yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
 		addCoins(coins);
 	};
 
-	const addNightSurveyCoins = (streak: number, scarLevel: number, isPremium: boolean) => {
-		const coins = calculateSurveyCoins(true, streak, scarLevel, isPremium);
+	const addNightSurveyCoins = (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false) => {
+		const coins = calculateSurveyCoins(true, streak, yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
 		addCoins(coins);
 	};
 
-	const addAdditionalSurveyCoins = (streak: number, scarLevel: number, isPremium: boolean) => {
+	const addAdditionalSurveyCoins = (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false) => {
 		let baseCoins = 1;
 		let streakBonus = streak >= 1 ? 1 * streak : 0;
-		let multiplier = scarLevel * 0.1 + 1;
-
-		if (isPremium) {
-			multiplier *= 2;
-		}
+		const multiplier = calculateCoinMultiplier(yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
 
 		addCoins(Math.floor((baseCoins + streakBonus) * multiplier));
 	};
 
-	const addClickingCoins = (yinValue: number, scarLevel: number, isPremium: boolean) => {
-		// +10/(yang/10) ay where yang = 100 - yin
-		const yangValue = 100 - yinValue;
+	const addClickingCoins = (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false) => {
+		// +10/(yang/10) where yang = 100 - yin (but yangValue is already provided)
 		const baseCoins = 10 / (yangValue / 10);
-		let multiplier = scarLevel * 0.1 + 1;
-
-		if (isPremium) {
-			multiplier *= 2;
-		}
+		const multiplier = calculateCoinMultiplier(yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
 
 		addCoins(Math.floor(baseCoins * multiplier));
 	};
@@ -88,7 +98,9 @@ export function DragonCoinsProvider({ children }: { children: ReactNode }) {
 				addCoins,
 				spendCoins,
 				getCoins,
+				calculateCoinMultiplier,
 				calculateSurveyCoins,
+				calculateFireXP,
 				addMorningSurveyCoins,
 				addNightSurveyCoins,
 				addAdditionalSurveyCoins,

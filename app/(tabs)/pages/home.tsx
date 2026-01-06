@@ -9,6 +9,7 @@ import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useItems } from '@/context/ItemsProvider';
 import { usePopulation } from '@/context/PopulationProvider';
+import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
@@ -24,6 +25,7 @@ export default function HomePage() {
 	const fury = useFury();
 	const dragon = useDragon();
 	const items = useItems();
+	const premium = usePremium();
 	const dragonClicking = useDragonClicking();
 	const router = useRouter();
 	const survey = useSurvey();
@@ -81,10 +83,16 @@ export default function HomePage() {
 		<View style={styles.container}>
 			<TopHeader isHomePage={true} />
 			<ScrollView contentContainerStyle={styles.scrollContent}>
-				{/* Population Stat */}
-				<View style={styles.statContainer}>
-					<Text style={styles.statLabel}>Population</Text>
-					<Text style={styles.statValue}>{(population.population / 1_000_000_000).toFixed(2)}B</Text>
+				{/* Population Stats Section */}
+				<View style={styles.statsHeader}>
+					<View style={styles.statBox}>
+						<Text style={styles.statLabel}>🌍 World Population</Text>
+						<Text style={styles.statValue}>{(population.population / 1_000_000_000).toFixed(2)}B</Text>
+					</View>
+					<View style={styles.statBox}>
+						<Text style={styles.statLabel}>💀 Death Count</Text>
+						<Text style={styles.statValue}>{(population.deathCount || 0).toLocaleString()}</Text>
+					</View>
 				</View>
 
 				{/* Active Effects Section */}
@@ -110,7 +118,8 @@ export default function HomePage() {
 								onPress={() => {
 									dragonClicking.addClick();
 									const qty = items.ownedItems['click_dragon_clicks'] || 1;
-									coins.addCoins(0.01 * Math.max(1, qty));
+									// Use provider's clicking coins method so multipliers apply
+									coins.addClickingCoins(fury.furyMeter, shards.shards ?? 0, scar.currentScarLevel ?? 0, items.getActiveCoinMultiplier ? items.getActiveCoinMultiplier() : 1, premium.isPremium ?? false);
 								}}>
 								<Image source={images.dragon} style={styles.dragonImage} />
 							</Pressable>
@@ -155,7 +164,8 @@ export default function HomePage() {
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#fff' },
 	scrollContent: { paddingBottom: 40, paddingHorizontal: 16 },
-	statContainer: { alignItems: 'center', marginTop: 12, padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, marginBottom: 12 },
+	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 12, marginBottom: 12 },
+	statBox: { flex: 1, alignItems: 'center', padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0' },
 	statLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 4 },
 	statValue: { fontSize: 20, fontWeight: '800', color: '#333' },
 	timerContainer: { marginTop: 10, alignItems: 'flex-end' },

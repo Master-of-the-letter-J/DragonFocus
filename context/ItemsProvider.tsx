@@ -2,6 +2,7 @@ import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
+import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import React, { ReactNode, useContext, useMemo, useState } from 'react';
 
@@ -230,6 +231,7 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 	const coins = useDragonCoins();
 	const shards = useShards();
 	const scarLevel = useScarLevel();
+	const premium = usePremium();
 
 	// give the player one starter Dragon Clicks upgrade regardless of scar level
 	const [ownedItems, setOwnedItems] = useState<Record<string, number>>({ click_dragon_clicks: 1 });
@@ -276,9 +278,15 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 			}
 		}
 
-		// Generators: add immediate coins equal to day's value on purchase
+		// Generators: add immediate coins equal to day's value on purchase (apply multiplier)
 		if (item.type === 'generator' && item.effect?.coinsPerDay) {
-			coins.addCoins(item.effect.coinsPerDay);
+			const yangValue = fury.furyMeter;
+			const dragonShardsCount = shards.shards ?? 0;
+			const scar = scarLevel.currentScarLevel ?? 0;
+			const snackMult = getActiveCoinMultiplier();
+			const isPremiumFlag = premium.isPremium ?? false;
+			const earned = Math.floor(item.effect.coinsPerDay * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+			coins.addCoins(earned);
 		}
 
 		// Apply duration-based effects (boosters, jeopardy, regen, etc.)
@@ -354,9 +362,13 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 				const qty = ownedItems[si.id] || 0;
 				if (qty <= 0) return;
 				const base = si.effect.coinsPerDay * qty;
-				const mult = getActiveCoinMultiplier();
-				const scarMult = scarLevel.getMultiplier(false);
-				total += Math.floor(base * mult * scarMult * days);
+				const yangValue = fury.furyMeter;
+				const dragonShardsCount = shards.shards ?? 0;
+				const scar = scarLevel.currentScarLevel ?? 0;
+				const snackMult = getActiveCoinMultiplier();
+				const isPremiumFlag = premium.isPremium ?? false;
+				const multiplier = coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag);
+				total += Math.floor(base * multiplier * days);
 			}
 		});
 

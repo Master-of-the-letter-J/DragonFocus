@@ -1,4 +1,3 @@
-import TopHeader from '@/components/TopHeader';
 import { useAchievements } from '@/context/AchievementsProvider';
 import { useTheme } from '@/context/ThemeProvider';
 import React, { useState } from 'react';
@@ -28,7 +27,6 @@ export default function Achievements() {
 
 	return (
 		<View style={styles.container}>
-			<TopHeader isHomePage={false} />
 			<Text style={styles.header}>🏆 Achievements</Text>
 			<ScrollView contentContainerStyle={{ paddingVertical: 8 }}>
 				<View style={styles.grid}>

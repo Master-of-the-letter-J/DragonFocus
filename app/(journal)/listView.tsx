@@ -1,4 +1,3 @@
-import TopHeader from '@/components/TopHeader';
 import { useJournal } from '@/context/JournalProvider';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,7 +7,6 @@ export default function ListView() {
 
 	return (
 		<View style={{ flex: 1 }}>
-			<TopHeader isHomePage={false} />
 			<Text style={styles.header}>📚 Logs — List View</Text>
 			<ScrollView contentContainerStyle={{ padding: 12 }}>
 				{entries.map(e => (

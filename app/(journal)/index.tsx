@@ -40,25 +40,6 @@ export default function JournalHub() {
 
 			{/* Content */}
 			<View style={{ flex: 1 }}>{render()}</View>
-
-			{/* Bottom quick tabs */}
-			<View style={styles.bottomTabs}>
-				<Pressable onPress={() => setTab('table')} style={styles.bottomBtn}>
-					<Text>📊</Text>
-				</Pressable>
-				<Pressable onPress={() => setTab('list')} style={styles.bottomBtn}>
-					<Text>📚</Text>
-				</Pressable>
-				<Pressable onPress={() => setTab('alarms')} style={styles.bottomBtn}>
-					<Text>⏰</Text>
-				</Pressable>
-				<Pressable onPress={() => setTab('achievements')} style={styles.bottomBtn}>
-					<Text>🏆</Text>
-				</Pressable>
-				<Pressable onPress={() => setTab('graveyard')} style={styles.bottomBtn}>
-					<Text>🪦</Text>
-				</Pressable>
-			</View>
 		</View>
 	);
 }

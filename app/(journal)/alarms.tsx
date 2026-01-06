@@ -1,4 +1,3 @@
-import TopHeader from '@/components/TopHeader';
 import { useDragonAlarm } from '@/context/DragonAlarmProvider';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -10,7 +9,6 @@ export default function Alarms() {
 
 	return (
 		<View style={{ flex: 1 }}>
-			<TopHeader isHomePage={false} />
 			<Text style={styles.header}>⏰ Alarms</Text>
 			<ScrollView contentContainerStyle={{ padding: 12 }}>
 				{alarms.alarms.map(a => (

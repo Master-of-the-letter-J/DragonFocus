@@ -46,6 +46,7 @@ interface DragonContextType {
 	resetDragon?: () => void;
 	getHealthStage: () => 'Depression' | 'Mediocre' | 'Jolly';
 	setInvincible?: (v: boolean) => void;
+	setAge?: (v: number) => void;
 }
 
 const DragonContext = createContext<DragonContextType | undefined>(undefined);
@@ -75,6 +76,10 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 		if (newStage.maxHP > maxHP) {
 			setHp(prev => Math.min(prev + 5, newStage.maxHP));
 		}
+	};
+
+	const setAgeValue = (v: number) => {
+		setAge(Math.max(0, Math.floor(v)));
 	};
 
 	const damageHp = (amount: number) => {
@@ -183,6 +188,7 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 				dailyHealthPenalty,
 				getStageForAge,
 				setDragonName,
+				setAge: setAgeValue,
 				die,
 				revive,
 				resetDragon,

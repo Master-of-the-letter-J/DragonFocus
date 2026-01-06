@@ -8,13 +8,16 @@ import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useGoals, type HabitGoal, type TodoGoal } from '@/context/GoalsProvider';
+import { useItems } from '@/context/ItemsProvider';
 import { useJournal } from '@/context/JournalProvider';
+import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
+import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 
 function isYesterday(dateStr: string) {
 	const d = new Date(dateStr);
@@ -49,6 +52,9 @@ export default function SurveyNightPage() {
 	const dragon = useDragon();
 	const scarLevel = useScarLevel();
 	const fury = useFury();
+	const streakCtx = useStreak();
+	const items = useItems();
+	const premium = usePremium();
 	const journal = useJournal();
 	const goals = useGoals();
 	const router = useRouter();
@@ -176,7 +182,7 @@ export default function SurveyNightPage() {
 		}
 	};
 
-	const handleSaveForLater = () => {
+	const handleExitSurvey = () => {
 		// Construct the save object
 		const saveState = {
 			savedAt: new Date().toISOString().split('T')[0],
@@ -192,10 +198,9 @@ export default function SurveyNightPage() {
 			},
 		};
 
-		// Call the provider's save method
+		// Call the provider's save method without alert
 		survey.saveProgress('night', saveState);
-
-		Alert.alert('Survey Saved', 'Your progress has been saved. You can continue later.', [{ text: 'OK', onPress: () => router.back() }]);
+		router.back();
 	};
 
 	const submitSurvey = () => {
@@ -208,9 +213,18 @@ export default function SurveyNightPage() {
 		const mood = answers.mood as number | undefined;
 		if (typeof mood === 'number') furyDelta = moodOptions[mood].fury || 0;
 
+		// Gather multiplier inputs
+		const streakVal = streakCtx.getStreak ? streakCtx.getStreak() : streakCtx.streak ?? 0;
+		const yangValue = fury.furyMeter;
+		const dragonShardsCount = shards.shards ?? 0;
+		const scar = scarLevel.currentScarLevel ?? 0;
+		const snackMult = items.getActiveCoinMultiplier ? items.getActiveCoinMultiplier() : 1;
+		const isPremiumFlag = premium.isPremium ?? false;
+
 		if (!alreadyDoneToday) {
-			totalCoinsEarned = 10;
-			coins.addCoins(totalCoinsEarned);
+			const nightCoins = coins.calculateSurveyCoins(false, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag);
+			totalCoinsEarned = nightCoins;
+			coins.addCoins(nightCoins);
 			shards.addShards(1);
 			if (typeof fury.addFury === 'function') fury.addFury(furyDelta);
 		}
@@ -230,35 +244,39 @@ export default function SurveyNightPage() {
 		totalGoalsCompleted = habitCompletedCount + todoCompletedCount;
 
 		if (habitCompletedCount > 0) {
-			const habitCoins = 5 * habitCompletedCount + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
+			const baseHabitCoins = 5 * habitCompletedCount + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
 			if (!alreadyDoneToday) {
-				coins.addCoins(habitCoins);
-				totalGoalCoins += habitCoins;
+				const awarded = Math.floor(baseHabitCoins * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+				coins.addCoins(awarded);
+				totalGoalCoins += awarded;
 				dragon.addHealthFromGoal(habitCompletedCount * 2);
 			} else {
 				const snap = survey.getNightSnapshot() || { habitIds: [], todoIds: [] };
 				const newHabits = habitCompletedIds.filter(id => !snap.habitIds.includes(id));
 				if (newHabits.length > 0) {
-					const newCoins = 5 * newHabits.length + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
-					coins.addCoins(newCoins);
-					totalGoalCoins += newCoins;
+					const baseNew = 5 * newHabits.length + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
+					const awarded = Math.floor(baseNew * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+					coins.addCoins(awarded);
+					totalGoalCoins += awarded;
 					dragon.addHealthFromGoal(newHabits.length * 2);
 				}
 			}
 		}
 		if (todoCompletedCount > 0) {
-			const todoCoins = 10 * todoCompletedCount;
+			const baseTodoCoins = 10 * todoCompletedCount;
 			if (!alreadyDoneToday) {
-				coins.addCoins(todoCoins);
-				totalGoalCoins += todoCoins;
+				const awarded = Math.floor(baseTodoCoins * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+				coins.addCoins(awarded);
+				totalGoalCoins += awarded;
 				dragon.addHealthFromGoal(todoCompletedCount * 2);
 			} else {
 				const snap = survey.getNightSnapshot() || { habitIds: [], todoIds: [] };
 				const newTodos = todoCompletedIds.filter(id => !snap.todoIds.includes(id));
 				if (newTodos.length > 0) {
-					const newCoins = 10 * newTodos.length;
-					coins.addCoins(newCoins);
-					totalGoalCoins += newCoins;
+					const baseNew = 10 * newTodos.length;
+					const awarded = Math.floor(baseNew * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+					coins.addCoins(awarded);
+					totalGoalCoins += awarded;
 					dragon.addHealthFromGoal(newTodos.length * 2);
 				}
 			}
@@ -270,21 +288,24 @@ export default function SurveyNightPage() {
 
 		// Prompt and trivia rewards only for first nightly completion
 		if (!alreadyDoneToday) {
+			// Prompt bonus
 			if (answers.promptText && answers.promptText.trim()) {
-				coins.addCoins(2);
-				totalCoinsEarned += 2;
+				const extra = Math.floor(2 * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+				coins.addCoins(extra);
+				totalCoinsEarned += extra;
 			}
-			// Trivia reward: answers._triviaCorrectLocalIndex is used when we shuffled answers
+			// Trivia reward
 			if (answers.triviaAnswer !== undefined && typeof answers._triviaCorrectLocalIndex === 'number') {
 				if (answers.triviaAnswer === answers._triviaCorrectLocalIndex) {
-					coins.addCoins(2);
-					totalCoinsEarned += 2;
+					const extra = Math.floor(2 * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+					coins.addCoins(extra);
+					totalCoinsEarned += extra;
 				}
 			}
 		}
 
 		const totalCoins = totalCoinsEarned + totalGoalCoins;
-		const fireXPFromCoins = totalCoins * 10;
+		const fireXPFromCoins = coins.calculateFireXP(totalCoins);
 		const bonusFireXP = dragon.age * 10;
 		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
 
@@ -327,7 +348,7 @@ export default function SurveyNightPage() {
 					<View style={styles.resultsCard}>
 						<Text style={styles.resultText}>💰 Coins Earned: +{results.coinsEarned}</Text>
 						<Text style={styles.resultText}>💎 Shards Earned: +{results.shardsEarned}</Text>
-						<Text style={styles.resultText}>✨ XP Earned: +{results.xpEarned}</Text>
+						<Text style={styles.resultText}>✨ fireXP Earned: +{results.xpEarned}</Text>
 						<Text style={styles.resultText}>
 							😈 Fury: {results.furyDelta > 0 ? '+' : ''}
 							{results.furyDelta}
@@ -372,10 +393,17 @@ export default function SurveyNightPage() {
 
 			{/* Progress bar */}
 			<View style={styles.progressContainer}>
-				<ProgressBar progress={Math.round(((currentSection + 1) / totalSections) * 100)} />
-				<Text style={styles.progressText}>
-					{currentSection + 1}/{totalSections}
-				</Text>
+				<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+					<View style={{ flex: 1 }}>
+						<ProgressBar progress={Math.round(((currentSection + 1) / totalSections) * 100)} />
+						<Text style={styles.progressText}>
+							Question {currentSection + 1} of {totalSections}
+						</Text>
+					</View>
+					<Pressable onPress={handleExitSurvey} style={styles.closeButton}>
+						<Text style={styles.closeButtonText}>✕</Text>
+					</Pressable>
+				</View>
 			</View>
 
 			{/* Survey content */}
@@ -609,10 +637,17 @@ export default function SurveyNightPage() {
 
 			{/* Button controls */}
 			<View style={styles.buttonContainer}>
-				{/* Save for Later Button */}
-				<Pressable style={styles.buttonSmall} onPress={handleSaveForLater}>
-					<Text selectable={false} style={styles.buttonText}>
-						Save for Later
+				{/* Bottom buttons: Previous / Next (Save moved to top X) */}
+				{currentSection > 0 && (
+					<Pressable style={styles.buttonSmall} onPress={goBack}>
+						<Text selectable={false} style={styles.buttonText}>
+							Previous
+						</Text>
+					</Pressable>
+				)}
+				<Pressable style={styles.buttonNext} onPress={goNext}>
+					<Text selectable={false} style={styles.buttonTextPrimary}>
+						{currentSection === totalSections - 1 ? 'Submit' : 'Next'}
 					</Text>
 				</Pressable>
 
@@ -642,6 +677,8 @@ const styles = StyleSheet.create({
 	progressBar: { height: 8, backgroundColor: '#e0e0e0', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
 	progressFill: { height: '100%', backgroundColor: '#4CAF50' },
 	progressText: { fontSize: 12, textAlign: 'right' },
+	closeButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+	closeButtonText: { fontSize: 28, fontWeight: '300', color: '#666' },
 	surveyLabelContainer: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#f0f0f0', borderBottomWidth: 1, borderColor: '#e0e0e0', alignItems: 'center' },
 	surveyLabelText: { fontSize: 18, fontWeight: '700', color: '#333' },
 	surveyContent: { flex: 1, paddingHorizontal: 16 },

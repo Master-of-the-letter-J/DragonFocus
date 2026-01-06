@@ -67,6 +67,11 @@ interface GoalsContextType {
 	goalTemplates: string[];
 	createGoalFromTemplate: (template: string, type: 'habit' | 'todo') => void;
 	resetGoals?: () => void;
+	// Scar level based limits
+	getMaxHabits: (scarLevel: number, isPremium: boolean) => number;
+	getMaxTodos: (scarLevel: number, isPremium: boolean) => number;
+	canAddHabit: (scarLevel: number, isPremium: boolean) => boolean;
+	canAddTodo: (scarLevel: number, isPremium: boolean) => boolean;
 }
 
 const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
@@ -210,6 +215,33 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 		}
 	};
 
+	// Helper functions for scar level based limits
+	const getMaxHabits = (scarLevel: number, isPremium: boolean): number => {
+		if (isPremium) return Infinity; // Unlimited for premium
+		let max = 10; // Base = 10
+		if (scarLevel >= 4) max += 5; // +5 at level 4
+		if (scarLevel >= 8) max += 5; // +5 at level 8
+		if (scarLevel >= 10) max += 5; // +5 at level 10
+		return max;
+	};
+
+	const getMaxTodos = (scarLevel: number, isPremium: boolean): number => {
+		if (isPremium) return Infinity; // Unlimited for premium
+		let max = 5; // Base = 5
+		if (scarLevel >= 4) max += 5; // +5 at level 4
+		if (scarLevel >= 8) max += 5; // +5 at level 8
+		if (scarLevel >= 10) max += 5; // +5 at level 10
+		return max;
+	};
+
+	const canAddHabit = (scarLevel: number, isPremium: boolean): boolean => {
+		return habits.length < getMaxHabits(scarLevel, isPremium);
+	};
+
+	const canAddTodo = (scarLevel: number, isPremium: boolean): boolean => {
+		return todos.length < getMaxTodos(scarLevel, isPremium);
+	};
+
 	return (
 		<GoalsContext.Provider
 			value={{
@@ -240,6 +272,10 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 					const shuffled2 = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
 					setSuggestedTodoGoals(shuffled2.slice(0, 6).map(g => ({ title: g.title, coins: g.coins })));
 				},
+				getMaxHabits,
+				getMaxTodos,
+				canAddHabit,
+				canAddTodo,
 			}}>
 			{children}
 		</GoalsContext.Provider>

@@ -248,6 +248,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 					data={subGoals}
 					keyExtractor={item => item.id}
 					onDragEnd={({ data }) => setSubGoals(data)}
+					nestedScrollEnabled={true}
 					renderItem={({ item, drag, isActive }) => (
 						<Pressable
 							onLongPress={drag}

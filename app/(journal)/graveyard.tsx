@@ -12,7 +12,7 @@ export default function Graveyard() {
 			<ScrollView contentContainerStyle={{ padding: 12 }}>
 				{graveyard.map(g => (
 					<View key={g.id} style={styles.card}>
-						<Image source={require('@/assets/grave-placeholder.png')} style={styles.img} />
+						<Image source={require('@/assets/images/grave-placeholder.png')} style={styles.img} />
 						<View style={{ flex: 1 }}>
 							<Text style={{ fontWeight: '700' }}>{g.name}</Text>
 							<Text style={{ color: '#666' }}>

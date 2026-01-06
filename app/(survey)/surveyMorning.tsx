@@ -7,12 +7,15 @@ import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useGoals, type HabitGoal, type TodoGoal } from '@/context/GoalsProvider';
+import { useItems } from '@/context/ItemsProvider';
 import { useJournal } from '@/context/JournalProvider';
+import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
+import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -42,6 +45,9 @@ export default function SurveyMorningPage() {
 	const dragon = useDragon();
 	const scarLevel = useScarLevel();
 	const fury = useFury();
+	const streakCtx = useStreak();
+	const items = useItems();
+	const premium = usePremium();
 	const goals = useGoals();
 	const journal = useJournal();
 	const router = useRouter();
@@ -135,7 +141,7 @@ export default function SurveyMorningPage() {
 		}
 	};
 
-	const handleSaveForLater = () => {
+	const handleExitSurvey = () => {
 		const saveState = {
 			savedAt: new Date().toISOString().split('T')[0],
 			section: currentSection,
@@ -148,28 +154,43 @@ export default function SurveyMorningPage() {
 			},
 		};
 		survey.saveProgress('morning', saveState);
-		Alert.alert('Saved', 'Progress saved. You can continue later.', [{ text: 'OK', onPress: () => router.back() }]);
+		router.back();
 	};
 
 	const submitSurvey = () => {
 		const today = new Date().toISOString().split('T')[0];
-		let totalCoinsEarned = 10;
+		let baseCoins = 10; // base morning coins
 		let furyDelta = 0;
 
 		const mood = answers.mood as number | undefined;
 		const moodLabel = typeof mood === 'number' ? moodOptions[mood].label : '';
 		if (typeof mood === 'number') furyDelta = moodOptions[mood].fury || 0;
 
-		coins.addCoins(totalCoinsEarned);
+		// Gather multiplier inputs
+		const streakVal = streakCtx.getStreak ? streakCtx.getStreak() : streakCtx.streak ?? 0;
+		const yangValue = fury.furyMeter;
+		const dragonShardsCount = shards.shards ?? 0;
+		const scar = scarLevel.currentScarLevel ?? 0;
+		const snackMult = items.getActiveCoinMultiplier ? items.getActiveCoinMultiplier() : 1;
+		const isPremiumFlag = premium.isPremium ?? false;
+
+		// Calculate base morning coins using provider helper (applies multipliers)
+		const morningCoins = coins.calculateSurveyCoins(true, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag);
+		let totalCoinsEarned = morningCoins;
+
+		// Award coins and shard, and fury
+		coins.addCoins(morningCoins);
 		shards.addShards(1);
 		if (typeof fury.addFury === 'function') fury.addFury(furyDelta);
 
+		// Prompt bonus: apply multiplier to the small base (2)
 		if (answers.promptText && answers.promptText.trim()) {
-			coins.addCoins(2);
-			totalCoinsEarned += 2;
+			const extra = Math.floor(2 * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
+			coins.addCoins(extra);
+			totalCoinsEarned += extra;
 		}
 
-		const fireXPFromCoins = totalCoinsEarned * 10;
+		const fireXPFromCoins = coins.calculateFireXP(totalCoinsEarned);
 		const bonusFireXP = dragon.age * 10;
 		scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
 
@@ -200,7 +221,7 @@ export default function SurveyMorningPage() {
 		const h = item;
 		return (
 			<ScaleDecorator>
-				<TouchableOpacity onLongPress={drag} disabled={isActive} style={[styles.habitRow, h.importance === 'Important+' ? styles.habitImportantPlus : h.importance === 'Important' ? styles.habitImportant : null, isActive && { backgroundColor: '#f0f9ff', borderColor: '#2196F3', elevation: 5 }]}>
+				<TouchableOpacity activeOpacity={0.95} disabled={isActive} style={[styles.habitRow, h.importance === 'Important+' ? styles.habitImportantPlus : h.importance === 'Important' ? styles.habitImportant : null, isActive && { backgroundColor: '#f0f9ff', borderColor: '#2196F3', elevation: 5 }]}>
 					<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
 						<View style={{ flex: 1 }}>
 							<Text selectable={false} style={styles.habitTitle}>
@@ -216,7 +237,9 @@ export default function SurveyMorningPage() {
 									✏️
 								</Text>
 							</Pressable>
-							<Text style={{ fontSize: 20, color: '#ccc' }}>≡</Text>
+							<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 6 }}>
+								<Text style={{ fontSize: 20, color: '#ccc' }}>≡</Text>
+							</Pressable>
 						</View>
 					</View>
 				</TouchableOpacity>
@@ -228,7 +251,7 @@ export default function SurveyMorningPage() {
 		const t = item;
 		return (
 			<ScaleDecorator>
-				<TouchableOpacity onLongPress={drag} disabled={isActive} style={[styles.todoItem, t.importance === 'Important+' ? styles.todoImportantPlus : t.importance === 'Important' ? styles.todoImportant : null, isActive && { backgroundColor: '#f0f9ff', borderColor: '#2196F3', elevation: 5 }]}>
+				<TouchableOpacity activeOpacity={0.95} disabled={isActive} style={[styles.todoItem, t.importance === 'Important+' ? styles.todoImportantPlus : t.importance === 'Important' ? styles.todoImportant : null, isActive && { backgroundColor: '#f0f9ff', borderColor: '#2196F3', elevation: 5 }]}>
 					<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
 						<View style={{ flex: 1 }}>
 							<Text selectable={false} style={styles.habitTitle}>
@@ -244,7 +267,9 @@ export default function SurveyMorningPage() {
 									✏️
 								</Text>
 							</Pressable>
-							<Text style={{ fontSize: 20, color: '#ccc' }}>≡</Text>
+							<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 6 }}>
+								<Text style={{ fontSize: 20, color: '#ccc' }}>≡</Text>
+							</Pressable>
 						</View>
 					</View>
 					{t.subGoals.length > 0 && (
@@ -272,7 +297,7 @@ export default function SurveyMorningPage() {
 					<View style={styles.resultsCard}>
 						<Text style={styles.resultText}>💰 Coins Earned: +{results.coinsEarned}</Text>
 						<Text style={styles.resultText}>💎 Shards Earned: +{results.shardsEarned}</Text>
-						<Text style={styles.resultText}>✨ XP Earned: +{results.xpEarned}</Text>
+						<Text style={styles.resultText}>✨ fireXP Earned: +{results.xpEarned}</Text>
 						<Text style={styles.resultText}>
 							😈 Fury: {results.furyDelta > 0 ? '+' : ''}
 							{results.furyDelta}
@@ -314,12 +339,19 @@ export default function SurveyMorningPage() {
 				</Animated.View>
 
 				<View style={styles.progressContainer}>
-					<View style={styles.progressBar}>
-						<View style={[styles.progressFill, { width: `${((currentSection + 1) / totalSections) * 100}%` }]} />
+					<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+						<View style={{ flex: 1 }}>
+							<View style={styles.progressBar}>
+								<View style={[styles.progressFill, { width: `${((currentSection + 1) / totalSections) * 100}%` }]} />
+							</View>
+							<Text style={styles.progressText}>
+								Question {currentSection + 1} of {totalSections}
+							</Text>
+						</View>
+						<Pressable onPress={handleExitSurvey} style={styles.closeButton}>
+							<Text style={styles.closeButtonText}>✕</Text>
+						</Pressable>
 					</View>
-					<Text style={styles.progressText}>
-						{currentSection + 1}/{totalSections}
-					</Text>
 				</View>
 
 				<View style={styles.contentArea}>
@@ -327,6 +359,7 @@ export default function SurveyMorningPage() {
 						<DraggableFlatList
 							data={localHabits}
 							onDragEnd={({ data }) => setLocalHabits(data)}
+							nestedScrollEnabled={true}
 							keyExtractor={item => item.id}
 							renderItem={renderHabitItem}
 							contentContainerStyle={styles.listContentContainer}
@@ -376,6 +409,7 @@ export default function SurveyMorningPage() {
 						<DraggableFlatList
 							data={localTodos}
 							onDragEnd={({ data }) => setLocalTodos(data)}
+							nestedScrollEnabled={true}
 							keyExtractor={item => item.id}
 							renderItem={renderTodoItem}
 							contentContainerStyle={styles.listContentContainer}
@@ -470,12 +504,6 @@ export default function SurveyMorningPage() {
 				</View>
 
 				<View style={styles.buttonContainer}>
-					<Pressable style={styles.buttonSmall} onPress={handleSaveForLater}>
-						<Text selectable={false} style={styles.buttonText}>
-							Save & Exit
-						</Text>
-					</Pressable>
-
 					{currentSection > 0 && (
 						<Pressable style={styles.buttonSmall} onPress={goBack}>
 							<Text selectable={false} style={styles.buttonText}>
@@ -504,6 +532,8 @@ const styles = StyleSheet.create({
 	progressBar: { height: 8, backgroundColor: '#e0e0e0', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
 	progressFill: { height: '100%', backgroundColor: '#4CAF50' },
 	progressText: { fontSize: 12, textAlign: 'right' },
+	closeButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+	closeButtonText: { fontSize: 28, fontWeight: '300', color: '#666' },
 	surveyLabelContainer: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#f0f0f0', borderBottomWidth: 1, borderColor: '#e0e0e0', alignItems: 'center' },
 	surveyLabelText: { fontSize: 18, fontWeight: '700', color: '#333' },
 	surveyContent: { flex: 1, paddingHorizontal: 16 },
