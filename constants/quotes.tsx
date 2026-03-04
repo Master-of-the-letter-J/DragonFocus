@@ -1,3 +1,4 @@
+export const ADVICE: string[] = ['Start your day with a clear intention.', 'Small steps lead to big changes.', 'Focus on what you can control today.', 'Break large goals into tiny habits.', 'Progress over perfection.', 'Rest is part of productivity.', 'Be kind to yourself today.', 'One day at a time.', 'You are stronger than you think.', 'Celebrate small wins.', 'Consistency beats intensity.', 'Today is a fresh start.'];
 export interface Quote {
 	text: string;
 	author?: string;

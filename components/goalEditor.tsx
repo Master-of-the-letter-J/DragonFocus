@@ -22,7 +22,7 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 		importance: habit.importance,
 		category: habit.category || '',
 		daysOfWeek: habit.daysOfWeek || [],
-		challengeLength: habit.challengeLength || 0,
+		selectedChallenge: 0,
 	});
 
 	const handleSave = () => {
@@ -30,28 +30,34 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 			Alert.alert('Error', 'Habit title cannot be empty');
 			return;
 		}
+		// If habit is a locked challenge, disallow edits
+		if (habit.isChallenge) {
+			Alert.alert('Locked', 'This habit is currently in a challenge and cannot be edited.');
+			onClose();
+			return;
+		}
 		goals.editHabit(habit.id, {
 			title: form.title,
 			importance: form.importance as any,
 			category: form.category,
 			daysOfWeek: form.daysOfWeek,
-			challengeLength: form.challengeLength > 0 ? form.challengeLength : undefined,
 		});
 		onClose();
 	};
 
-	const handleDelete = () => {
-		Alert.alert('Delete Habit', 'Are you sure? This cannot be undone.', [
-			{ text: 'Cancel', style: 'cancel' },
-			{
-				text: 'Delete',
-				style: 'destructive',
-				onPress: () => {
-					goals.deleteHabit(habit.id);
-					onClose();
-				},
-			},
-		]);
+	const handleEnableChallenge = () => {
+		const len = form.selectedChallenge;
+		if (![7, 14, 30].includes(len)) {
+			Alert.alert('Select a length', 'Choose 7, 14 or 30 days to enable a challenge');
+			return;
+		}
+		const res = goals.enableChallenge(habit.id, len as number);
+		if (!res.success) {
+			Alert.alert('Unable to enable', res.message || 'Failed to enable challenge');
+		} else {
+			Alert.alert('Challenge enabled', `Challenge started (${len} days)`);
+			onClose();
+		}
 	};
 
 	return (
@@ -103,15 +109,27 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 					))}
 				</View>
 
-				<Text style={styles.label}>Challenge Length (days, 0 = off)</Text>
-				<TextInput value={String(form.challengeLength)} onChangeText={t => setForm({ ...form, challengeLength: parseInt(t) || 0 })} placeholder="7" style={styles.input} keyboardType="number-pad" />
+				<Text style={styles.label}>Challenge (locked while active)</Text>
+				{habit.isChallenge ? (
+					<Text style={{ color: '#1565C0', marginBottom: 8 }}>
+						Challenge active: {habit.challengeLength} days (started {habit.challengeStartDate})
+					</Text>
+				) : (
+					<View style={{ flexDirection: 'row', gap: 8 }}>
+						{[7, 14, 30].map(d => (
+							<Pressable key={d} style={[styles.segmentButton, form.selectedChallenge === d && styles.segmentActive]} onPress={() => setForm({ ...form, selectedChallenge: d })}>
+								<Text style={[styles.segmentText, form.selectedChallenge === d && styles.segmentTextActive]}>{d}d</Text>
+							</Pressable>
+						))}
+						<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleEnableChallenge}>
+							<Text style={[styles.buttonText, styles.buttonTextLight]}>Enable</Text>
+						</Pressable>
+					</View>
+				)}
 
 				<View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
 					<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleSave}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Save</Text>
-					</Pressable>
-					<Pressable style={[styles.button, styles.buttonDanger]} onPress={handleDelete}>
-						<Text style={[styles.buttonText, styles.buttonTextLight]}>Delete</Text>
 					</Pressable>
 					<Pressable style={[styles.button, styles.buttonSecondary]} onPress={onClose}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Cancel</Text>
@@ -169,6 +187,12 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 			Alert.alert('Error', 'To-Do title cannot be empty');
 			return;
 		}
+		// Disallow edits to challenge to-dos
+		if ((todo as any).isChallenge) {
+			Alert.alert('Locked', 'This to-do is a challenge and cannot be edited.');
+			onClose();
+			return;
+		}
 		goals.editTodo(todo.id, {
 			title: form.title,
 			importance: form.importance as any,
@@ -180,7 +204,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 	};
 
 	const handleDelete = () => {
-		Alert.alert('Delete To-Do', 'Are you sure? This cannot be undone.', [
+		Alert.alert('Delete To-Do', 'Are you sure you want to delete this to-do?', [
 			{ text: 'Cancel', style: 'cancel' },
 			{
 				text: 'Delete',

@@ -3,70 +3,63 @@ import { Text, View } from '@/components/Themed';
 import TopHeader from '@/components/TopHeader';
 import { images } from '@/constants';
 import { useDragonClicking } from '@/context/DragonClickingProvider';
-import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
-import { useShards } from '@/context/DragonShardsProvider';
-import { useFury } from '@/context/FuryProvider';
 import { useItems } from '@/context/ItemsProvider';
 import { usePopulation } from '@/context/PopulationProvider';
-import { usePremium } from '@/context/PremiumProvider';
-import { useScarLevel } from '@/context/ScarLevelProvider';
-import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+
+const formatDuration = (seconds: number) => {
+	if (seconds <= 0) return '0s';
+	const days = Math.floor(seconds / 86400);
+	const hours = Math.floor((seconds % 86400) / 3600);
+	const mins = Math.floor((seconds % 3600) / 60);
+	const secs = seconds % 60;
+	if (days > 0) return `${days}d ${hours}h`;
+	if (hours > 0) return `${hours}h ${mins}m`;
+	if (mins > 0) return `${mins}m ${secs}s`;
+	return `${secs}s`;
+};
 
 export default function HomePage() {
-	const scar = useScarLevel();
-	const shards = useShards();
-	const coins = useDragonCoins();
-	const streak = useStreak();
-	const fury = useFury();
 	const dragon = useDragon();
 	const items = useItems();
-	const premium = usePremium();
 	const dragonClicking = useDragonClicking();
 	const router = useRouter();
 	const survey = useSurvey();
 	const population = usePopulation();
 
-	const today = new Date().toISOString().split('T')[0];
+	const [snackModalOpen, setSnackModalOpen] = useState(false);
+	const [idleModalOpen, setIdleModalOpen] = useState(false);
 
+	const today = new Date().toISOString().split('T')[0];
 	const savedMorning = survey.loadProgress('morning');
 	const savedNight = survey.loadProgress('night');
 
-	const morningPercent = survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today ? 100 : savedMorning?.progressPercent ?? 0;
-	const nightPercent = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today ? 100 : savedNight?.progressPercent ?? 0;
+	const morningPercent = survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today ? 100 : (savedMorning?.progressPercent ?? 0);
+	const nightPercent = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today ? 100 : (savedNight?.progressPercent ?? 0);
+
+	const ownedSnacks = useMemo(() => {
+		return items.shopItems.filter(item => item.type === 'snack' && (items.ownedItems[item.id] || 0) > 0);
+	}, [items.ownedItems, items.shopItems]);
+
+	const effectList = items.getEffectDisplayList();
 
 	useEffect(() => {
-		if (typeof items.processDailyPayouts === 'function') {
-			const added = items.processDailyPayouts();
-			if (added && added > 0) {
-				Alert.alert('Daily Payout', `Your generators produced ${added} coins while you were away.`);
-			}
-		}
-	}, []);
+		if (!items.snackToast) return;
+		const timeout = setTimeout(() => items.consumeSnackToast(), 1000);
+		return () => clearTimeout(timeout);
+	}, [items.consumeSnackToast, items.snackToast]);
 
-	const activeSnackTimers = useMemo(() => {
-		if (!items.activeEffects) return [];
-		const now = new Date();
-		return items.activeEffects
-			.filter(effect => effect.expiresAt && effect.type === 'regen')
-			.map(effect => {
-				const expiresAt = new Date(effect.expiresAt!);
-				const msRemaining = expiresAt.getTime() - now.getTime();
-				const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
-				return { ...effect, daysRemaining: Math.max(0, daysRemaining) };
-			})
-			.filter(t => t.daysRemaining > 0);
-	}, [items.activeEffects]);
+	useEffect(() => {
+		if (items.pendingIdleSummary) setIdleModalOpen(true);
+	}, [items.pendingIdleSummary]);
 
 	const getSurveyButtonState = (type: 'morning' | 'night') => {
 		const isCompleted = type === 'morning' ? survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today : survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
-
 		const hasSaved = type === 'morning' ? !!savedMorning : !!savedNight;
-
 		if (isCompleted) return 'Retake';
 		if (hasSaved) return 'Continue';
 		return 'Ready';
@@ -75,36 +68,38 @@ export default function HomePage() {
 	const morningStatus = getSurveyButtonState('morning');
 	const nightStatus = getSurveyButtonState('night');
 
-	// Helper to ensure button is clickable if we want to Retake or Continue
 	const isMorningClickable = (survey.canTakeMorningSurvey() || morningStatus === 'Retake' || !!savedMorning) && dragon.dragonState === 'alive';
 	const isNightClickable = (survey.canTakeNightSurvey() || nightStatus === 'Retake' || !!savedNight) && dragon.dragonState === 'alive';
 
 	return (
 		<View style={styles.container}>
 			<TopHeader isHomePage={true} />
+
+			<Pressable style={styles.snackButton} onPress={() => setSnackModalOpen(true)}>
+				<Text style={styles.snackButtonText}>Snacks ({ownedSnacks.length})</Text>
+			</Pressable>
+
+			<View style={styles.effectsTopRight}>
+				{effectList.slice(0, 6).map(effect => (
+					<View key={effect.id} style={styles.effectCard}>
+						<Text style={styles.effectTitle}>{effect.name}</Text>
+						<Text style={styles.effectText}>{effect.topEffect}</Text>
+						<Text style={styles.effectTime}>{effect.startsInSeconds > 0 ? `Starts in ${formatDuration(effect.startsInSeconds)}` : `Ends in ${formatDuration(effect.remainingSeconds)}`}</Text>
+					</View>
+				))}
+			</View>
+
 			<ScrollView contentContainerStyle={styles.scrollContent}>
-				{/* Population Stats Section */}
 				<View style={styles.statsHeader}>
 					<View style={styles.statBox}>
-						<Text style={styles.statLabel}>🌍 World Population</Text>
+						<Text style={styles.statLabel}>World Population</Text>
 						<Text style={styles.statValue}>{(population.population / 1_000_000_000).toFixed(2)}B</Text>
 					</View>
 					<View style={styles.statBox}>
-						<Text style={styles.statLabel}>💀 Death Count</Text>
+						<Text style={styles.statLabel}>Death Count</Text>
 						<Text style={styles.statValue}>{(population.deathCount || 0).toLocaleString()}</Text>
 					</View>
 				</View>
-
-				{/* Active Effects Section */}
-				{activeSnackTimers.length > 0 && (
-					<View style={styles.timerContainer}>
-						{activeSnackTimers.map(timer => (
-							<Text key={timer.id} style={styles.timerText}>
-								🟢 {timer.daysRemaining}d Regen Active
-							</Text>
-						))}
-					</View>
-				)}
 
 				<View style={styles.dragonArea}>
 					<Text style={styles.dragonName}>{dragon.dragonName}</Text>
@@ -112,14 +107,13 @@ export default function HomePage() {
 					{dragon.dragonState === 'alive' && (
 						<>
 							<Text style={styles.dragonStats}>
-								HP: {dragon.hp}/{dragon.maxHP} • Age: {dragon.age} • {dragon.currentStage.name}
+								HP: {dragon.hp}/{dragon.maxHP} | Age: {dragon.age} | {dragon.currentStage.name}
 							</Text>
 							<Pressable
+								hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
 								onPress={() => {
 									dragonClicking.addClick();
-									const qty = items.ownedItems['click_dragon_clicks'] || 1;
-									// Use provider's clicking coins method so multipliers apply
-									coins.addClickingCoins(fury.furyMeter, shards.shards ?? 0, scar.currentScarLevel ?? 0, items.getActiveCoinMultiplier ? items.getActiveCoinMultiplier() : 1, premium.isPremium ?? false);
+									items.processDragonClick();
 								}}>
 								<Image source={images.dragon} style={styles.dragonImage} />
 							</Pressable>
@@ -127,28 +121,26 @@ export default function HomePage() {
 					)}
 
 					{dragon.dragonState === 'dead' && (
-						<Pressable onPress={() => Alert.alert('😔 Respects Paid', 'Dragon revived!', [{ text: 'OK', onPress: () => dragon.revive() }])}>
+						<Pressable onPress={() => dragon.revive()}>
 							<Image source={images.dragon} style={[styles.dragonImage, { opacity: 0.5 }]} />
-							<Text style={styles.deadText}>Tap to pay respects & revive</Text>
+							<Text style={styles.deadText}>Tap to revive</Text>
 						</Pressable>
 					)}
 
 					<View style={styles.surveySection}>
-						<Text style={styles.surveyLabel}>📋 Daily Surveys</Text>
+						<Text style={styles.surveyLabel}>Daily Surveys</Text>
 						<View style={styles.surveysContainer}>
-							{/* Morning Survey */}
-							<Pressable style={[styles.largeButton, styles.surveyButton, isMorningClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyMorning' as any)} disabled={!isMorningClickable}>
+							<Pressable style={[styles.largeButton, styles.surveyButton, isMorningClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyMorning')} disabled={!isMorningClickable}>
 								<View style={styles.buttonTop}>
-									<Text style={styles.largeButtonTitle}>🌅 Morning Survey</Text>
+									<Text style={styles.largeButtonTitle}>Morning Survey</Text>
 									<Text style={styles.statusBadge}>{morningStatus}</Text>
 								</View>
 								<ProgressBar progress={morningPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
 							</Pressable>
 
-							{/* Night Survey */}
-							<Pressable style={[styles.largeButton, styles.surveyButton, isNightClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyNight' as any)} disabled={!isNightClickable}>
+							<Pressable style={[styles.largeButton, styles.surveyButton, isNightClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyNight')} disabled={!isNightClickable}>
 								<View style={styles.buttonTop}>
-									<Text style={styles.largeButtonTitle}>🌙 Night Survey</Text>
+									<Text style={styles.largeButtonTitle}>Night Survey</Text>
 									<Text style={styles.statusBadge}>{nightStatus}</Text>
 								</View>
 								<ProgressBar progress={nightPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
@@ -157,6 +149,76 @@ export default function HomePage() {
 					</View>
 				</View>
 			</ScrollView>
+
+			{items.snackToast && (
+				<View style={styles.toast}>
+					<Text style={styles.toastTitle}>{items.snackToast.name}</Text>
+					<Text style={styles.toastText}>{items.snackToast.topEffect}</Text>
+				</View>
+			)}
+
+			<Modal visible={snackModalOpen} transparent animationType="fade" onRequestClose={() => setSnackModalOpen(false)}>
+				<View style={styles.modalBackdrop}>
+					<View style={styles.modalCard}>
+						<Text style={styles.modalTitle}>Dragon Snacks</Text>
+						<ScrollView style={{ maxHeight: 320 }}>
+							{ownedSnacks.length === 0 && <Text style={styles.modalText}>No snacks owned yet.</Text>}
+							{ownedSnacks.map(snack => (
+								<View key={snack.id} style={styles.snackRow}>
+									<View style={{ flex: 1 }}>
+										<Text style={styles.snackName}>{snack.name}</Text>
+										<Text style={styles.modalText}>{snack.description}</Text>
+										<Text style={styles.modalText}>Owned: {items.ownedItems[snack.id] || 0}</Text>
+									</View>
+									<Pressable style={styles.useSnackBtn} onPress={() => items.useItem(snack.id)}>
+										<Text style={styles.useSnackBtnText}>Use</Text>
+									</Pressable>
+								</View>
+							))}
+						</ScrollView>
+						<Pressable style={styles.closeModalBtn} onPress={() => setSnackModalOpen(false)}>
+							<Text style={styles.closeModalBtnText}>Close</Text>
+						</Pressable>
+					</View>
+				</View>
+			</Modal>
+
+			<Modal
+				visible={idleModalOpen && !!items.pendingIdleSummary}
+				transparent
+				animationType="fade"
+				onRequestClose={() => {
+					setIdleModalOpen(false);
+					items.consumeIdleSummary();
+				}}>
+				<View style={styles.modalBackdrop}>
+					<View style={styles.modalCard}>
+						<Text style={styles.modalTitle}>Idle Rewards</Text>
+						{items.pendingIdleSummary && (
+							<View>
+								<Text style={styles.modalText}>Away for: {formatDuration(items.pendingIdleSummary.elapsedSeconds)}</Text>
+								<Text style={styles.modalText}>Coins earned: +{items.pendingIdleSummary.coins.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Fire XP earned: +{items.pendingIdleSummary.fireXp.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Shards earned: +{items.pendingIdleSummary.shards}</Text>
+								<Text style={styles.modalText}>Fury earned: +{items.pendingIdleSummary.furyEarned.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Fury lost: -{items.pendingIdleSummary.furyLost.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Fury total: {items.pendingIdleSummary.furyTotal.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Health earned: +{items.pendingIdleSummary.healthEarned.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Health lost: -{items.pendingIdleSummary.healthLost.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Health total: {items.pendingIdleSummary.healthTotal.toFixed(2)}</Text>
+							</View>
+						)}
+						<Pressable
+							style={styles.closeModalBtn}
+							onPress={() => {
+								setIdleModalOpen(false);
+								items.consumeIdleSummary();
+							}}>
+							<Text style={styles.closeModalBtnText}>Collect</Text>
+						</Pressable>
+					</View>
+				</View>
+			</Modal>
 		</View>
 	);
 }
@@ -164,12 +226,17 @@ export default function HomePage() {
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#fff' },
 	scrollContent: { paddingBottom: 40, paddingHorizontal: 16 },
-	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 12, marginBottom: 12 },
+	snackButton: { position: 'absolute', top: 76, left: 16, zIndex: 20, backgroundColor: '#0F766E', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
+	snackButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+	effectsTopRight: { position: 'absolute', top: 76, right: 10, zIndex: 20, width: 170, gap: 6 },
+	effectCard: { backgroundColor: '#111827', borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
+	effectTitle: { color: '#fff', fontSize: 11, fontWeight: '700' },
+	effectText: { color: '#E5E7EB', fontSize: 10, marginTop: 2 },
+	effectTime: { color: '#93C5FD', fontSize: 10, marginTop: 2 },
+	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 58, marginBottom: 12 },
 	statBox: { flex: 1, alignItems: 'center', padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0' },
 	statLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 4 },
 	statValue: { fontSize: 20, fontWeight: '800', color: '#333' },
-	timerContainer: { marginTop: 10, alignItems: 'flex-end' },
-	timerText: { fontSize: 12, color: '#4CAF50', fontWeight: '600' },
 	dragonArea: { alignItems: 'center', marginTop: 20 },
 	dragonName: { fontSize: 24, fontWeight: '800' },
 	dragonStats: { fontSize: 14, color: '#666', marginTop: 4 },
@@ -182,9 +249,22 @@ const styles = StyleSheet.create({
 	largeButton: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1.5 },
 	buttonActive: { borderColor: '#4CAF50', backgroundColor: '#F0F9F1' },
 	buttonDisabled: { borderColor: '#E0E0E0', backgroundColor: '#FAFAFA', opacity: 0.6 },
-	buttonTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+	buttonTop: { backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
 	largeButtonTitle: { fontSize: 17, fontWeight: '700' },
 	statusBadge: { fontSize: 12, fontWeight: '600', color: '#4CAF50', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
 	progressBarSmall: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' },
 	progressFillSmall: { height: '100%', backgroundColor: '#4CAF50' },
+	toast: { position: 'absolute', bottom: 16, left: 16, right: 16, backgroundColor: '#1F2937', borderRadius: 10, padding: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4 },
+	toastTitle: { color: '#fff', fontWeight: '700', fontSize: 13 },
+	toastText: { color: '#E5E7EB', fontSize: 12, marginTop: 2 },
+	modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+	modalCard: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 12, padding: 16 },
+	modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
+	modalText: { fontSize: 14, color: '#333', marginBottom: 6 },
+	snackRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 10 },
+	snackName: { fontSize: 15, fontWeight: '700', color: '#111' },
+	useSnackBtn: { backgroundColor: '#2563EB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
+	useSnackBtnText: { color: '#fff', fontWeight: '700' },
+	closeModalBtn: { marginTop: 12, backgroundColor: '#111827', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+	closeModalBtnText: { color: '#fff', fontWeight: '700' },
 });

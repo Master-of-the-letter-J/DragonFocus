@@ -4,10 +4,60 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 function SurveySettingsContent() {
-	const { questionSettings, updateAdviceSettings, updateQuotesSettings, toggleMood, addCustomEmotion, removeCustomEmotion, updateHabitCategories, addHabitCategory, removeHabitCategory, updateTodoCategories, addTodoCategory, removeTodoCategory, addCustomPrompt, removeCustomPrompt, updatePromptsEnabled, setTriviaCount, setJournalEntry } = useQuestions();
+	const { questionSettings, updateAdviceSettings, updateQuotesSettings, toggleMood, addCustomEmotion, removeCustomEmotion, updateHabitCategories, addHabitCategory, removeHabitCategory, updateTodoCategories, addTodoCategory, removeTodoCategory, addCustomPrompt, removeCustomPrompt, updatePromptsEnabled, setTriviaCount, setJournalEntry, togglePromptCategory, toggleTriviaCategory } = useQuestions();
+
+	const PROMPT_CATEGORIES = ['Self-Discovery', 'Reflection', 'Gratitude', 'Fun & Creative', 'Mindfulness', 'Productivity', 'Relationships'];
+	const TRIVIA_CATEGORIES = ['General Knowledge', 'Pop Culture', 'History', 'Science', 'Geography', 'Sports', 'Literature / Arts', 'Food'];
+	// helpers to map display category names to settings keys
+	const promptKey = (cat: string) => {
+		switch (cat) {
+			case 'Self-Discovery':
+				return 'SelfDiscovery';
+			case 'Reflection':
+				return 'Reflection';
+			case 'Gratitude':
+				return 'Gratitude';
+			case 'Fun & Creative':
+				return 'FunCreative';
+			case 'Mindfulness':
+				return 'Mindfulness';
+			case 'Productivity':
+				return 'Productivity';
+			case 'Relationships':
+				return 'Relationships';
+			default:
+				return '';
+		}
+	};
+
+	const triviaKey = (cat: string) => {
+		switch (cat) {
+			case 'General Knowledge':
+				return 'GeneralKnowledge';
+			case 'Pop Culture':
+				return 'PopCulture';
+			case 'History':
+				return 'History';
+			case 'Science':
+				return 'Science';
+			case 'Geography':
+				return 'Geography';
+			case 'Sports':
+				return 'Sports';
+			case 'Literature / Arts':
+				return 'LiteratureArts';
+			case 'Food':
+				return 'Food';
+			default:
+				return '';
+		}
+	};
 
 	const [customHabitCatInput, setCustomHabitCatInput] = useState('');
 	const [customTodoCatInput, setCustomTodoCatInput] = useState('');
+	const [newMoodEmoji, setNewMoodEmoji] = useState('');
+	const [newMoodDesc, setNewMoodDesc] = useState('');
+	const [newMoodFury, setNewMoodFury] = useState('0');
 
 	return (
 		<View>
@@ -58,6 +108,54 @@ function SurveySettingsContent() {
 					<Switch value={questionSettings.mood.enabled} onValueChange={toggleMood} />
 				</View>
 				<Text style={styles.questionHint}>Customize mood options and emotions</Text>
+				{questionSettings.mood.customEmotions && (
+					<View style={{ marginTop: 8 }}>
+						{questionSettings.mood.customEmotions.map(e => (
+							<View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
+								<Text>
+									{e.emoji} {e.description}
+								</Text>
+								{e.custom && (
+									<Pressable onPress={() => removeCustomEmotion(e.id)}>
+										<Text style={{ color: '#E65100', fontWeight: '700' }}>Remove</Text>
+									</Pressable>
+								)}
+							</View>
+						))}
+					</View>
+				)}
+
+				{/* Add custom mood */}
+				<View style={{ marginTop: 8 }}>
+					<View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+						<TextInput placeholder="Emoji" style={[styles.categoryInput, { width: 80 }]} onChangeText={setNewMoodEmoji} value={newMoodEmoji} />
+						<TextInput placeholder="Description" style={[styles.categoryInput, { flex: 1 }]} onChangeText={setNewMoodDesc} value={newMoodDesc} />
+					</View>
+					<View style={{ marginBottom: 8 }}>
+						<Text style={{ fontSize: 12, fontWeight: '600', color: '#666', marginBottom: 4 }}>Fury Value: {newMoodFury}</Text>
+						<View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
+							{[-10, -5, -2, 2, 5, 10].map(val => (
+								<Pressable key={val} style={[styles.furyBtn, parseInt(newMoodFury || '0') === val && styles.furyBtnActive]} onPress={() => setNewMoodFury(val.toString())}>
+									<Text style={[styles.furyBtnText, parseInt(newMoodFury || '0') === val && styles.furyBtnTextActive]}>
+										{val > 0 ? '+' : ''}
+										{val}
+									</Text>
+								</Pressable>
+							))}
+						</View>
+					</View>
+					<Pressable
+						style={styles.addButton}
+						onPress={() => {
+							if (!newMoodEmoji.trim() || !newMoodDesc.trim()) return;
+							addCustomEmotion({ id: `c${Date.now()}`, emoji: newMoodEmoji.trim(), description: newMoodDesc.trim().slice(0, 50), furyChange: parseInt(newMoodFury || '0', 10), custom: true });
+							setNewMoodEmoji('');
+							setNewMoodDesc('');
+							setNewMoodFury('0');
+						}}>
+						<Text style={styles.addButtonText}>+ Add Mood</Text>
+					</Pressable>
+				</View>
 			</View>
 
 			{/* 4. Habit Goals Categories */}
@@ -171,6 +269,45 @@ function SurveySettingsContent() {
 				</View>
 				<TextInput style={styles.templateInput} placeholder="Optional: Journal template text..." value={questionSettings.journalEntry.template} onChangeText={t => setJournalEntry(questionSettings.journalEntry.setting, t)} multiline placeholderTextColor="#999" />
 			</View>
+
+			{/* Trivia categories toggles */}
+			<View style={[styles.questionBox, { marginTop: 8 }]}>
+				<Text style={styles.questionTitle}>🧩 Trivia Categories</Text>
+				<Text style={styles.questionHint}>Enable or disable trivia categories</Text>
+				<View style={styles.typeToggleRow}>
+					{TRIVIA_CATEGORIES.map(cat => {
+						const k = triviaKey(cat) as keyof typeof questionSettings.trivia.types;
+						const active = !!questionSettings.trivia.types[k];
+						return (
+							<Pressable key={cat} style={[styles.typeToggle, active && styles.typeToggleActive]} onPress={() => toggleTriviaCategory(cat)}>
+								<Text style={[styles.typeToggleText, active && styles.typeToggleTextActive]}>{cat}</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			</View>
+
+			{/* 2b. Prompts */}
+			<View style={styles.questionBox}>
+				<View style={styles.questionHeader}>
+					<Text style={styles.questionTitle}>✍️ Random Prompts</Text>
+					<Switch value={questionSettings.prompts.enabled} onValueChange={updatePromptsEnabled} />
+				</View>
+				<Text style={styles.questionHint}>Enable prompts and choose categories</Text>
+				{questionSettings.prompts.enabled && (
+					<View style={styles.typeToggleRow}>
+						{PROMPT_CATEGORIES.map(cat => {
+							const k = promptKey(cat) as keyof typeof questionSettings.prompts.types;
+							const active = !!questionSettings.prompts.types[k];
+							return (
+								<Pressable key={cat} style={[styles.typeToggle, active && styles.typeToggleActive]} onPress={() => togglePromptCategory(cat)}>
+									<Text style={[styles.typeToggleText, active && styles.typeToggleTextActive]}>{cat}</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+				)}
+			</View>
 		</View>
 	);
 }
@@ -233,6 +370,10 @@ const styles = StyleSheet.create({
 	journalOptionText: { fontSize: 12, fontWeight: '600', color: '#333' },
 	journalOptionTextActive: { color: '#fff' },
 	templateInput: { padding: 8, backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: '#DDD', fontSize: 12, minHeight: 60, marginTop: 6 },
+	furyBtn: { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#EEE', borderRadius: 4, borderWidth: 1, borderColor: '#DDD' },
+	furyBtnActive: { backgroundColor: '#FF5722', borderColor: '#FF5722' },
+	furyBtnText: { fontSize: 11, fontWeight: '600', color: '#333' },
+	furyBtnTextActive: { color: '#fff' },
 	// Tutorial button
 	tutorialButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#1976D2', borderRadius: 8, alignSelf: 'flex-start', marginBottom: 8 },
 	tutorialButtonText: { color: '#fff', fontWeight: '700' },

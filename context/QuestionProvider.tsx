@@ -51,11 +51,30 @@ export interface QuestionSettings {
 	};
 	prompts: {
 		enabled: boolean;
+		types: {
+			SelfDiscovery: boolean;
+			Reflection: boolean;
+			Gratitude: boolean;
+			Creative: boolean;
+			Mindfulness: boolean;
+			Productivity: boolean;
+			Relationships: boolean;
+		};
 		customPrompts: CustomPrompt[];
 	};
 	trivia: {
 		morningCount: number; // 0-3, default 1
 		eveningCount: number; // 0-3, default 1
+		types: {
+			General: boolean;
+			PopCulture: boolean;
+			History: boolean;
+			Science: boolean;
+			Geography: boolean;
+			Sports: boolean;
+			LiteratureArts: boolean;
+			Food: boolean;
+		};
 	};
 	journalEntry: {
 		setting: 'morning' | 'evening' | 'both' | 'none';
@@ -79,6 +98,8 @@ interface QuestionContextType {
 	addCustomPrompt: (prompt: CustomPrompt) => void;
 	removeCustomPrompt: (id: string) => void;
 	updatePromptsEnabled: (enabled: boolean) => void;
+	togglePromptCategory: (category: string) => void;
+	toggleTriviaCategory: (category: string) => void;
 	setTriviaCount: (morning: number, evening: number) => void;
 	setJournalEntry: (setting: 'morning' | 'evening' | 'both' | 'none', template: string) => void;
 }
@@ -140,6 +161,15 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 	},
 	prompts: {
 		enabled: false,
+		types: {
+			SelfDiscovery: true,
+			Reflection: true,
+			Gratitude: true,
+			Creative: true,
+			Mindfulness: true,
+			Productivity: true,
+			Relationships: true,
+		},
 		customPrompts: [
 			{
 				id: '1',
@@ -153,6 +183,16 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 	trivia: {
 		morningCount: 1,
 		eveningCount: 1,
+		types: {
+			General: true,
+			PopCulture: true,
+			History: true,
+			Science: true,
+			Geography: true,
+			Sports: true,
+			LiteratureArts: true,
+			Food: true,
+		},
 	},
 	journalEntry: {
 		setting: 'both',
@@ -305,10 +345,84 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 		}));
 	};
 
+	const togglePromptCategory = (category: string) => {
+		// map external category names to keys
+		const mapKey = (c: string) => {
+			switch (c) {
+				case 'Self-Discovery':
+					return 'SelfDiscovery';
+				case 'Fun & Creative':
+					return 'FunCreative';
+				case 'Mindfulness':
+					return 'Mindfulness';
+				case 'Productivity':
+					return 'Productivity';
+				case 'Relationships':
+					return 'Relationships';
+				case 'Reflection':
+					return 'Reflection';
+				case 'Gratitude':
+					return 'Gratitude';
+				default:
+					return c;
+			}
+		};
+
+		const key = mapKey(category) as keyof typeof DEFAULT_SETTINGS.prompts.types;
+		setQuestionSettings(prev => ({
+			...prev,
+			prompts: {
+				...prev.prompts,
+				types: {
+					...prev.prompts.types,
+					[key]: !prev.prompts.types[key],
+				},
+			},
+		}));
+	};
+
+	const toggleTriviaCategory = (category: string) => {
+		const mapKey = (c: string) => {
+			switch (c) {
+				case 'General Knowledge':
+					return 'GeneralKnowledge';
+				case 'Pop Culture':
+					return 'PopCulture';
+				case 'History':
+					return 'History';
+				case 'Science':
+					return 'Science';
+				case 'Geography':
+					return 'Geography';
+				case 'Sports':
+					return 'Sports';
+				case 'Literature / Arts':
+					return 'LiteratureArts';
+				case 'Food':
+					return 'Food';
+				default:
+					return c;
+			}
+		};
+
+		const key = mapKey(category) as keyof typeof DEFAULT_SETTINGS.trivia.types;
+		setQuestionSettings(prev => ({
+			...prev,
+			trivia: {
+				...prev.trivia,
+				types: {
+					...prev.trivia.types,
+					[key]: !prev.trivia.types[key],
+				},
+			},
+		}));
+	};
+
 	const setTriviaCount = (morning: number, evening: number) => {
 		setQuestionSettings(prev => ({
 			...prev,
 			trivia: {
+				...prev.trivia,
 				morningCount: Math.max(0, Math.min(3, morning)),
 				eveningCount: Math.max(0, Math.min(3, evening)),
 			},
@@ -343,6 +457,8 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 				addCustomPrompt,
 				removeCustomPrompt,
 				updatePromptsEnabled,
+				togglePromptCategory,
+				toggleTriviaCategory,
 				setTriviaCount,
 				setJournalEntry,
 			}}>

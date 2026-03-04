@@ -1,9 +1,14 @@
+import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
+import { useShards } from '@/context/DragonShardsProvider';
+import { useFury } from '@/context/FuryProvider';
 import { useItems } from '@/context/ItemsProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import { useTheme } from '@/context/ThemeProvider';
 import { useWeather } from '@/context/WeatherProvider';
+import Slider from '@react-native-community/slider';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -14,6 +19,11 @@ export default function GeneralSettings() {
 	const theme = useTheme();
 	const weather = useWeather();
 	const scarLevel = useScarLevel();
+
+	const questions = useQuestions();
+	const fury = useFury();
+	const shards = useShards();
+	const coins = useDragonCoins();
 
 	const [volumes, setVolumes] = useState({ music: 0.7, sounds: 0.8, ambient: 0.5, dragonSounds: 0.9 });
 
@@ -50,39 +60,13 @@ export default function GeneralSettings() {
 					<Text style={styles.label}>Music</Text>
 					<Text style={styles.value}>{Math.round(volumes.music * 100)}%</Text>
 				</View>
-				<View style={styles.rowButtons}>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('music', 0)}>
-						<Text>0%</Text>
-					</Pressable>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('music', 0.33)}>
-						<Text>33%</Text>
-					</Pressable>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('music', 0.66)}>
-						<Text>66%</Text>
-					</Pressable>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('music', 1)}>
-						<Text>100%</Text>
-					</Pressable>
-				</View>
+				<Slider value={volumes.music} onValueChange={v => handleVolumeChange('music', v)} minimumValue={0} maximumValue={1} step={0.01} />
 
 				<View style={[styles.row, { marginTop: 8 }]}>
 					<Text style={styles.label}>Sound Effects</Text>
 					<Text style={styles.value}>{Math.round(volumes.sounds * 100)}%</Text>
 				</View>
-				<View style={styles.rowButtons}>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('sounds', 0)}>
-						<Text>0%</Text>
-					</Pressable>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('sounds', 0.33)}>
-						<Text>33%</Text>
-					</Pressable>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('sounds', 0.66)}>
-						<Text>66%</Text>
-					</Pressable>
-					<Pressable style={styles.smallButton} onPress={() => handleVolumeChange('sounds', 1)}>
-						<Text>100%</Text>
-					</Pressable>
-				</View>
+				<Slider value={volumes.sounds} onValueChange={v => handleVolumeChange('sounds', v)} minimumValue={0} maximumValue={1} step={0.01} />
 			</View>
 
 			{/* Backgrounds, Theme & Weather next */}
@@ -129,7 +113,52 @@ export default function GeneralSettings() {
 				<Pressable style={styles.button} onPress={simulateDay}>
 					<Text style={styles.buttonText}>Simulate Day (no alert)</Text>
 				</Pressable>
-				<View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+				<View style={{ flexDirection: 'row', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+					<Pressable style={styles.smallButton} onPress={() => dragon.healHp?.(10)}>
+						<Text style={styles.smallButtonText}>+10 Health</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => dragon.damageHp?.(10)}>
+						<Text style={styles.smallButtonText}>-10 Health</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => coins.addCoins?.(1000)}>
+						<Text style={styles.smallButtonText}>+1000 Coins</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => coins.addCoins?.(10000)}>
+						<Text style={styles.smallButtonText}>+10K Coins</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => shards.addShards?.(10)}>
+						<Text style={styles.smallButtonText}>+10 Shards</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => shards.addShards?.(-10)}>
+						<Text style={styles.smallButtonText}>-10 Shards</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => fury.addFury?.(-10)}>
+						<Text style={styles.smallButtonText}>-10 Fury</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => fury.addFury?.(-5)}>
+						<Text style={styles.smallButtonText}>-5 Fury</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => fury.addFury?.(-2)}>
+						<Text style={styles.smallButtonText}>-2 Fury</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => fury.addFury?.(2)}>
+						<Text style={styles.smallButtonText}>+2 Fury</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => fury.addFury?.(5)}>
+						<Text style={styles.smallButtonText}>+5 Fury</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => fury.addFury?.(10)}>
+						<Text style={styles.smallButtonText}>+10 Fury</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => scarLevel.addXP?.(1000)}>
+						<Text style={styles.smallButtonText}>+1K XP</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => scarLevel.addXP?.(10000)}>
+						<Text style={styles.smallButtonText}>+10K XP</Text>
+					</Pressable>
+					<Pressable style={styles.smallButton} onPress={() => scarLevel.addXP?.(100000)}>
+						<Text style={styles.smallButtonText}>+100K XP</Text>
+					</Pressable>
 					<Pressable style={styles.smallButton} onPress={agePlus}>
 						<Text style={styles.smallButtonText}>+1 Age</Text>
 					</Pressable>

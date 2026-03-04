@@ -1,4 +1,3 @@
-import TopHeader from '@/components/TopHeader';
 import { useGraveyard } from '@/context/GraveyardProvider';
 import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -7,7 +6,6 @@ export default function Graveyard() {
 	const { graveyard } = useGraveyard();
 	return (
 		<View style={{ flex: 1 }}>
-			<TopHeader isHomePage={false} />
 			<Text style={styles.header}>🪦 Graveyard</Text>
 			<ScrollView contentContainerStyle={{ padding: 12 }}>
 				{graveyard.map(g => (

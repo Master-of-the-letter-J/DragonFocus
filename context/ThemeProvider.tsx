@@ -94,7 +94,7 @@ const defaultPalette: ThemePalette = {
 	dark: defaultDarkTheme,
 };
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function DragonThemeProvider({ children }: { children: ReactNode }) {
 	const [mode, setModeState] = useState<ThemeMode>('dark');
 	const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>('dungeon');
 	const [customBackgroundColor, setCustomBackgroundColor] = useState<string | undefined>(undefined);
@@ -133,7 +133,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function useTheme(): ThemeContextType {
 	const context = useContext(ThemeContext);
 	if (!context) {
-		throw new Error('useTheme must be used within a ThemeProvider');
+		throw new Error('useTheme must be used within a DragonThemeProvider');
 	}
 	return context;
 }

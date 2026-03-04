@@ -20,17 +20,17 @@ export interface ScarLevelInfo {
 // -----------------------------------------------------
 
 const SCAR_LEVELS: ScarLevelInfo[] = [
-	{ level: 0, name: 'Beginner', levelUpRequiredXP: 250, multiplier: 1.0, features: ['Morning/Night Surveys', 'Day Goals', 'Mood', 'Streaks', 'Stats Table'] },
-	{ level: 1, name: 'Apprentice', levelUpRequiredXP: 500, multiplier: 1.1, features: ['Schedules', 'Custom Checklists', 'Goal Categories', 'Goal Importance', 'Shop (Multiplier Snacks)'] },
-	{ level: 2, name: 'Rider', levelUpRequiredXP: 1000, multiplier: 1.2, features: ['Journal', 'Quotes', 'Short Answer Goals', 'Prompts', 'Cosmetics', 'Mood Snacks', 'Dragon Graveyard'] },
-	{ level: 3, name: 'Whisperer', levelUpRequiredXP: 2000, multiplier: 1.3, features: ['Custom Dropdowns', 'More Cosmetics', 'Special Snacks'] },
-	{ level: 4, name: 'Journeyman', levelUpRequiredXP: 3000, multiplier: 1.4, features: ['Clicking Dragon', 'Achievements', 'New Theme', 'More Cosmetics', 'Ascension', 'Background Customization', 'Weather System'] },
-	{ level: 5, name: 'Trainer', levelUpRequiredXP: 5000, multiplier: 1.5, features: ['Clicking Dragon Upgrades', 'Coin Generators', 'New Theme', 'More Cosmetics', 'Glowing Icon'] },
-	{ level: 6, name: 'Warden', levelUpRequiredXP: 10_000, multiplier: 1.6, features: ['Coin Snacks', 'Cosmetics'] },
-	{ level: 7, name: 'Dragon Warrior', levelUpRequiredXP: 25_000, multiplier: 1.7, features: ['Health Snacks', 'Rename Dragon (Wyrm)', 'Cosmetics'] },
-	{ level: 8, name: 'Dragon Master', levelUpRequiredXP: 50_000, multiplier: 1.8, features: ['Cosmetics'] },
-	{ level: 9, name: 'Dragon Grandmaster', levelUpRequiredXP: 200_000, multiplier: 1.9, features: ['Cosmetics'] },
-	{ level: 10, name: 'Ultimate Dragon Warrior', levelUpRequiredXP: Infinity, multiplier: 2.0, features: ['Cosmetics', 'New Background', 'Best Icon'], premiumFeatures: ['Dragon Pact Premium Features'] },
+	{ level: 0, name: 'Beginner', levelUpRequiredXP: 0, multiplier: 1.0, features: ['Morning/Night Surveys', 'Day Goals', 'Mood', 'Streaks', 'Stats Table'] },
+	{ level: 1, name: 'Apprentice', levelUpRequiredXP: 250, multiplier: 1.1, features: ['Schedules', 'Custom Checklists', 'Goal Categories', 'Goal Importance', 'Shop (Multiplier Snacks)'] },
+	{ level: 2, name: 'Rider', levelUpRequiredXP: 500, multiplier: 1.2, features: ['Journal', 'Quotes', 'Short Answer Goals', 'Prompts', 'Cosmetics', 'Mood Snacks', 'Dragon Graveyard'] },
+	{ level: 3, name: 'Whisperer', levelUpRequiredXP: 1000, multiplier: 1.3, features: ['Custom Dropdowns', 'More Cosmetics', 'Special Snacks'] },
+	{ level: 4, name: 'Journeyman', levelUpRequiredXP: 2000, multiplier: 1.4, features: ['Clicking Dragon', 'Achievements', 'New Theme', 'More Cosmetics', 'Ascension', 'Background Customization', 'Weather System'] },
+	{ level: 5, name: 'Trainer', levelUpRequiredXP: 3000, multiplier: 1.5, features: ['Clicking Dragon Upgrades', 'Coin Generators', 'New Theme', 'More Cosmetics', 'Glowing Icon'] },
+	{ level: 6, name: 'Warden', levelUpRequiredXP: 5000, multiplier: 1.6, features: ['Coin Snacks', 'Cosmetics'] },
+	{ level: 7, name: 'Dragon Warrior', levelUpRequiredXP: 10_000, multiplier: 1.7, features: ['Health Snacks', 'Rename Dragon (Wyrm)', 'Cosmetics'] },
+	{ level: 8, name: 'Dragon Master', levelUpRequiredXP: 25_000, multiplier: 1.8, features: ['Cosmetics'] },
+	{ level: 9, name: 'Dragon Grandmaster', levelUpRequiredXP: 50_000, multiplier: 1.9, features: ['Cosmetics'] },
+	{ level: 10, name: 'Ultimate Dragon Warrior', levelUpRequiredXP: 200_000, multiplier: 2.0, features: ['Cosmetics', 'New Background', 'Best Icon'], premiumFeatures: ['Dragon Pact Premium Features'] },
 ];
 
 // -----------------------------------------------------

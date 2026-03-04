@@ -11,13 +11,14 @@ import { useGoals, type HabitGoal, type TodoGoal } from '@/context/GoalsProvider
 import { useItems } from '@/context/ItemsProvider';
 import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 
 function isYesterday(dateStr: string) {
 	const d = new Date(dateStr);
@@ -30,7 +31,7 @@ interface SurveyAnswers {
 	[key: string]: any;
 }
 
-const moodOptions = [
+const DEFAULT_MOOD_OPTIONS = [
 	{ emoji: '😭', label: 'Devastated', fury: +10 },
 	{ emoji: '😢', label: 'Sad', fury: +6 },
 	{ emoji: '😟', label: 'Worried', fury: +3 },
@@ -45,8 +46,17 @@ const moodOptions = [
 	{ emoji: '😡', label: 'Angry', fury: +9 },
 ];
 
+// Challenge reward map (mirrors Morning)
+const CHALLENGE_REWARDS: Record<number, { coins: number; shards: number }> = {
+	7: { coins: 100, shards: 10 },
+	14: { coins: 250, shards: 25 },
+	30: { coins: 750, shards: 60 },
+};
+
 export default function SurveyNightPage() {
+	// Providers (defensive)
 	const survey = useSurvey();
+	const { questionSettings } = useQuestions();
 	const coins = useDragonCoins();
 	const shards = useShards();
 	const dragon = useDragon();
@@ -59,7 +69,13 @@ export default function SurveyNightPage() {
 	const goals = useGoals();
 	const router = useRouter();
 
-	// Survey state
+	//Defensive
+	const qSettings = questionSettings; //as any) ?? { prompts: { types: {} }, trivia: { types: {} }, mood: { customEmotions: [] } };
+
+	// Prepare mood options (custom or default)
+	const moodOptions: { emoji: string; label: string; fury: number }[] = qSettings?.mood?.customEmotions && qSettings.mood.customEmotions.length > 0 ? qSettings.mood.customEmotions.map((e: any) => ({ emoji: e.emoji, label: e.description ?? e.label ?? 'Custom', fury: e.furyChange ?? 0 })) : DEFAULT_MOOD_OPTIONS;
+
+	// State
 	const [currentSection, setCurrentSection] = useState(0);
 	const [answers, setAnswers] = useState<SurveyAnswers>({});
 	const [journalText, setJournalText] = useState('');
@@ -67,7 +83,6 @@ export default function SurveyNightPage() {
 	const [randomPromptIndex, setRandomPromptIndex] = useState<number | null>(null);
 	const [randomQuoteIndex, setRandomQuoteIndex] = useState<number | null>(null);
 	const [randomTriviaIndex, setRandomTriviaIndex] = useState<number | null>(null);
-	// Holds the randomized answers and the pointer to the correct answer in that specific random order
 	const [triviaOptions, setTriviaOptions] = useState<{ answers: string[]; correctLocalIndex: number } | null>(null);
 
 	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
@@ -75,7 +90,7 @@ export default function SurveyNightPage() {
 	const [results, setResults] = useState<any>(null);
 	const slideAnim = React.useRef(new Animated.Value(-100)).current;
 
-	// Goal editor modals
+	// Editor modals (Night should not allow editing challenge items; editors are read-only or disabled by provider)
 	const [editingHabit, setEditingHabit] = useState<HabitGoal | null>(null);
 	const [editingTodo, setEditingTodo] = useState<TodoGoal | null>(null);
 
@@ -93,28 +108,16 @@ export default function SurveyNightPage() {
 
 	const totalSections = sections.length;
 
-	// Survey label animation
+	// Slide label animation
 	useEffect(() => {
 		if (showSurveyLabel) {
-			Animated.sequence([
-				Animated.timing(slideAnim, {
-					toValue: 0,
-					duration: 300,
-					useNativeDriver: true,
-				}),
-				Animated.delay(1400),
-				Animated.timing(slideAnim, {
-					toValue: -100,
-					duration: 300,
-					useNativeDriver: true,
-				}),
-			]).start(() => setShowSurveyLabel(false));
+			Animated.sequence([Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }), Animated.delay(1400), Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: true })]).start(() => setShowSurveyLabel(false));
 		}
 	}, [showSurveyLabel]);
 
-	// Initialize on mount (load saved progress if exists, allow retake)
+	// On mount: load saved progress, seed indices, etc.
 	useEffect(() => {
-		const saved = survey.loadProgress('night');
+		const saved = survey?.loadProgress?.('night');
 		const todayStr = new Date().toISOString().split('T')[0];
 
 		if (saved && saved.savedAt === todayStr) {
@@ -122,196 +125,266 @@ export default function SurveyNightPage() {
 			if (saved.journalText) setJournalText(saved.journalText);
 			if (typeof saved.section === 'number') setCurrentSection(saved.section);
 
-			// Load indices
 			if (saved.indices) {
 				if (typeof saved.indices.trivia === 'number') setRandomTriviaIndex(saved.indices.trivia);
 				if (typeof saved.indices.advice === 'number') setRandomAdviceIndex(saved.indices.advice);
 				if (typeof saved.indices.prompt === 'number') setRandomPromptIndex(saved.indices.prompt);
 				if (typeof saved.indices.quote === 'number') setRandomQuoteIndex(saved.indices.quote);
 			}
-
-			// Important: Load the randomized trivia order if it was saved
-			if (saved.triviaOptions) {
-				setTriviaOptions(saved.triviaOptions);
-			}
+			if (saved.triviaOptions) setTriviaOptions(saved.triviaOptions);
 		}
 
 		setShowSurveyLabel(true);
 
-		// Pick random values if not set by saved progress
 		if (ADVICE.length > 0 && randomAdviceIndex === null) setRandomAdviceIndex(Math.floor(Math.random() * ADVICE.length));
-		if (PROMPTS.length > 0 && randomPromptIndex === null) setRandomPromptIndex(Math.floor(Math.random() * PROMPTS.length));
-		if (TRIVIA.length > 0 && randomTriviaIndex === null) setRandomTriviaIndex(Math.floor(Math.random() * TRIVIA.length));
-		if (QUOTES.length > 0 && scarLevel.currentScarLevel >= 1 && randomQuoteIndex === null) setRandomQuoteIndex(Math.floor(Math.random() * QUOTES.length));
+
+		// Try to pick prompt/trivia defensively
+		try {
+			const promptMap: Record<string, keyof typeof qSettings.prompts.types> = {
+				SelfDiscovery: 'SelfDiscovery',
+				Reflection: 'Reflection',
+				Gratitude: 'Gratitude',
+				Creative: 'Creative',
+				Mindfulness: 'Mindfulness',
+				Productivity: 'Productivity',
+				Relationships: 'Relationships',
+			};
+			const enabledPrompts = PROMPTS.filter(p => {
+				const key = p.category in promptMap ? promptMap[p.category] : p.category;
+				return !!qSettings.prompts?.types?.[key];
+			});
+			if (enabledPrompts.length > 0 && randomPromptIndex === null) {
+				const chosen = enabledPrompts[Math.floor(Math.random() * enabledPrompts.length)];
+				const globalIndex = PROMPTS.findIndex(x => x === chosen);
+				if (globalIndex >= 0) setRandomPromptIndex(globalIndex);
+			}
+		} catch (e) {
+			/* ignore */
+		}
+
+		try {
+			const triviaMap: Record<string, keyof typeof qSettings.trivia.types> = {
+				General: 'General',
+				PopCulture: 'PopCulture',
+				History: 'History',
+				Science: 'Science',
+				Geography: 'Geography',
+				Sports: 'Sports',
+				LiteratureArts: 'LiteratureArts',
+				Food: 'Food',
+			};
+			const enabledTrivia = TRIVIA.filter(t => !!qSettings.trivia?.types?.[t.category in triviaMap ? triviaMap[t.category] : t.category]);
+			if (enabledTrivia.length > 0 && randomTriviaIndex === null) {
+				const chosen = enabledTrivia[Math.floor(Math.random() * enabledTrivia.length)];
+				const globalIndex = TRIVIA.findIndex(x => x === chosen);
+				if (globalIndex >= 0) setRandomTriviaIndex(globalIndex);
+			}
+		} catch (e) {
+			/* ignore */
+		}
+
+		if (QUOTES.length > 0 && (scarLevel?.currentScarLevel ?? 0) >= 1 && randomQuoteIndex === null) setRandomQuoteIndex(Math.floor(Math.random() * QUOTES.length));
 	}, []);
 
-	// Randomize Trivia Answers
-	// This effect runs when the index changes. If we loaded triviaOptions from save, we skip this to preserve order.
+	// Randomize trivia answers (preserve saved order if loaded)
 	useEffect(() => {
 		if (randomTriviaIndex !== null && TRIVIA[randomTriviaIndex] && !triviaOptions) {
 			const original = TRIVIA[randomTriviaIndex];
-			const source = original.answers.map((a, i) => ({ a, i }));
+			const source = original.answers.map((a: string, i: number) => ({ a, i }));
 
-			// Fisher-Yates Shuffle
+			// Fisher-Yates
 			for (let i = source.length - 1; i > 0; i--) {
 				const j = Math.floor(Math.random() * (i + 1));
 				[source[i], source[j]] = [source[j], source[i]];
 			}
-
-			const answersList = source.map(s => s.a);
-			const correctLocalIndex = source.findIndex(s => s.i === original.correctIndex);
+			const answersList = source.map((s: any) => s.a);
+			const correctLocalIndex = source.findIndex((s: any) => s.i === original.correctIndex);
 
 			setTriviaOptions({ answers: answersList, correctLocalIndex });
-
-			// Store the correct index in answers for easy grading later
+			// store for grading later
 			setAnswers(prev => ({ ...prev, _triviaCorrectLocalIndex: correctLocalIndex }));
 		}
 	}, [randomTriviaIndex]);
 
+	// Can proceed to next section gating
+	const canProceedToNext = (): boolean => {
+		const sec = sections[currentSection];
+		if (!sec || typeof sec.key !== 'string') return true;
+
+		if (sec.key === 'trivia') {
+			return !!answers.triviaSubmitted;
+		}
+		if (sec.key === 'prompt') {
+			const promptText = answers.promptText as string | undefined;
+			return !!(promptText && promptText.trim().length > 0);
+		}
+		if (sec.key === 'journal') {
+			return !!(journalText && journalText.trim().length > 0);
+		}
+		return true;
+	};
+
 	const goNext = () => {
+		if (!canProceedToNext()) return;
 		if (currentSection === totalSections - 1) {
 			submitSurvey();
 		} else {
-			setCurrentSection(currentSection + 1);
+			setCurrentSection(prev => Math.min(prev + 1, totalSections - 1));
 		}
 	};
 
 	const goBack = () => {
-		if (currentSection > 0) {
-			setCurrentSection(currentSection - 1);
-		}
+		setCurrentSection(prev => Math.max(prev - 1, 0));
 	};
 
 	const handleExitSurvey = () => {
-		// Construct the save object
 		const saveState = {
 			savedAt: new Date().toISOString().split('T')[0],
 			section: currentSection,
 			answers: answers,
-			journalText: journalText,
-			triviaOptions: triviaOptions, // Save the randomized order
+			journalText,
+			triviaOptions,
 			indices: {
 				trivia: randomTriviaIndex,
 				advice: randomAdviceIndex,
 				prompt: randomPromptIndex,
 				quote: randomQuoteIndex,
 			},
+			progressPercent: Math.floor(((currentSection + 1) / totalSections) * 100),
 		};
-
-		// Call the provider's save method without alert
-		survey.saveProgress('night', saveState);
+		survey?.saveProgress?.('night', saveState);
 		router.back();
 	};
 
 	const submitSurvey = () => {
 		const today = new Date().toISOString().split('T')[0];
-		const alreadyDoneToday = survey.lastNightSurveyDate === today && survey.nightSurveyCompleted;
-		let totalCoinsEarned = 0; // base awarded only if first completion
+		const alreadyDoneToday = survey?.lastNightSurveyDate === today && survey?.nightSurveyCompleted;
+		let totalCoinsEarned = 0;
 		let furyDelta = 0;
 
-		// Mood affects fury
+		// Mood to fury
 		const mood = answers.mood as number | undefined;
-		if (typeof mood === 'number') furyDelta = moodOptions[mood].fury || 0;
+		if (typeof mood === 'number' && moodOptions[mood]) furyDelta = moodOptions[mood].fury || 0;
 
-		// Gather multiplier inputs
-		const streakVal = streakCtx.getStreak ? streakCtx.getStreak() : streakCtx.streak ?? 0;
-		const yangValue = fury.furyMeter;
-		const dragonShardsCount = shards.shards ?? 0;
-		const scar = scarLevel.currentScarLevel ?? 0;
-		const snackMult = items.getActiveCoinMultiplier ? items.getActiveCoinMultiplier() : 1;
-		const isPremiumFlag = premium.isPremium ?? false;
+		// multipliers
+		const streakVal = typeof streakCtx?.getStreak === 'function' ? streakCtx.getStreak() : (streakCtx?.streak ?? 0);
+		const yangValue = fury?.furyMeter ?? 0;
+		const dragonShardsCount = shards?.shards ?? 0;
+		const scar = scarLevel?.currentScarLevel ?? 0;
+		const snackMult = typeof items?.getActiveCoinMultiplier === 'function' ? items.getActiveCoinMultiplier() : 1;
+		const isPremiumFlag = premium?.isPremium ?? false;
 
 		if (!alreadyDoneToday) {
-			const nightCoins = coins.calculateSurveyCoins(false, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag);
+			const nightCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(false, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
 			totalCoinsEarned = nightCoins;
-			coins.addCoins(nightCoins);
-			shards.addShards(1);
-			if (typeof fury.addFury === 'function') fury.addFury(furyDelta);
+			coins?.addCoins?.(nightCoins);
+			shards?.addShards?.(1);
+			if (typeof fury?.addFury === 'function') fury.addFury(furyDelta);
 		}
 
-		// Mark survey complete BEFORE calculating goal rewards
-		survey.completeNightSurvey();
+		// mark complete before goal rewards
+		survey?.completeNightSurvey?.();
 
-		// Goal rewards (only in evening survey). For retakes, only award for newly completed goals.
+		// goal rewards calculation
 		let totalGoalCoins = 0;
 		let totalGoalsCompleted = 0;
 
 		const todayStr = new Date().toISOString().split('T')[0];
-		const habitCompletedIds = goals.habits.filter(h => h.lastCompletedDate === todayStr).map(h => h.id);
-		const todoCompletedIds = goals.todos.filter(t => t.completedDate === todayStr).map(t => t.id);
+		const habitCompletedIds = (goals?.habits ?? []).filter((h: any) => h.lastCompletedDate === todayStr).map((h: any) => h.id);
+		const todoCompletedIds = (goals?.todos ?? []).filter((t: any) => t.completedDate === todayStr).map((t: any) => t.id);
 		const habitCompletedCount = habitCompletedIds.length;
 		const todoCompletedCount = todoCompletedIds.length;
 		totalGoalsCompleted = habitCompletedCount + todoCompletedCount;
 
+		// Habit coins
 		if (habitCompletedCount > 0) {
-			const baseHabitCoins = 5 * habitCompletedCount + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
+			const baseHabitCoins = 5 * habitCompletedCount + ((goals?.habits ?? []).some((h: any) => h.streak >= 5) ? 5 : 0);
 			if (!alreadyDoneToday) {
-				const awarded = Math.floor(baseHabitCoins * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-				coins.addCoins(awarded);
+				const awarded = Math.floor(baseHabitCoins * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+				coins?.addCoins?.(awarded);
 				totalGoalCoins += awarded;
-				dragon.addHealthFromGoal(habitCompletedCount * 2);
+				dragon?.addHealthFromGoal?.(habitCompletedCount * 2);
 			} else {
-				const snap = survey.getNightSnapshot() || { habitIds: [], todoIds: [] };
+				const snap = survey?.getNightSnapshot?.() || { habitIds: [], todoIds: [] };
 				const newHabits = habitCompletedIds.filter(id => !snap.habitIds.includes(id));
 				if (newHabits.length > 0) {
-					const baseNew = 5 * newHabits.length + (goals.habits.some(h => h.streak >= 5) ? 5 : 0);
-					const awarded = Math.floor(baseNew * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-					coins.addCoins(awarded);
+					const baseNew = 5 * newHabits.length + ((goals?.habits ?? []).some((h: any) => h.streak >= 5) ? 5 : 0);
+					const awarded = Math.floor(baseNew * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+					coins?.addCoins?.(awarded);
 					totalGoalCoins += awarded;
-					dragon.addHealthFromGoal(newHabits.length * 2);
+					dragon?.addHealthFromGoal?.(newHabits.length * 2);
 				}
 			}
 		}
+
+		// Todo coins
 		if (todoCompletedCount > 0) {
 			const baseTodoCoins = 10 * todoCompletedCount;
 			if (!alreadyDoneToday) {
-				const awarded = Math.floor(baseTodoCoins * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-				coins.addCoins(awarded);
+				const awarded = Math.floor(baseTodoCoins * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+				coins?.addCoins?.(awarded);
 				totalGoalCoins += awarded;
-				dragon.addHealthFromGoal(todoCompletedCount * 2);
+				dragon?.addHealthFromGoal?.(todoCompletedCount * 2);
 			} else {
-				const snap = survey.getNightSnapshot() || { habitIds: [], todoIds: [] };
+				const snap = survey?.getNightSnapshot?.() || { habitIds: [], todoIds: [] };
 				const newTodos = todoCompletedIds.filter(id => !snap.todoIds.includes(id));
 				if (newTodos.length > 0) {
 					const baseNew = 10 * newTodos.length;
-					const awarded = Math.floor(baseNew * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-					coins.addCoins(awarded);
+					const awarded = Math.floor(baseNew * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+					coins?.addCoins?.(awarded);
 					totalGoalCoins += awarded;
-					dragon.addHealthFromGoal(newTodos.length * 2);
+					dragon?.addHealthFromGoal?.(newTodos.length * 2);
 				}
 			}
 		}
 
-		if (dragon.hp <= 0) {
-			dragon.die();
+		// CHALLENGE completion rewards: check habits flagged as isChallenge and not yet claimed
+		const challengeFinishers = (goals?.habits ?? []).filter((h: any) => h.isChallenge && h.challengeLength && h.challengeStartDate && !h.challengeRewardClaimed && (h.streak ?? 0) >= (h.challengeLength ?? 0));
+		if (challengeFinishers.length > 0) {
+			challengeFinishers.forEach((h: any) => {
+				const len = Number(h.challengeLength);
+				const reward = CHALLENGE_REWARDS[len] ?? { coins: 0, shards: 0 };
+				if (reward.coins > 0) {
+					coins?.addCoins?.(reward.coins);
+					totalGoalCoins += reward.coins;
+				}
+				if (reward.shards > 0) {
+					shards?.addShards?.(reward.shards);
+				}
+				// mark claimed so we don't double-award
+				goals?.editHabit?.(h.id, { challengeRewardClaimed: true });
+			});
 		}
 
-		// Prompt and trivia rewards only for first nightly completion
+		if (dragon?.hp <= 0) {
+			dragon?.die?.();
+		}
+
+		// Prompt & trivia extra rewards only if first nightly completion
 		if (!alreadyDoneToday) {
-			// Prompt bonus
 			if (answers.promptText && answers.promptText.trim()) {
-				const extra = Math.floor(2 * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-				coins.addCoins(extra);
+				const extra = Math.floor(2 * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+				coins?.addCoins?.(extra);
 				totalCoinsEarned += extra;
 			}
-			// Trivia reward
+
 			if (answers.triviaAnswer !== undefined && typeof answers._triviaCorrectLocalIndex === 'number') {
 				if (answers.triviaAnswer === answers._triviaCorrectLocalIndex) {
-					const extra = Math.floor(2 * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-					coins.addCoins(extra);
+					const extra = Math.floor(2 * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+					coins?.addCoins?.(extra);
 					totalCoinsEarned += extra;
 				}
 			}
 		}
 
 		const totalCoins = totalCoinsEarned + totalGoalCoins;
-		const fireXPFromCoins = coins.calculateFireXP(totalCoins);
-		const bonusFireXP = dragon.age * 10;
-		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
+		const fireXPFromCoins = typeof coins?.calculateFireXP === 'function' ? coins.calculateFireXP(totalCoins) : 0;
+		const bonusFireXP = (dragon?.age ?? 0) * 10;
+		if (!alreadyDoneToday) scarLevel?.addXP?.(fireXPFromCoins + bonusFireXP);
 
-		// Journal entry
-		const moodLabel = typeof mood === 'number' ? moodOptions[mood].label : '';
-		journal.addEntry({
+		// Journal entry with mood and rewards
+		const moodLabel = typeof mood === 'number' && moodOptions[mood] ? moodOptions[mood].label : '';
+		journal?.addEntry?.({
 			id: `entry_${today}_night_${Date.now()}`,
 			date: today,
 			surveyType: 'night',
@@ -322,11 +395,11 @@ export default function SurveyNightPage() {
 			rewards: { coins: totalCoins, xp: fireXPFromCoins + bonusFireXP, fury: furyDelta },
 		});
 
-		// Save snapshot for future retakes (store which goals were completed now)
-		survey.recordNightSnapshot({ habitIds: habitCompletedIds, todoIds: todoCompletedIds });
+		// Save snapshot (for retakes)
+		survey?.recordNightSnapshot?.({ habitIds: habitCompletedIds, todoIds: todoCompletedIds });
 
 		// Clear saved progress
-		survey.clearProgress('night');
+		survey?.clearProgress?.('night');
 
 		// Show results
 		setResults({
@@ -339,6 +412,20 @@ export default function SurveyNightPage() {
 		setShowResults(true);
 	};
 
+	// Delete habit / todo from list (confirm)
+	const confirmDeleteHabit = (id: string) => {
+		Alert.alert('Delete habit', 'Are you sure you want to delete this habit?', [
+			{ text: 'Cancel', style: 'cancel' },
+			{ text: 'Delete', style: 'destructive', onPress: () => goals?.deleteHabit?.(id) },
+		]);
+	};
+	const confirmDeleteTodo = (id: string) => {
+		Alert.alert('Delete to-do', 'Are you sure you want to delete this to-do?', [
+			{ text: 'Cancel', style: 'cancel' },
+			{ text: 'Delete', style: 'destructive', onPress: () => goals?.deleteTodo?.(id) },
+		]);
+	};
+
 	if (showResults && results) {
 		return (
 			<View style={styles.container}>
@@ -348,7 +435,7 @@ export default function SurveyNightPage() {
 					<View style={styles.resultsCard}>
 						<Text style={styles.resultText}>💰 Coins Earned: +{results.coinsEarned}</Text>
 						<Text style={styles.resultText}>💎 Shards Earned: +{results.shardsEarned}</Text>
-						<Text style={styles.resultText}>✨ fireXP Earned: +{results.xpEarned}</Text>
+						<Text style={styles.resultText}>✨ Fire-XP Earned: +{results.xpEarned}</Text>
 						<Text style={styles.resultText}>
 							😈 Fury: {results.furyDelta > 0 ? '+' : ''}
 							{results.furyDelta}
@@ -369,29 +456,28 @@ export default function SurveyNightPage() {
 		<View style={styles.container}>
 			<TopHeader isHomePage={false} />
 
-			{/* Goal editor modals */}
+			{/* Editors (night should not allow editing of challenge-locked items; editors may need to respect isChallenge) */}
 			{editingHabit && (
-				<Modal visible={!!editingHabit} transparent={true} animationType="slide">
+				<Modal visible={!!editingHabit} transparent animationType="slide">
 					<View style={styles.modalOverlay}>
 						<HabitEditor habit={editingHabit} onClose={() => setEditingHabit(null)} />
 					</View>
 				</Modal>
 			)}
-
 			{editingTodo && (
-				<Modal visible={!!editingTodo} transparent={true} animationType="slide">
+				<Modal visible={!!editingTodo} transparent animationType="slide">
 					<View style={styles.modalOverlay}>
 						<TodoEditor todo={editingTodo} onClose={() => setEditingTodo(null)} />
 					</View>
 				</Modal>
 			)}
 
-			{/* Survey Label Animation */}
+			{/* Animated label */}
 			<Animated.View style={[styles.surveyLabelContainer, { transform: [{ translateY: slideAnim }] }]}>
 				<Text style={styles.surveyLabelText}>🌙 Night Survey</Text>
 			</Animated.View>
 
-			{/* Progress bar */}
+			{/* Progress */}
 			<View style={styles.progressContainer}>
 				<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
 					<View style={{ flex: 1 }}>
@@ -406,32 +492,30 @@ export default function SurveyNightPage() {
 				</View>
 			</View>
 
-			{/* Survey content */}
+			{/* Content */}
 			<ScrollView style={styles.surveyContent} contentContainerStyle={styles.surveyContentInner}>
 				<Text style={styles.surveyType}>🌙 Night Survey</Text>
 
-				{/* ADVICE */}
+				{/* Advice */}
 				{section.key === 'advice' && (
 					<View>
 						<Text style={styles.question}>🐉 Dragon Inhales...</Text>
-						{randomAdviceIndex !== null && ADVICE[randomAdviceIndex] ? (
+						{randomAdviceIndex !== null && ADVICE[randomAdviceIndex] ?
 							<>
 								<Text style={styles.adviceText}>{ADVICE[randomAdviceIndex]}</Text>
 								<Text style={styles.adviceLabel}>— Advice for today</Text>
 							</>
-						) : (
-							<Text style={{ marginBottom: 12 }}>A piece of wisdom for your journey.</Text>
-						)}
+						:	<Text style={{ marginBottom: 12 }}>A piece of wisdom for your journey.</Text>}
 					</View>
 				)}
 
-				{/* MOOD */}
+				{/* Mood */}
 				{section.key === 'mood' && (
 					<View>
 						<Text style={styles.question}>How are you feeling?</Text>
 						<View style={styles.moodGrid}>
 							{moodOptions.map((m, idx) => (
-								<Pressable key={m.label} style={[styles.moodButton, answers.mood === idx && styles.moodSelected]} onPress={() => setAnswers({ ...answers, mood: idx })}>
+								<Pressable key={`${m.label}-${idx}`} style={[styles.moodButton, answers.mood === idx && styles.moodSelected]} onPress={() => setAnswers({ ...answers, mood: idx })}>
 									<Text selectable={false} style={styles.moodEmoji}>
 										{m.emoji}
 									</Text>
@@ -444,27 +528,56 @@ export default function SurveyNightPage() {
 					</View>
 				)}
 
-				{/* DAY GOALS */}
+				{/* Day / Habit Goals */}
 				{section.key === 'dayGoals' && (
 					<View>
 						<Text style={styles.question}>Day / Habit Goals</Text>
 						<Text style={{ marginBottom: 8 }}>Check off completed goals today. You can uncheck until you submit.</Text>
-						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled={true}>
-							{goals.habits
-								.filter(h => h.title.trim())
-								.map(h => {
+
+						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled>
+							{(goals?.habits ?? [])
+								.filter(h => h.title && h.title.trim())
+								.map((h: any) => {
 									const today = new Date().toISOString().split('T')[0];
 									const isCompleted = answers[`habit_${h.id}`];
 									const missedStreak = h.streak > 0 && h.lastCompletedDate && h.lastCompletedDate !== today && !isYesterday(h.lastCompletedDate);
 
 									return (
 										<View key={h.id}>
-											<View style={[styles.habitRow, isCompleted ? styles.habitCompleted : null, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-												<Text selectable={false} style={styles.habitTitle}>
-													{h.title}
-												</Text>
+											<View style={[styles.habitRow, h.isChallenge ? styles.challengeRow : null, isCompleted ? styles.habitCompleted : null, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+												<View style={{ flex: 1 }}>
+													<Text
+														selectable={false}
+														style={[
+															styles.habitTitle,
+															h.importance === 'Important+' ? styles.habitImportantPlus
+															: h.importance === 'Important' ? styles.habitImportant
+															: null,
+														]}>
+														{h.title}
+													</Text>
+													<Text selectable={false} style={styles.habitMeta}>
+														{h.category ? `${h.category}` : ''} • Streak: {h.streak ?? 0}
+													</Text>
+
+													{/* If this habit is a challenge, show progress and reward preview */}
+													{h.isChallenge && h.challengeLength && (
+														<Text selectable={false} style={{ fontSize: 12, color: '#1565C0', marginTop: 6 }}>
+															Challenge: {h.streak ?? 0}/{h.challengeLength} days • Reward:{' '}
+															{h.challengeLength === 7 ?
+																'💰100 • 💎10'
+															: h.challengeLength === 14 ?
+																'💰250 • 💎25'
+															:	'💰750 • 💎60'}
+														</Text>
+													)}
+												</View>
+
+												{/* Completed checkbox */}
 												<Checkbox value={!!isCompleted} onValueChange={v => setAnswers({ ...answers, [`habit_${h.id}`]: v })} />
 											</View>
+
+											{/* Missed streak note */}
 											{missedStreak && !isCompleted && (
 												<View style={{ marginTop: 6 }}>
 													<Text selectable={false} style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
@@ -480,38 +593,16 @@ export default function SurveyNightPage() {
 					</View>
 				)}
 
-				{/* TODO GOALS */}
+				{/* To-Do Goals */}
 				{section.key === 'todoGoals' && (
 					<View>
 						<Text style={styles.question}>To-Do Goals</Text>
 						<Text style={{ marginBottom: 8 }}>Check off completed to-dos and their sub-goals. You can uncheck until you submit.</Text>
 
-						{/* Suggested To‑Dos */}
-						{goals.suggestedTodoGoals && goals.suggestedTodoGoals.length > 0 && (
-							<>
-								<Text style={{ marginTop: 8, marginBottom: 6, fontWeight: '700' }}>💡 Suggested To‑Dos</Text>
-								{goals.suggestedTodoGoals.map(s => (
-									<Pressable
-										key={s.title}
-										style={{ padding: 8, backgroundColor: '#fafafa', borderRadius: 8, marginBottom: 6 }}
-										onPress={() => {
-											goals.addTodo({ title: s.title });
-											goals.rerollSuggestedTodos();
-										}}>
-										<Text>
-											+ {s.title} — 💰 {s.coins} coins
-										</Text>
-									</Pressable>
-								))}
-								<Pressable style={{ padding: 8, backgroundColor: '#eee', borderRadius: 8, alignItems: 'center' }} onPress={() => goals.rerollSuggestedTodos()}>
-									<Text>🔄 Re‑Roll To‑Do Suggestions</Text>
-								</Pressable>
-							</>
-						)}
-						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled={true}>
-							{goals.todos
-								.filter(t => t.title.trim())
-								.map(t => {
+						<ScrollView style={styles.goalsScrollView} nestedScrollEnabled>
+							{(goals?.todos ?? [])
+								.filter(t => t.title && t.title.trim())
+								.map((t: any) => {
 									const today = new Date().toISOString().split('T')[0];
 									const isCompleted = answers[`todo_${t.id}`];
 									const created = new Date(t.createdAt);
@@ -527,15 +618,29 @@ export default function SurveyNightPage() {
 												</Text>
 												<Checkbox disabled={!canComplete} value={!!isCompleted} onValueChange={v => setAnswers({ ...answers, [`todo_${t.id}`]: v })} />
 											</View>
+
+											{/* show category, due date, importance */}
+											{(t.category || t.dueDate || t.importance) && (
+												<Text style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+													{t.category ? `${t.category}` : ''}
+													{t.category && t.dueDate ? ' • ' : ''}
+													{t.dueDate ? `Due: ${t.dueDate}` : ''}
+													{(t.category || t.dueDate) && t.importance ? ' • ' : ''}
+													{t.importance ? `${t.importance}` : ''}
+												</Text>
+											)}
+
 											{!canComplete && (
 												<Text selectable={false} style={{ fontSize: 11, color: '#999', fontStyle: 'italic', marginTop: 4 }}>
 													(Can complete after 1 day)
 												</Text>
 											)}
-											{isCompleted && t.subGoals.length > 0 && (
+
+											{/* Subgoals are checkable directly from the night survey */}
+											{t.subGoals && t.subGoals.length > 0 && (
 												<View style={{ marginTop: 8 }}>
-													{t.subGoals.map(sg => (
-														<Pressable key={sg.id} style={styles.subGoalRow} onPress={() => goals.toggleSubGoal(t.id, sg.id)}>
+													{t.subGoals.map((sg: any) => (
+														<Pressable key={sg.id} style={styles.subGoalRow} onPress={() => goals?.toggleSubGoal?.(t.id, sg.id)}>
 															<Text selectable={false} style={{ textDecorationLine: sg.completed ? 'line-through' : 'none' }}>
 																{sg.completed ? '✓' : '○'} {sg.title}
 															</Text>
@@ -550,7 +655,7 @@ export default function SurveyNightPage() {
 					</View>
 				)}
 
-				{/* PROMPT */}
+				{/* Prompt */}
 				{section.key === 'prompt' && (
 					<View>
 						<Text style={styles.question}>Random Prompt</Text>
@@ -561,7 +666,7 @@ export default function SurveyNightPage() {
 					</View>
 				)}
 
-				{/* TRIVIA */}
+				{/* Trivia */}
 				{section.key === 'trivia' && randomTriviaIndex !== null && TRIVIA[randomTriviaIndex] && (
 					<View>
 						<Text style={styles.question}>Quick Trivia</Text>
@@ -571,7 +676,7 @@ export default function SurveyNightPage() {
 						<Text selectable={false} style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
 							Select your answer:
 						</Text>
-						{(triviaOptions ? triviaOptions.answers : TRIVIA[randomTriviaIndex].answers).map((answer, i) => {
+						{(triviaOptions ? triviaOptions.answers : TRIVIA[randomTriviaIndex].answers).map((answer: string, i: number) => {
 							const isSelected = answers.triviaAnswer === i;
 							const submitted = answers.triviaSubmitted;
 							const isCorrect = triviaOptions ? i === triviaOptions.correctLocalIndex : i === TRIVIA[randomTriviaIndex].correctIndex;
@@ -607,7 +712,7 @@ export default function SurveyNightPage() {
 					</View>
 				)}
 
-				{/* JOURNAL */}
+				{/* Journal */}
 				{section.key === 'journal' && (
 					<View>
 						<Text style={styles.question}>Journal Entry</Text>
@@ -615,11 +720,11 @@ export default function SurveyNightPage() {
 					</View>
 				)}
 
-				{/* QUOTE */}
+				{/* Quote */}
 				{section.key === 'quote' && (
 					<View>
 						<Text style={styles.question}>🐉 Dragon Exhales...</Text>
-						{randomQuoteIndex !== null && QUOTES[randomQuoteIndex] ? (
+						{randomQuoteIndex !== null && QUOTES[randomQuoteIndex] ?
 							<>
 								<Text selectable={false} style={[styles.adviceText, { fontStyle: 'italic', marginBottom: 12 }]}>
 									"{QUOTES[randomQuoteIndex]}"
@@ -628,40 +733,28 @@ export default function SurveyNightPage() {
 									— Words of wisdom
 								</Text>
 							</>
-						) : (
-							<Text style={{ marginBottom: 12 }}>A inspiring thought for you.</Text>
-						)}
+						:	<Text style={{ marginBottom: 12 }}>A inspiring thought for you.</Text>}
 					</View>
 				)}
 			</ScrollView>
 
-			{/* Button controls */}
+			{/* Bottom controls */}
 			<View style={styles.buttonContainer}>
-				{/* Bottom buttons: Previous / Next (Save moved to top X) */}
-				{currentSection > 0 && (
-					<Pressable style={styles.buttonSmall} onPress={goBack}>
-						<Text selectable={false} style={styles.buttonText}>
-							Previous
-						</Text>
-					</Pressable>
-				)}
-				<Pressable style={styles.buttonNext} onPress={goNext}>
-					<Text selectable={false} style={styles.buttonTextPrimary}>
-						{currentSection === totalSections - 1 ? 'Submit' : 'Next'}
-					</Text>
-				</Pressable>
-
-				{/* Previous Button */}
-				<Pressable style={[styles.buttonSmall, { opacity: currentSection === 0 ? 0.5 : 1 }]} onPress={goBack} disabled={currentSection === 0}>
+				{/* Previous */}
+				<Pressable style={[styles.buttonSmall, currentSection === 0 ? { opacity: 0.6 } : null]} onPress={goBack} disabled={currentSection === 0}>
 					<Text selectable={false} style={styles.buttonText}>
 						Previous
 					</Text>
 				</Pressable>
 
-				{/* Next/Submit Button */}
-				<Pressable style={styles.buttonNext} onPress={goNext}>
+				{/* Next / Submit */}
+				<Pressable style={[styles.buttonNext, !canProceedToNext() && styles.buttonDisabled]} onPress={goNext} disabled={!canProceedToNext()}>
 					<Text selectable={false} style={styles.buttonTextPrimary}>
-						{answers.triviaSubmitted && section.key === 'trivia' ? 'Next' : currentSection === totalSections - 1 ? 'Submit' : 'Next'}
+						{answers.triviaSubmitted && section.key === 'trivia' ?
+							'Next'
+						: currentSection === totalSections - 1 ?
+							'Submit'
+						:	'Next'}
 					</Text>
 				</Pressable>
 			</View>
@@ -689,9 +782,10 @@ const styles = StyleSheet.create({
 	adviceLabel: { fontSize: 13, color: '#999', fontStyle: 'italic' },
 	label: { fontSize: 14, fontWeight: '600', color: '#666' },
 	textInputArea: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, minHeight: 100, fontSize: 16 },
-	buttonContainer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 12, paddingBottom: 16 },
-	buttonSmall: { flex: 1, paddingVertical: 12, backgroundColor: '#fafafa', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#ddd' },
-	buttonNext: { flex: 1, paddingVertical: 12, backgroundColor: '#4CAF50', borderRadius: 8, alignItems: 'center' },
+	buttonContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, paddingBottom: 16, gap: 0, justifyContent: 'space-between' },
+	buttonSmall: { flex: 1, paddingVertical: 12, backgroundColor: '#fafafa', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#ddd', marginRight: 8 },
+	buttonNext: { flex: 2, paddingVertical: 12, backgroundColor: '#4CAF50', borderRadius: 8, alignItems: 'center' },
+	buttonDisabled: { backgroundColor: '#ccc', opacity: 0.6 },
 	buttonText: { fontSize: 14, fontWeight: '600', color: '#666' },
 	buttonTextPrimary: { fontSize: 14, fontWeight: '600', color: '#fff' },
 	smallButton: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#eee', borderRadius: 8, alignSelf: 'flex-start', marginTop: 8 },
@@ -699,14 +793,17 @@ const styles = StyleSheet.create({
 	miniButton: { width: 32, height: 32, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
 	miniEditButton: { backgroundColor: '#2196F3' },
 	miniButtonText: { fontSize: 14, color: '#fff' },
-	moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
+	moodGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
 	moodButton: { width: '30%', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', alignItems: 'center', marginBottom: 8 },
 	moodSelected: { borderColor: '#4CAF50', backgroundColor: '#eefaf0' },
 	moodEmoji: { fontSize: 24, marginBottom: 6 },
 	moodLabel: { fontSize: 12, textAlign: 'center' },
 	habitRow: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#eee', marginBottom: 8 },
+	challengeRow: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#d0e8ff', marginBottom: 8, backgroundColor: '#f3f9ff' },
 	habitCompleted: { borderColor: '#4CAF50', backgroundColor: '#E8F5E9' },
 	habitTitle: { fontSize: 16, fontWeight: '600' },
+	habitImportant: { color: '#f57c00' },
+	habitImportantPlus: { color: '#d32f2f' },
 	habitMeta: { fontSize: 12, color: '#666', marginTop: 4 },
 	goalsScrollView: { maxHeight: 250, borderRadius: 8, marginVertical: 8 },
 	suggestedScrollView: { maxHeight: 150, borderRadius: 8, borderWidth: 1, borderColor: '#f0f0f0' },

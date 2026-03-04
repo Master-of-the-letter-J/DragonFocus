@@ -1,5 +1,7 @@
-import { SUGGESTED_HABIT_GOALS, SUGGESTED_TODO_GOALS } from '@/constants/suggestgoals';
+import { SUGGESTED_HABIT_GOALS, SUGGESTED_TODO_GOALS, SuggestedHabitGoal, SuggestedTodoGoal } from '@/constants/suggestgoals';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { useDragonCoins } from './DragonCoinsProvider';
+import { useShards } from './DragonShardsProvider';
 
 // Simple uid generator to avoid extra dependency in prototype
 function uid() {
@@ -22,6 +24,8 @@ export interface HabitGoal {
 	lastCompletedDate?: string | null;
 	isChallenge?: boolean;
 	challengeLength?: number;
+	challengeStartDate?: string | null;
+	challengeRewardClaimed?: boolean;
 	createdAt: number;
 }
 
@@ -43,6 +47,13 @@ export interface TodoGoal {
 	completedDate?: string | null;
 	failed?: boolean;
 	failedDate?: string | null;
+	// Challenge fields for to-dos
+	isChallenge?: boolean;
+	challengeLength?: number;
+	challengeStartDate?: string | null;
+	challengeRewardClaimed?: boolean;
+	rewardCoins?: number;
+	rewardShards?: number;
 	createdAt: number;
 }
 
@@ -60,8 +71,8 @@ interface GoalsContextType {
 	toggleSubGoal: (todoId: string, subId: string) => void;
 	completeTodo: (id: string) => boolean;
 	failTodo: (id: string, fail: boolean) => void;
-	suggestedHabitGoals: string[];
-	suggestedTodoGoals: { title: string; coins: number }[];
+	suggestedHabitGoals: SuggestedHabitGoal[];
+	suggestedTodoGoals: SuggestedTodoGoal[];
 	rerollSuggestedHabits: () => void;
 	rerollSuggestedTodos: () => void;
 	goalTemplates: string[];
@@ -72,14 +83,18 @@ interface GoalsContextType {
 	getMaxTodos: (scarLevel: number, isPremium: boolean) => number;
 	canAddHabit: (scarLevel: number, isPremium: boolean) => boolean;
 	canAddTodo: (scarLevel: number, isPremium: boolean) => boolean;
+	enableChallenge: (id: string, length: number) => { success: boolean; message?: string };
 }
 
 const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 
 const PRESET_HABITS: HabitGoal[] = [
-	{ id: uid(), title: 'Make bed', importance: 'Default', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: 'Drink water', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: '10 minute meditation', importance: 'Important+', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+	{ id: uid(), title: 'Make Bed', importance: 'Default', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+	{ id: uid(), title: 'Brush Teeth', importance: 'Default', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+	{ id: uid(), title: 'Drink 8 Cups of Water', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+	{ id: uid(), title: 'Meditate 10 Minutes', importance: 'Important+', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+	{ id: uid(), title: 'Exercise 30 minutes or more', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+	{ id: uid(), title: 'Sleep with Good Bedtime', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
 ];
 
 const SUGGESTED = ['Read 10 pages', 'Run 1 mile', 'Practice instrument 30 min', 'Write 100 words', 'Cold shower', 'Stretch for 10 minutes', 'Do 20 push-ups', 'Meditate 15 minutes', 'Take a walk', 'Learn something new', 'Journal about your day', 'Drink 8 glasses of water', 'Tidy your space', 'Call a friend or family', 'Exercise for 30 minutes', 'Cook a healthy meal', 'Do yoga for 20 minutes', 'Take a cold bath', 'Study for 1 hour', 'Plan your day ahead'];
@@ -89,23 +104,63 @@ const GOAL_TEMPLATES = ['Run for (Time) minutes', 'Do (Amount) push-ups', 'Walk 
 export function GoalsProvider({ children }: { children: ReactNode }) {
 	const [habits, setHabits] = useState<HabitGoal[]>(PRESET_HABITS);
 	const [todos, setTodos] = useState<TodoGoal[]>([]);
-	const [suggestedHabitGoals, setSuggestedHabitGoals] = useState<string[]>(() => {
+	const [suggestedHabitGoals, setSuggestedHabitGoals] = useState<SuggestedHabitGoal[]>(() => {
 		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-		return shuffled.slice(0, 6).map(g => g.title);
+		return shuffled.slice(0, 6);
 	});
-	const [suggestedTodoGoals, setSuggestedTodoGoals] = useState<{ title: string; coins: number }[]>(() => {
+	const [suggestedTodoGoals, setSuggestedTodoGoals] = useState<SuggestedTodoGoal[]>(() => {
 		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
-		return shuffled.slice(0, 6).map(g => ({ title: g.title, coins: g.coins }));
+		return shuffled.slice(0, 6);
 	});
 
 	const rerollSuggestedHabits = () => {
 		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-		setSuggestedHabitGoals(shuffled.slice(0, 6).map(g => g.title));
+		setSuggestedHabitGoals(shuffled.slice(0, 6));
 	};
 
 	const rerollSuggestedTodos = () => {
 		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
-		setSuggestedTodoGoals(shuffled.slice(0, 6).map(g => ({ title: g.title, coins: g.coins })));
+		setSuggestedTodoGoals(shuffled.slice(0, 6));
+	};
+
+	// access coins/shards providers for challenge payments
+	const coins = useDragonCoins();
+	const shards = useShards();
+
+	/**
+	 * Enable a habit challenge: spends coins/shards and marks habit as challenge-started
+	 */
+	const enableChallenge = (id: string, length: number) => {
+		const h = habits.find(x => x.id === id);
+		if (!h) return { success: false, message: 'Habit not found' };
+		if (h.isChallenge) return { success: false, message: 'Challenge already active' };
+		let coinCost = 0;
+		let shardCost = 0;
+		switch (length) {
+			case 7:
+				coinCost = 10;
+				break;
+			case 14:
+				coinCost = 25;
+				break;
+			case 30:
+				coinCost = 50;
+				shardCost = 5;
+				break;
+			default:
+				return { success: false, message: 'Invalid challenge length' };
+		}
+
+		if (coinCost > 0 && !coins.spendCoins(coinCost)) return { success: false, message: 'Not enough coins' };
+		if (shardCost > 0 && !shards.spendShards(shardCost)) {
+			// refund coins if shards failed
+			if (coinCost > 0) coins.addCoins(coinCost);
+			return { success: false, message: 'Not enough shards' };
+		}
+
+		const startDate = new Date().toISOString().split('T')[0];
+		setHabits(prev => prev.map(x => (x.id === id ? { ...x, isChallenge: true, challengeLength: length, challengeStartDate: startDate, challengeRewardClaimed: false } : x)));
+		return { success: true };
 	};
 
 	const addHabit = (h: Partial<HabitGoal>) => {
@@ -122,6 +177,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 			lastCompletedDate: null,
 			isChallenge: h.isChallenge || false,
 			challengeLength: h.challengeLength,
+			challengeStartDate: h.challengeStartDate || null,
+			challengeRewardClaimed: h.challengeRewardClaimed || false,
 			createdAt: Date.now(),
 		};
 		setHabits(prev => [newHabit, ...prev]);
@@ -161,6 +218,12 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 			completedDate: null,
 			failed: false,
 			failedDate: null,
+			isChallenge: t.isChallenge || false,
+			challengeLength: t.challengeLength,
+			challengeStartDate: t.challengeStartDate || null,
+			challengeRewardClaimed: t.challengeRewardClaimed || false,
+			rewardCoins: t.rewardCoins,
+			rewardShards: t.rewardShards,
 			createdAt: Date.now(),
 		};
 		setTodos(prev => [newTodo, ...prev]);
@@ -268,14 +331,15 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 					setHabits(PRESET_HABITS);
 					setTodos([]);
 					const shuffled1 = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-					setSuggestedHabitGoals(shuffled1.slice(0, 6).map(g => g.title));
+					setSuggestedHabitGoals(shuffled1.slice(0, 6));
 					const shuffled2 = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
-					setSuggestedTodoGoals(shuffled2.slice(0, 6).map(g => ({ title: g.title, coins: g.coins })));
+					setSuggestedTodoGoals(shuffled2.slice(0, 6));
 				},
 				getMaxHabits,
 				getMaxTodos,
 				canAddHabit,
 				canAddTodo,
+				enableChallenge,
 			}}>
 			{children}
 		</GoalsContext.Provider>

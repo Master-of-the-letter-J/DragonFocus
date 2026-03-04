@@ -51,6 +51,7 @@ interface DragonContextType {
 
 const DragonContext = createContext<DragonContextType | undefined>(undefined);
 
+/**@requires GraveyardProvider */
 export function DragonProvider({ children }: { children: ReactNode }) {
 	const graveyard = useGraveyard(); // <-- NEW
 

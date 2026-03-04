@@ -2,229 +2,234 @@ import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
+import { usePopulation } from '@/context/PopulationProvider';
 import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
-import React, { ReactNode, useContext, useMemo, useState } from 'react';
+import { useStreak } from '@/context/StreakProvider';
+import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 
-export type ItemType = 'snack' | 'cosmetic' | 'generator' | 'theme';
+export type ItemType = 'snack' | 'cosmetic' | 'generator' | 'clicker' | 'theme';
 
 export interface ShopItem {
 	id: string;
 	name: string;
 	type: ItemType;
 	price: number;
+	priceGrowth?: number;
 	description?: string;
-	scarLevelRequired?: number; // minimum scar level to purchase
-	requiresShards?: number; // shard cost on top of coins
-	// effect parameters for snacks/generators
-	effect?: {
-		hp?: number; // immediate HP
-		regenDays?: number; // regeneration duration days
-		fury?: number; // immediate fury change
-		coinsPerDay?: number; // for generators
-		durationDays?: number; // temporary multipliers, etc.
-		mood?: number; // mood impact placeholder
-	};
+	scarLevelRequired?: number;
+	requiresShards?: number;
 }
 
-type ItemsProviderContextProps = {
+type QueueGroup = 'survey' | 'generator' | 'clicker' | 'jeopardy';
+
+export interface ActiveEffect {
+	id: string;
+	sourceItemId: string;
+	name: string;
+	startsAtMs: number;
+	endsAtMs: number;
+	queueGroup?: QueueGroup;
+	surveyMultiplier?: number;
+	generatorMultiplier?: number;
+	clickerMultiplier?: number;
+	jeopardyMultiplier?: number;
+	furyPerDay?: number;
+	healthPerDay?: number;
+}
+
+export interface IdleSummary {
+	elapsedSeconds: number;
+	coins: number;
+	fireXp: number;
+	shards: number;
+	furyEarned: number;
+	furyLost: number;
+	furyTotal: number;
+	healthEarned: number;
+	healthLost: number;
+	healthTotal: number;
+}
+
+export interface SnackUseToast {
+	name: string;
+	topEffect: string;
+}
+
+export interface EffectDisplayEntry {
+	id: string;
+	name: string;
+	topEffect: string;
+	remainingSeconds: number;
+	startsInSeconds: number;
+	strength: number;
+}
+
+type EffectSnapshot = {
+	surveyMultiplier: number;
+	generatorMultiplier: number;
+	clickerMultiplier: number;
+	jeopardyMultiplier: number;
+	furyPerDay: number;
+	healthPerDay: number;
+};
+
+type SimResult = {
+	coins: number;
+	fireXp: number;
+	shards: number;
+	furyDelta: number;
+	healthDelta: number;
+};
+
+interface ItemsContextType {
 	shopItems: ShopItem[];
-	ownedItems: Record<string, number>; // id -> quantity
+	ownedItems: Record<string, number>;
 	purchaseItem: (id: string) => boolean;
 	useItem: (id: string) => boolean;
 	addItemToInventory: (id: string, qty?: number) => void;
-	sellItem?: (id: string) => boolean;
-	processDailyPayouts?: () => number; // returns coins added
-	activeEffects?: ActiveEffect[];
-	getActiveCoinMultiplier?: () => number;
-	getActiveJeopardyMultiplier?: () => number;
-	resetInventory?: () => void;
-};
+	sellItem: (id: string) => boolean;
+	processDailyPayouts: () => number;
+	processDragonClick: () => number;
+	getClickReward: () => number;
+	getItemCoinCost: (id: string) => number;
+	getItemShardCost: (id: string) => number;
+	getGeneratorProductionPerDay: (id: string) => number;
+	getTotalGeneratorProductionPerDay: () => number;
+	activeEffects: ActiveEffect[];
+	getActiveCoinMultiplier: () => number;
+	getActiveJeopardyMultiplier: () => number;
+	getSurveyMultiplier: () => number;
+	getGeneratorMultiplier: () => number;
+	getClickerMultiplier: () => number;
+	getEffectDisplayList: () => EffectDisplayEntry[];
+	pendingIdleSummary: IdleSummary | null;
+	consumeIdleSummary: () => void;
+	snackToast: SnackUseToast | null;
+	consumeSnackToast: () => void;
+	resetInventory: () => void;
+}
 
-const ItemsProviderContext = React.createContext<ItemsProviderContextProps | undefined>(undefined);
+interface RuntimeStats {
+	yang: number;
+	yin: number;
+	shards: number;
+	scarLevel: number;
+	streak: number;
+	age: number;
+	population: number;
+	destroyedPopulation: number;
+	premium: boolean;
+	antiTreasuryCount: number;
+	totalGeneratorCount: number;
+}
+
+type GeneratorId =
+	| 'gen_treasury'
+	| 'gen_forge'
+	| 'gen_freezer'
+	| 'gen_dragon_nft'
+	| 'gen_anti_treasury'
+	| 'gen_black_hole'
+	| 'gen_golden_saddle'
+	| 'gen_dragon_anti_charm'
+	| 'gen_dragon_charm'
+	| 'gen_coin_fountain'
+	| 'gen_ultimate_dragon_bracelet'
+	| 'gen_big_stick';
+
+const ItemsProviderContext = React.createContext<ItemsContextType | undefined>(undefined);
 
 export const useItems = () => {
 	const context = useContext(ItemsProviderContext);
-	if (context === undefined) throw new Error('useItems must be used within ItemsProvider');
+	if (!context) throw new Error('useItems must be used within ItemsProvider');
 	return context;
 };
 
-function buildInitialShopItems(): ShopItem[] {
-	return [
-		{
-			id: 'snack_health_chocolate',
-			name: 'Health Chocolate',
-			type: 'snack',
-			price: 25,
-			description: 'A delicious chocolate that restores HP (10-50).',
-			effect: { hp: 25 },
-		},
-		{
-			id: 'snack_regen_7d',
-			name: 'Regeneration Pack (7d)',
-			type: 'snack',
-			price: 500,
-			description: 'Regenerates HP each day for 7 days (+10/day).',
-			effect: { regenDays: 7, hp: 10 },
-		},
-		{
-			id: 'snack_double_jeopardy',
-			name: 'Double Jeopardy Snack',
-			type: 'snack',
-			price: 300,
-			description: 'Double gains & losses from questions for a day.',
-			effect: { durationDays: 1 },
-		},
-		{
-			id: 'generator_treasury',
-			name: 'Treasury (Daily)',
-			type: 'generator',
-			price: 1000,
-			description: 'Generates +1 coin/day (multiplied by scar/premium).',
-			effect: { coinsPerDay: 1 },
-		},
-		{
-			id: 'cosmetic_hat_red',
-			name: 'Red Dragon Hat',
-			type: 'cosmetic',
-			price: 200,
-			description: 'A stylish red hat for your dragon.',
-		},
-		// Simplified mood snacks
-		{ id: 'mood_nugget', name: 'Mood Nugget (-5)', type: 'snack', price: 25, description: 'Small calming snack: -5 Fury', effect: { fury: -5 } },
-		{ id: 'mood_bar', name: 'Mood Bar (-15)', type: 'snack', price: 60, description: 'Tough day? -15 Fury', effect: { fury: -15 } },
-		{ id: 'mood_feast', name: 'Mood Feast (-40)', type: 'snack', price: 140, description: 'Big calming feast: -40 Fury', effect: { fury: -40 } },
+const DAY_SECONDS = 86400;
+const DAY_MS = DAY_SECONDS * 1000;
 
-		// Coin boosters
-		{ id: 'booster_double', name: 'Double Coin Booster (1d)', type: 'snack', price: 250, description: 'Double coin gains for 1 day.', effect: { durationDays: 1 } },
-		{ id: 'booster_triple', name: 'Triple Coin Booster (1d)', type: 'snack', price: 600, description: 'Triple coin gains for 1 day.', effect: { durationDays: 1 } },
-		{ id: 'booster_quad', name: 'Quadruple Coin Booster (1d)', type: 'snack', price: 1200, description: '4x coin gains for 1 day.', effect: { durationDays: 1 } },
+const round2 = (value: number) => Math.round(value * 100) / 100;
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const makeEffectId = () => `effect_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-		// Health snacks (different tiers)
-		{ id: 'health_small', name: 'Health Snack (25)', type: 'snack', price: 30, description: 'Restores 25 HP.', effect: { hp: 25 } },
-		{ id: 'health_medium', name: 'Health Snack (100)', type: 'snack', price: 100, description: 'Restores 100 HP.', effect: { hp: 100 } },
-		{ id: 'health_large', name: 'Health Snack (500)', type: 'snack', price: 400, description: 'Restores 500 HP.', effect: { hp: 500 } },
+const GENERATOR_IDS: GeneratorId[] = [
+	'gen_treasury',
+	'gen_forge',
+	'gen_freezer',
+	'gen_dragon_nft',
+	'gen_anti_treasury',
+	'gen_black_hole',
+	'gen_golden_saddle',
+	'gen_dragon_anti_charm',
+	'gen_dragon_charm',
+	'gen_coin_fountain',
+	'gen_ultimate_dragon_bracelet',
+	'gen_big_stick',
+];
 
-		// Regeneration snacks
-		{ id: 'regen_3d', name: 'Regen 3 Days (+10/day)', type: 'snack', price: 120, description: 'Regenerate +10 HP daily for 3 days.', effect: { regenDays: 3, hp: 10 } },
-		{ id: 'regen_10d', name: 'Regen 10 Days (+50/day)', type: 'snack', price: 1200, description: 'Regenerate +50 HP daily for 10 days.', effect: { regenDays: 10, hp: 50 } },
+const SHOP_ITEMS: ShopItem[] = [
+	{ id: 'gen_treasury', name: 'Treasury', type: 'generator', price: 5, priceGrowth: 1.08, scarLevelRequired: 3, requiresShards: 1, description: '+1 Coins/Day * Multiplier' },
+	{ id: 'gen_forge', name: 'Forge', type: 'generator', price: 10, priceGrowth: 1.12, scarLevelRequired: 4, requiresShards: 1, description: '+(2 + Yang/50) Coins/Day * Multiplier' },
+	{ id: 'gen_freezer', name: 'Freezer', type: 'generator', price: 10, priceGrowth: 1.12, scarLevelRequired: 4, requiresShards: 1, description: '+(2 + Yin/50) Coins/Day * Multiplier' },
+	{ id: 'gen_dragon_nft', name: 'Dragon NFT', type: 'generator', price: 15, priceGrowth: 1.16, scarLevelRequired: 4, requiresShards: 1, description: '+(3 + Streak/30) Coins/Day * Multiplier' },
+	{ id: 'gen_anti_treasury', name: 'Anti-Treasury', type: 'generator', price: 20, priceGrowth: 1.2, scarLevelRequired: 5, requiresShards: 1, description: '+(4 + Anti-Treasury #), reduces other generation by 1' },
+	{ id: 'gen_black_hole', name: 'Black Hole', type: 'generator', price: 25, priceGrowth: 1.14, scarLevelRequired: 5, requiresShards: 1, description: '+(5 + Scar Level) Coins/Day * Multiplier' },
+	{ id: 'gen_golden_saddle', name: 'Golden Saddle', type: 'generator', price: 30, priceGrowth: 1.3, scarLevelRequired: 6, requiresShards: 1, description: '+(6 + Age/10) Coins/Day * Multiplier' },
+	{ id: 'gen_dragon_anti_charm', name: 'Dragon Anti-Charm', type: 'generator', price: 35, priceGrowth: 1.1, scarLevelRequired: 7, requiresShards: 1, description: '+(7 + log10(Pop. Destroyed)) Coins/Day * Multiplier' },
+	{ id: 'gen_dragon_charm', name: 'Dragon Charm', type: 'generator', price: 40, priceGrowth: 1.1, scarLevelRequired: 7, requiresShards: 1, description: '+(8 + log10(Pop)) Coins/Day * Multiplier' },
+	{ id: 'gen_coin_fountain', name: 'Coin Fountain', type: 'generator', price: 45, priceGrowth: 1.08, scarLevelRequired: 8, requiresShards: 1, description: '+9 Coins/Day * Multiplier' },
+	{ id: 'gen_ultimate_dragon_bracelet', name: 'Ultimate Dragon Bracelet', type: 'generator', price: 50, priceGrowth: 1.18, scarLevelRequired: 9, requiresShards: 1, description: '+(10 + Building #) Coins/Day * Multiplier' },
+	{ id: 'gen_big_stick', name: 'Big Stick', type: 'generator', price: 100, priceGrowth: 1.05, scarLevelRequired: 10, requiresShards: 1, description: '+10 Coins/Day * (Multiplier^2)' },
 
-		// Coin Generators (Scar Level Gated - Each costs 1 Dragon Shard + coins)
-		// Scar Level 3+
-		{ id: 'gen_treasury', name: 'Treasury', type: 'generator', price: 5, description: '+1 Coins/Day * Multiplier', scarLevelRequired: 3, requiresShards: 1, effect: { coinsPerDay: 1 } },
+	{ id: 'click_dragon_clicks', name: 'Dragon Clicks', type: 'clicker', price: 10, priceGrowth: 1.15, scarLevelRequired: 3, requiresShards: 1, description: 'Each gives +0.01 Coins per click' },
+	{ id: 'click_age_multiplier', name: 'Dragon Age Multiplier', type: 'clicker', price: 10, priceGrowth: 10, scarLevelRequired: 5, requiresShards: 1, description: 'Each multiplies Dragon Clicks by +0.01*Age' },
+	{ id: 'click_demonic_clicks', name: 'Demonic Dragon Clicks', type: 'clicker', price: 100, priceGrowth: 1.2, scarLevelRequired: 7, requiresShards: 1, description: 'Each gives +0.001% of generation/day per click' },
+	{ id: 'click_mega_clicks', name: 'Mega-Dragon Clicks', type: 'clicker', price: 1000, priceGrowth: 1.1, scarLevelRequired: 9, requiresShards: 1, description: 'Each gives +0.1 Coins per click' },
 
-		// Scar Level 4+
-		{ id: 'gen_forge', name: 'Forge', type: 'generator', price: 10, description: '+(2 + Yang/50) Coins/Day * Multiplier', scarLevelRequired: 4, requiresShards: 1, effect: { coinsPerDay: 2 } },
-		{ id: 'gen_freezer', name: 'Freezer', type: 'generator', price: 10, description: '+(2 + Yin/50) Coins/Day * Multiplier', scarLevelRequired: 4, requiresShards: 1, effect: { coinsPerDay: 2 } },
-		{ id: 'gen_dragon_nft', name: 'Dragon NFT', type: 'generator', price: 15, description: '+(3 + Streak/30) Coins/Day * Multiplier', scarLevelRequired: 4, requiresShards: 1, effect: { coinsPerDay: 3 } },
+	{ id: 'snack_survey_double_1d', name: 'Double Survey Booster', type: 'snack', price: 40, scarLevelRequired: 1, description: 'x2 Survey rewards for 1 day' },
+	{ id: 'snack_survey_triple_3d', name: 'Triple Survey Booster', type: 'snack', price: 120, scarLevelRequired: 1, description: 'x3 Survey rewards for 3 days' },
+	{ id: 'snack_survey_quad_7d', name: 'Quad Survey Booster', type: 'snack', price: 300, scarLevelRequired: 1, description: 'x4 Survey rewards for 7 days' },
+	{ id: 'snack_mood_space', name: 'Space Nuggets', type: 'snack', price: 25, scarLevelRequired: 2, description: 'Random Fury -25 to +25' },
+	{ id: 'snack_mood_chill', name: 'Chill Nuggets', type: 'snack', price: 20, scarLevelRequired: 2, description: 'Random Fury -15 to -10' },
+	{ id: 'snack_mood_explosive', name: 'Explosive Nuggets', type: 'snack', price: 15, scarLevelRequired: 2, description: 'Random Fury +10 to +15' },
+	{ id: 'snack_therapy_10d', name: 'Therapy Nuggets', type: 'snack', price: 80, scarLevelRequired: 2, description: '-10 Fury/day for 10 days' },
+	{ id: 'snack_health_chocolate', name: 'Health Chocolate', type: 'snack', price: 30, scarLevelRequired: 3, description: '+10 Health' },
+	{ id: 'snack_super_health_chocolate', name: 'Super Health Chocolate', type: 'snack', price: 80, scarLevelRequired: 3, description: '+15 to +25 Health' },
+	{ id: 'snack_dark_chocolate', name: 'Dark Chocolate', type: 'snack', price: 50, scarLevelRequired: 3, description: '-10 or +20 Health' },
+	{ id: 'snack_white_chocolate', name: 'White Chocolate', type: 'snack', price: 55, scarLevelRequired: 3, description: '-10 to +20 Health' },
+	{ id: 'snack_regen_10hp_10d', name: 'Regen Snack +10', type: 'snack', price: 90, scarLevelRequired: 3, description: '+10 Health/day for 10 days' },
+	{ id: 'snack_regen_20hp_10d', name: 'Regen Snack +20', type: 'snack', price: 170, scarLevelRequired: 3, description: '+20 Health/day for 10 days' },
+	{ id: 'snack_regen_50hp_10d', name: 'Regen Snack +50', type: 'snack', price: 400, scarLevelRequired: 3, description: '+50 Health/day for 10 days' },
+	{ id: 'snack_regen_100hp_10d', name: 'Regen Snack +100', type: 'snack', price: 900, scarLevelRequired: 3, description: '+100 Health/day for 10 days' },
+	{ id: 'snack_bipolar_10d', name: 'Bipolar Mood Nuggets', type: 'snack', price: 70, scarLevelRequired: 4, description: 'Random Fury/day (-20 to +10) for 10 days' },
+	{ id: 'snack_jeopardy_double_1d', name: 'Double Jeopardy Snack', type: 'snack', price: 60, scarLevelRequired: 4, description: 'x2 question gains/losses for 1 day' },
+	{ id: 'snack_jeopardy_triple_3d', name: 'Triple Jeopardy Snack', type: 'snack', price: 180, scarLevelRequired: 4, description: 'x3 question gains/losses for 3 days' },
+	{ id: 'snack_jeopardy_quad_7d', name: 'Quad Jeopardy Snack', type: 'snack', price: 360, scarLevelRequired: 4, description: 'x4 question gains/losses for 7 days' },
+	{ id: 'snack_anti_coin_1d', name: 'Anti-Coin Booster', type: 'snack', price: 120, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 1 day' },
+	{ id: 'snack_anti_coin_3d', name: 'Anti-Coin Booster+', type: 'snack', price: 310, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 3 days' },
+	{ id: 'snack_anti_coin_7d', name: 'Anti-Coin Booster++', type: 'snack', price: 700, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 7 days' },
+	{ id: 'snack_gen_double_1d', name: 'Double Generator Booster', type: 'snack', price: 180, scarLevelRequired: 6, requiresShards: 1, description: 'Generator x2 for 1 day' },
+	{ id: 'snack_gen_triple_3d', name: 'Triple Generator Booster', type: 'snack', price: 540, scarLevelRequired: 6, requiresShards: 3, description: 'Generator x3 for 3 days' },
+	{ id: 'snack_gen_quad_7d', name: 'Quad Generator Booster', type: 'snack', price: 1300, scarLevelRequired: 6, requiresShards: 7, description: 'Generator x4 for 7 days' },
+	{ id: 'snack_click_double_1d', name: 'Double Clicker Booster', type: 'snack', price: 180, scarLevelRequired: 6, requiresShards: 1, description: 'Clicker x2 for 1 day' },
+	{ id: 'snack_click_triple_3d', name: 'Triple Clicker Booster', type: 'snack', price: 540, scarLevelRequired: 6, requiresShards: 3, description: 'Clicker x3 for 3 days' },
+	{ id: 'snack_click_quad_7d', name: 'Quad Clicker Booster', type: 'snack', price: 1300, scarLevelRequired: 6, requiresShards: 7, description: 'Clicker x4 for 7 days' },
+	{ id: 'snack_ice', name: 'Ice Snack', type: 'snack', price: 90, scarLevelRequired: 8, description: '-20 Fury, -10 Health' },
+	{ id: 'snack_fire', name: 'Fire Snack', type: 'snack', price: 40, scarLevelRequired: 8, description: '+10 Fury, +5 Health' },
+	{ id: 'snack_ice_injection', name: 'Ice Injection', type: 'snack', price: 280, scarLevelRequired: 8, description: '-100 Fury, then -5 Health/day for 5 days' },
+	{ id: 'snack_fire_injection', name: 'Fire Injection', type: 'snack', price: 280, scarLevelRequired: 8, description: '+100 Health, then +20 Fury/day for 5 days' },
+	{ id: 'snack_super', name: 'Super Snack', type: 'snack', price: 2400, scarLevelRequired: 10, requiresShards: 10, description: '-10 Fury, +10 Health, and x2 Survey/Generator/Clicker for 10 days' },
+	{ id: 'snack_age', name: 'Age Snack', type: 'snack', price: 3000, scarLevelRequired: 10, requiresShards: 10, description: '+1 Dragon Age' },
 
-		// Scar Level 5+
-		{ id: 'gen_anti_treasury', name: 'Anti-Treasury', type: 'generator', price: 20, description: '+(4 + Count) Coins/Day * Multiplier (reduces other generators -1)', scarLevelRequired: 5, requiresShards: 1, effect: { coinsPerDay: 4 } },
-		{ id: 'gen_black_hole', name: 'Black Hole', type: 'generator', price: 25, description: '+(5 + Scar Level) Coins/Day * Multiplier', scarLevelRequired: 5, requiresShards: 1, effect: { coinsPerDay: 5 } },
+	{ id: 'cosmetic_shades', name: 'Sunglasses', type: 'cosmetic', price: 90, description: 'Cool sunglasses for your dragon.' },
+	{ id: 'cosmetic_crown', name: 'Royal Crown', type: 'cosmetic', price: 1000, description: 'A crown to rule the skies.' },
+	{ id: 'theme_dungeon', name: 'Dungeon Theme', type: 'theme', price: 500, description: 'Dark stone walls and torch-lit dungeon atmosphere' },
+];
 
-		// Scar Level 6+
-		{ id: 'gen_golden_saddle', name: 'Golden Saddle', type: 'generator', price: 30, description: '+(6 + Age/10) Coins/Day * Multiplier', scarLevelRequired: 6, requiresShards: 1, effect: { coinsPerDay: 6 } },
-
-		// Scar Level 7+
-		{ id: 'gen_dragon_anti_charm', name: 'Dragon Anti-Charm', type: 'generator', price: 35, description: '+(7 + log(Destroyed)) Coins/Day * Multiplier', scarLevelRequired: 7, requiresShards: 1, effect: { coinsPerDay: 7 } },
-		{ id: 'gen_dragon_charm', name: 'Dragon Charm', type: 'generator', price: 40, description: '+(8 + log(Pop)) Coins/Day * Multiplier', scarLevelRequired: 7, requiresShards: 1, effect: { coinsPerDay: 8 } },
-
-		// Scar Level 8+
-		{ id: 'gen_coin_fountain', name: 'Coin Fountain', type: 'generator', price: 45, description: '+9 Coins/Day * Multiplier', scarLevelRequired: 8, requiresShards: 1, effect: { coinsPerDay: 9 } },
-
-		// Scar Level 9+
-		{ id: 'gen_ultimate_dragon_bracelet', name: 'Ultimate Dragon Bracelet', type: 'generator', price: 50, description: '+(10 + Building#) Coins/Day * Multiplier', scarLevelRequired: 9, requiresShards: 1, effect: { coinsPerDay: 10 } },
-
-		// Scar Level 10+
-		{ id: 'gen_big_stick', name: 'Big Stick', type: 'generator', price: 100, description: '+10 Coins/Day * (Multiplier^2)', scarLevelRequired: 10, requiresShards: 1, effect: { coinsPerDay: 10 } },
-
-		// Dragon Clickers (upgrade item type, gated by scar level)
-		{ id: 'click_dragon_clicks', name: 'Dragon Clicks', type: 'generator', price: 10, description: 'Each click +0.01 coins (L4+)', scarLevelRequired: 4, requiresShards: 1, effect: { coinsPerDay: 1 } },
-		{ id: 'click_age_multiplier', name: 'Dragon Age Multiplier', type: 'generator', price: 10, description: 'Click gains * 0.01 * Age (L5+)', scarLevelRequired: 5, requiresShards: 1, effect: { coinsPerDay: 1 } },
-		{ id: 'click_demonic_clicks', name: 'Demonic Dragon Clicks', type: 'generator', price: 100, description: 'Each click +0.001% of daily generation (L6+)', scarLevelRequired: 6, requiresShards: 1, effect: { coinsPerDay: 1 } },
-		{ id: 'click_mega_clicks', name: 'Mega-Dragon Clicks', type: 'generator', price: 1000, description: 'Each click +0.1 coins (L7+)', scarLevelRequired: 7, requiresShards: 1, effect: { coinsPerDay: 1 } },
-
-		// Cosmetics
-		{ id: 'cosmetic_tie_blue', name: 'Blue Dragon Tie', type: 'cosmetic', price: 75, description: 'A classy blue tie for your dragon.' },
-		{ id: 'cosmetic_shades', name: 'Sunglasses', type: 'cosmetic', price: 90, description: 'Cool sunglasses for your dragon.' },
-		{ id: 'cosmetic_crown', name: 'Royal Crown', type: 'cosmetic', price: 1000, description: 'A crown to rule the skies.' },
-
-		// 50 Cosmetic Items (scar level gated)
-		{ id: 'cosmetic_golden_crown', name: 'Gold Dragon Crown', type: 'cosmetic', price: 1000, description: 'A regal golden crown fit for dragon royalty', scarLevelRequired: 2 },
-		{ id: 'cosmetic_crystalline_horns', name: 'Crystalline Horns', type: 'cosmetic', price: 1500, description: 'Shimmering crystal horns that catch the light beautifully', scarLevelRequired: 3 },
-		{ id: 'cosmetic_ethereal_wings', name: 'Ethereal Wings', type: 'cosmetic', price: 2000, description: 'Mystical wings that glow with otherworldly energy', scarLevelRequired: 4 },
-		{ id: 'cosmetic_shadow_aura', name: 'Shadow Aura', type: 'cosmetic', price: 1500, description: 'A dark mystical aura that surrounds your dragon' },
-		{ id: 'cosmetic_flame_trail', name: 'Flame Trail Effect', type: 'cosmetic', price: 1000, description: 'Leave a trail of flames as your dragon moves' },
-		{ id: 'cosmetic_ice_scales', name: 'Frozen Ice Scales', type: 'cosmetic', price: 750, description: 'Pristine ice-blue scales with a frosty shimmer' },
-		{ id: 'cosmetic_obsidian_shell', name: 'Obsidian Shell Armor', type: 'cosmetic', price: 3000, description: 'Sleek obsidian plating for a menacing appearance', scarLevelRequired: 5 },
-		{ id: 'cosmetic_rose_petals', name: 'Rose Petal Effect', type: 'cosmetic', price: 500, description: 'Rose petals swirl around your dragon in a romantic aura' },
-		{ id: 'cosmetic_star_crown', name: 'Starlight Crown', type: 'cosmetic', price: 2000, description: 'A crown adorned with twinkling stars' },
-		{ id: 'cosmetic_pearl_horns', name: 'Pearl Horns', type: 'cosmetic', price: 1000, description: 'Lustrous pearl horns with a milky white glow' },
-		{ id: 'cosmetic_rainbow_wings', name: 'Rainbow Wings', type: 'cosmetic', price: 2500, description: 'Vibrant wings displaying all colors of the rainbow', scarLevelRequired: 6 },
-		{ id: 'cosmetic_purple_mist', name: 'Purple Mist Aura', type: 'cosmetic', price: 750, description: 'An enchanted purple mist that wraps around your dragon' },
-		{ id: 'cosmetic_diamond_scales', name: 'Diamond Scales', type: 'cosmetic', price: 1500, description: 'Hard as diamonds and twice as brilliant' },
-		{ id: 'cosmetic_crown_of_thorns', name: 'Crown of Thorns', type: 'cosmetic', price: 1200, description: 'A menacing crown with sharp dark thorns', scarLevelRequired: 3 },
-		{ id: 'cosmetic_lunar_wings', name: 'Lunar Wings', type: 'cosmetic', price: 1750, description: 'Wings that shimmer like the moonlight' },
-		{ id: 'cosmetic_solar_flare', name: 'Solar Flare Effect', type: 'cosmetic', price: 2000, description: 'Radiates burning solar energy in every movement' },
-		{ id: 'cosmetic_frost_breath', name: 'Frost Breath Aura', type: 'cosmetic', price: 1000, description: 'Icy breath surrounds your dragon at all times' },
-		{ id: 'cosmetic_emerald_eyes', name: 'Emerald Eyes', type: 'cosmetic', price: 500, description: 'Glowing emerald eyes that pierce through darkness' },
-		{ id: 'cosmetic_silver_scales', name: 'Silver Scales', type: 'cosmetic', price: 750, description: 'Shimmering silver scales for an elegant look' },
-		{ id: 'cosmetic_inferno_wings', name: 'Inferno Wings', type: 'cosmetic', price: 3000, description: 'Wings wreathed in continuous flames', scarLevelRequired: 5 },
-		{ id: 'cosmetic_crystal_horns_blue', name: 'Blue Crystal Horns', type: 'cosmetic', price: 1250, description: 'Sapphire-blue crystal horns with inner light' },
-		{ id: 'cosmetic_golden_scales', name: 'Golden Scales', type: 'cosmetic', price: 1000, description: 'Luxurious gold-plated scales' },
-		{ id: 'cosmetic_thunder_aura', name: 'Thunder Aura', type: 'cosmetic', price: 1500, description: 'Electric energy crackles around your dragon' },
-		{ id: 'cosmetic_void_wings', name: 'Void Wings', type: 'cosmetic', price: 5000, description: 'Wings of pure darkness from the void itself', scarLevelRequired: 8 },
-		{ id: 'cosmetic_rose_crown', name: 'Rose Crown', type: 'cosmetic', price: 750, description: 'A crown of blooming roses and thorns' },
-		{ id: 'cosmetic_turquoise_scales', name: 'Turquoise Scales', type: 'cosmetic', price: 600, description: 'Ocean-blue turquoise scales with a tropical feel' },
-		{ id: 'cosmetic_stellar_horns', name: 'Stellar Horns', type: 'cosmetic', price: 1800, description: 'Horns that contain stars and cosmic energy' },
-		{ id: 'cosmetic_moonlight_aura', name: 'Moonlight Aura', type: 'cosmetic', price: 1200, description: 'A soft, calming aura of moonlight' },
-		{ id: 'cosmetic_lava_scales', name: 'Lava Scales', type: 'cosmetic', price: 1400, description: 'Scales that flow like molten lava', scarLevelRequired: 4 },
-		{ id: 'cosmetic_spectral_wings', name: 'Spectral Wings', type: 'cosmetic', price: 2250, description: 'Ghostly wings that phase in and out of reality' },
-		{ id: 'cosmetic_jade_horns', name: 'Jade Horns', type: 'cosmetic', price: 1100, description: 'Smooth jade horns with natural green markings' },
-		{ id: 'cosmetic_aurora_wings', name: 'Aurora Wings', type: 'cosmetic', price: 2500, description: 'Wings that display the colors of the northern lights', scarLevelRequired: 5 },
-		{ id: 'cosmetic_crimson_crown', name: 'Crimson Crown', type: 'cosmetic', price: 1000, description: 'A deep red crown with ruby accents' },
-		{ id: 'cosmetic_lightning_trail', name: 'Lightning Trail', type: 'cosmetic', price: 1350, description: 'Strike electricity from the ground with each step' },
-		{ id: 'cosmetic_amethyst_scales', name: 'Amethyst Scales', type: 'cosmetic', price: 850, description: 'Purple gem-like scales with natural veins' },
-		{ id: 'cosmetic_phoenix_wings', name: 'Phoenix Wings', type: 'cosmetic', price: 3500, description: 'Magnificent wings of flame and rebirth', scarLevelRequired: 6 },
-		{ id: 'cosmetic_twilight_aura', name: 'Twilight Aura', type: 'cosmetic', price: 1450, description: 'An aura mixing sunset and moonrise colors' },
-		{ id: 'cosmetic_obsidian_horns', name: 'Obsidian Horns', type: 'cosmetic', price: 1200, description: 'Jet-black horns as hard as volcanic glass' },
-		{ id: 'cosmetic_prismatic_scales', name: 'Prismatic Scales', type: 'cosmetic', price: 2000, description: 'Scales that refract light into infinite colors' },
-		{ id: 'cosmetic_wind_wings', name: 'Wind Wings', type: 'cosmetic', price: 1750, description: 'Wings that flow like invisible wind currents' },
-		{ id: 'cosmetic_copper_scales', name: 'Copper Scales', type: 'cosmetic', price: 450, description: 'Warm copper-colored scales with a metallic sheen' },
-		{ id: 'cosmetic_shadow_horns', name: 'Shadow Horns', type: 'cosmetic', price: 1500, description: 'Horns wreathed in living shadow' },
-		{ id: 'cosmetic_glacial_wings', name: 'Glacial Wings', type: 'cosmetic', price: 2200, description: 'Crystalline ice wings that never melt' },
-		{ id: 'cosmetic_flame_crown', name: 'Flame Crown', type: 'cosmetic', price: 1300, description: 'A crown of perpetually burning flames' },
-		{ id: 'cosmetic_aquamarine_scales', name: 'Aquamarine Scales', type: 'cosmetic', price: 900, description: 'Deep sea blue scales with a watery gleam' },
-		{ id: 'cosmetic_celestial_aura', name: 'Celestial Aura', type: 'cosmetic', price: 2750, description: 'An aura of planets and cosmic wonder', scarLevelRequired: 7 },
-		{ id: 'cosmetic_bone_horns', name: 'Ancient Bone Horns', type: 'cosmetic', price: 700, description: 'Weathered horns of great age and power' },
-		{ id: 'cosmetic_lightning_wings', name: 'Lightning Wings', type: 'cosmetic', price: 3250, description: 'Wings crackling with electrical energy', scarLevelRequired: 6 },
-		{ id: 'cosmetic_platinum_scales', name: 'Platinum Scales', type: 'cosmetic', price: 1600, description: 'Rare platinum scales of ultimate prestige' },
-		{ id: 'cosmetic_midnight_crown', name: 'Midnight Crown', type: 'cosmetic', price: 1100, description: 'A dark crown adorned with midnight blue gems' },
-		{ id: 'cosmetic_mystic_wings', name: 'Mystic Wings', type: 'cosmetic', price: 2600, description: 'Wings swirling with arcane magical energy' },
-		{ id: 'cosmetic_rose_gold_scales', name: 'Rose Gold Scales', type: 'cosmetic', price: 1350, description: 'Elegant rose gold scales with a warm glow', scarLevelRequired: 2 },
-
-		// Background & Theme Items
-		{ id: 'theme_dungeon', name: 'Dungeon Theme', type: 'theme', price: 500, description: 'Dark stone walls and torch-lit dungeon atmosphere' },
-		{ id: 'theme_castle', name: 'Castle & Plains Theme', type: 'theme', price: 600, description: 'Majestic castle with rolling green plains' },
-		{ id: 'theme_space', name: 'Space Theme', type: 'theme', price: 800, description: 'Vast cosmic void with stars and nebulas' },
-		{ id: 'theme_volcano', name: 'Volcano Theme', type: 'theme', price: 700, description: 'Fiery volcanic landscape with flowing lava' },
-		{ id: 'theme_forest', name: 'Enchanted Forest Theme', type: 'theme', price: 650, description: 'Mystical forest with ancient trees and glowing flora' },
-		{ id: 'theme_ocean', name: 'Ocean Depths Theme', type: 'theme', price: 700, description: 'Underwater kingdom with coral and bioluminescent creatures' },
-		{ id: 'theme_sky', name: 'Sky Kingdom Theme', type: 'theme', price: 750, description: 'Floating islands among the clouds', scarLevelRequired: 3 },
-		{ id: 'theme_neon', name: 'Neon Cyberpunk Theme', type: 'theme', price: 900, description: 'Futuristic neon-lit cyberpunk cityscape', scarLevelRequired: 4 },
-		{ id: 'theme_zen', name: 'Zen Garden Theme', type: 'theme', price: 550, description: 'Peaceful zen garden with koi ponds and bamboo' },
-		{ id: 'theme_hellscape', name: 'Hellscape Theme', type: 'theme', price: 1000, description: 'Infernal realm with flames and darkness', scarLevelRequired: 5 },
-	];
-}
-
-export type ActiveEffect = {
-	id: string;
-	type: 'coinMultiplier' | 'jeopardyMultiplier' | 'moodShift' | 'regen';
-	multiplier?: number;
-	expiresAt?: string; // ISO date
-	sourceItemId?: string;
-};
-
+/** @requires DragonCoinsProvider @requires DragonShardsProvider */
 export default function ItemsProvider({ children }: { children: ReactNode }) {
 	const dragon = useDragon();
 	const fury = useFury();
@@ -232,167 +237,667 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 	const shards = useShards();
 	const scarLevel = useScarLevel();
 	const premium = usePremium();
+	const streak = useStreak();
+	const population = usePopulation();
 
-	// give the player one starter Dragon Clicks upgrade regardless of scar level
-	const [ownedItems, setOwnedItems] = useState<Record<string, number>>({ click_dragon_clicks: 1 });
+	const shopItems = useMemo(() => SHOP_ITEMS, []);
+	const [ownedItems, setOwnedItems] = useState<Record<string, number>>({});
 	const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
-	const shopItems = useMemo(() => buildInitialShopItems(), []);
-	const [lastPayoutDate, setLastPayoutDate] = useState<string | null>(null);
+	const [pendingIdleSummary, setPendingIdleSummary] = useState<IdleSummary | null>(null);
+	const [snackToast, setSnackToast] = useState<SnackUseToast | null>(null);
 
-	const addItemToInventory = (id: string, qty = 1) => {
-		setOwnedItems(prev => ({ ...prev, [id]: (prev[id] || 0) + qty }));
-	};
+	const ownedItemsRef = useRef(ownedItems);
+	const activeEffectsRef = useRef(activeEffects);
+	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+	const lastProcessedMsRef = useRef(Date.now());
+	const backgroundStartedMsRef = useRef<number | null>(null);
 
-	const purchaseItem = (id: string) => {
-		const item = shopItems.find(i => i.id === id);
-		if (!item) return false;
-		if (!coins.spendCoins(item.price)) return false;
-		if (item.requiresShards) {
-			if (!shards.spendShards(item.requiresShards)) {
-				// refund coins
-				coins.addCoins(item.price);
-				return false;
-			}
+	useEffect(() => {
+		ownedItemsRef.current = ownedItems;
+	}, [ownedItems]);
+
+	useEffect(() => {
+		activeEffectsRef.current = activeEffects;
+	}, [activeEffects]);
+
+	const getItemById = useCallback(
+		(id: string) => {
+			return shopItems.find(item => item.id === id);
+		},
+		[shopItems]
+	);
+
+	const getOwnedCount = useCallback((id: string) => ownedItemsRef.current[id] ?? 0, []);
+
+	const getRuntimeStats = useCallback((): RuntimeStats => {
+		const yang = clamp(fury.furyMeter ?? 0, 0, 100);
+		const antiTreasuryCount = getOwnedCount('gen_anti_treasury');
+		const totalGeneratorCount = GENERATOR_IDS.reduce((sum, id) => sum + getOwnedCount(id), 0);
+		return {
+			yang,
+			yin: 100 - yang,
+			shards: Math.max(0, shards.shards ?? 0),
+			scarLevel: Math.max(0, scarLevel.currentScarLevel ?? 0),
+			streak: Math.max(0, streak.streak ?? 0),
+			age: Math.max(0, dragon.age ?? 0),
+			population: Math.max(0, population.population ?? 0),
+			destroyedPopulation: Math.max(0, population.deathCount ?? 0),
+			premium: !!premium.isPremium,
+			antiTreasuryCount,
+			totalGeneratorCount,
+		};
+	}, [dragon.age, fury.furyMeter, getOwnedCount, population.deathCount, population.population, premium.isPremium, scarLevel.currentScarLevel, shards.shards, streak.streak]);
+
+	const baseGeneratorPerUnit = useCallback((id: GeneratorId, stats: RuntimeStats) => {
+		switch (id) {
+			case 'gen_treasury':
+				return 1;
+			case 'gen_forge':
+				return 2 + stats.yang / 50;
+			case 'gen_freezer':
+				return 2 + stats.yin / 50;
+			case 'gen_dragon_nft':
+				return 3 + stats.streak / 30;
+			case 'gen_anti_treasury':
+				return 4 + stats.antiTreasuryCount;
+			case 'gen_black_hole':
+				return 5 + stats.scarLevel;
+			case 'gen_golden_saddle':
+				return 6 + stats.age / 10;
+			case 'gen_dragon_anti_charm':
+				return 7 + Math.log10(Math.max(1, stats.destroyedPopulation));
+			case 'gen_dragon_charm':
+				return 8 + Math.log10(Math.max(1, stats.population));
+			case 'gen_coin_fountain':
+				return 9;
+			case 'gen_ultimate_dragon_bracelet':
+				return 10 + stats.totalGeneratorCount;
+			case 'gen_big_stick':
+				return 10;
+			default:
+				return 0;
 		}
+	}, []);
+
+	const getEffectSnapshotAt = useCallback((atMs: number, sourceEffects: ActiveEffect[] = activeEffectsRef.current): EffectSnapshot => {
+		let surveyMultiplier = 1;
+		let generatorMultiplier = 1;
+		let clickerMultiplier = 1;
+		let jeopardyMultiplier = 1;
+		let furyPerDay = 0;
+		let healthPerDay = 0;
+
+		for (const effect of sourceEffects) {
+			if (effect.startsAtMs > atMs || effect.endsAtMs <= atMs) continue;
+			if (effect.surveyMultiplier !== undefined) surveyMultiplier *= effect.surveyMultiplier;
+			if (effect.generatorMultiplier !== undefined) generatorMultiplier *= effect.generatorMultiplier;
+			if (effect.clickerMultiplier !== undefined) clickerMultiplier *= effect.clickerMultiplier;
+			if (effect.jeopardyMultiplier !== undefined) jeopardyMultiplier *= effect.jeopardyMultiplier;
+			if (effect.furyPerDay !== undefined) furyPerDay += effect.furyPerDay;
+			if (effect.healthPerDay !== undefined) healthPerDay += effect.healthPerDay;
+		}
+
+		return { surveyMultiplier, generatorMultiplier, clickerMultiplier, jeopardyMultiplier, furyPerDay, healthPerDay };
+	}, []);
+
+	const addTimedEffect = useCallback((effect: Omit<ActiveEffect, 'id' | 'startsAtMs' | 'endsAtMs'> & { days: number }) => {
+		setActiveEffects(prev => {
+			const now = Date.now();
+			const cleaned = prev.filter(item => item.endsAtMs > now);
+			const durationMs = Math.max(0, effect.days) * DAY_MS;
+			if (durationMs <= 0) return cleaned;
+
+			const { days, ...payload } = effect;
+
+			if (payload.queueGroup) {
+				const queue = cleaned.filter(item => item.queueGroup === payload.queueGroup);
+				const other = cleaned.filter(item => item.queueGroup !== payload.queueGroup);
+
+				const getQueueMultiplier = (item: Partial<ActiveEffect>) => {
+					switch (payload.queueGroup) {
+						case 'survey':
+							return item.surveyMultiplier ?? 1;
+						case 'generator':
+							return item.generatorMultiplier ?? 1;
+						case 'clicker':
+							return item.clickerMultiplier ?? 1;
+						case 'jeopardy':
+							return item.jeopardyMultiplier ?? 1;
+					}
+				};
+
+				const segments = queue
+					.map(item => {
+						const remaining = item.endsAtMs - Math.max(now, item.startsAtMs);
+						return { sourceItemId: item.sourceItemId, name: item.name, remaining, multiplier: getQueueMultiplier(item) ?? 1 };
+					})
+					.filter(segment => segment.remaining > 0);
+
+				const newMultiplier = getQueueMultiplier(payload) ?? 1;
+				const existing = segments.find(segment => segment.sourceItemId === payload.sourceItemId && segment.multiplier === newMultiplier);
+				if (existing) {
+					existing.remaining += durationMs;
+				} else {
+					segments.push({ sourceItemId: payload.sourceItemId, name: payload.name, remaining: durationMs, multiplier: newMultiplier });
+				}
+
+				segments.sort((a, b) => b.multiplier - a.multiplier);
+				let cursor = now;
+				const rebuilt: ActiveEffect[] = segments.map(segment => {
+					const startsAtMs = cursor;
+					const endsAtMs = startsAtMs + segment.remaining;
+					cursor = endsAtMs;
+					return {
+						id: makeEffectId(),
+						sourceItemId: segment.sourceItemId,
+						name: segment.name,
+						queueGroup: payload.queueGroup,
+						startsAtMs,
+						endsAtMs,
+						surveyMultiplier: payload.queueGroup === 'survey' ? segment.multiplier : undefined,
+						generatorMultiplier: payload.queueGroup === 'generator' ? segment.multiplier : undefined,
+						clickerMultiplier: payload.queueGroup === 'clicker' ? segment.multiplier : undefined,
+						jeopardyMultiplier: payload.queueGroup === 'jeopardy' ? segment.multiplier : undefined,
+					};
+				});
+
+				return [...other, ...rebuilt];
+			}
+
+			const mergeIndex = cleaned.findIndex(item => !item.queueGroup && item.sourceItemId === payload.sourceItemId && item.surveyMultiplier === payload.surveyMultiplier && item.generatorMultiplier === payload.generatorMultiplier && item.clickerMultiplier === payload.clickerMultiplier && item.jeopardyMultiplier === payload.jeopardyMultiplier && item.furyPerDay === payload.furyPerDay && item.healthPerDay === payload.healthPerDay);
+			if (mergeIndex >= 0) {
+				const next = [...cleaned];
+				next[mergeIndex] = { ...next[mergeIndex], endsAtMs: next[mergeIndex].endsAtMs + durationMs };
+				return next;
+			}
+
+			return [...cleaned, { id: makeEffectId(), ...payload, startsAtMs: now, endsAtMs: now + durationMs }];
+		});
+	}, []);
+
+	const getItemCoinCost = useCallback((id: string) => {
+		const item = getItemById(id);
+		if (!item) return 0;
+		const growth = item.priceGrowth ?? 1;
+		return round2(item.price * Math.pow(growth, getOwnedCount(id)));
+	}, [getItemById, getOwnedCount]);
+
+	const getItemShardCost = useCallback((id: string) => {
+		const item = getItemById(id);
+		if (!item) return 0;
+		if (item.type === 'generator' || item.type === 'clicker') return 1;
+		return item.requiresShards ?? 0;
+	}, [getItemById]);
+
+	const getGeneratorProductionPerDayAt = useCallback((atMs: number, sourceEffects: ActiveEffect[] = activeEffectsRef.current) => {
+		const stats = getRuntimeStats();
+		const effects = getEffectSnapshotAt(atMs, sourceEffects);
+		const multiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.generatorMultiplier, stats.premium);
+
+		let other = 0;
+		let antiTreasury = 0;
+		let bigStick = 0;
+
+		for (const id of GENERATOR_IDS) {
+			const count = getOwnedCount(id);
+			if (count <= 0) continue;
+			const raw = baseGeneratorPerUnit(id, stats) * count;
+			const boosted = id === 'gen_big_stick' ? raw * multiplier * multiplier : raw * multiplier;
+
+			if (id === 'gen_anti_treasury') antiTreasury += boosted;
+			else if (id === 'gen_big_stick') bigStick += boosted;
+			else other += boosted;
+		}
+
+		return Math.max(0, other - stats.antiTreasuryCount) + antiTreasury + bigStick;
+	}, [baseGeneratorPerUnit, coins, getEffectSnapshotAt, getOwnedCount, getRuntimeStats]);
+
+	const getGeneratorProductionPerDay = useCallback((id: string) => {
+		if (!GENERATOR_IDS.includes(id as GeneratorId)) return 0;
+		const stats = getRuntimeStats();
+		const effects = getEffectSnapshotAt(Date.now());
+		const multiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.generatorMultiplier, stats.premium);
+		const base = baseGeneratorPerUnit(id as GeneratorId, stats);
+		const boosted = id === 'gen_big_stick' ? base * multiplier * multiplier : base * multiplier;
+		return round2(Math.max(0, boosted));
+	}, [baseGeneratorPerUnit, coins, getEffectSnapshotAt, getRuntimeStats]);
+
+	const getTotalGeneratorProductionPerDay = useCallback(() => {
+		return round2(getGeneratorProductionPerDayAt(Date.now()));
+	}, [getGeneratorProductionPerDayAt]);
+
+	const getSurveyMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).surveyMultiplier, [getEffectSnapshotAt]);
+	const getGeneratorMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).generatorMultiplier, [getEffectSnapshotAt]);
+	const getClickerMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).clickerMultiplier, [getEffectSnapshotAt]);
+	const getActiveJeopardyMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).jeopardyMultiplier, [getEffectSnapshotAt]);
+	const getActiveCoinMultiplier = useCallback(() => getSurveyMultiplier(), [getSurveyMultiplier]);
+
+	const getClickReward = useCallback(() => {
+		const stats = getRuntimeStats();
+		const effects = getEffectSnapshotAt(Date.now());
+
+		const clicksOwned = getOwnedCount('click_dragon_clicks');
+		const ageOwned = getOwnedCount('click_age_multiplier');
+		const demonicOwned = getOwnedCount('click_demonic_clicks');
+		const megaOwned = getOwnedCount('click_mega_clicks');
+
+		const baseClickCoins = clicksOwned * 0.01 + megaOwned * 0.1;
+		const ageMultiplier = 1 + ageOwned * 0.01 * stats.age;
+		const generationPerDay = getGeneratorProductionPerDayAt(Date.now());
+		const demonicBonus = demonicOwned * generationPerDay * 0.00001;
+		const raw = baseClickCoins * ageMultiplier + demonicBonus;
+		if (raw <= 0) return 0;
+
+		const clickMultiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.clickerMultiplier, stats.premium);
+		return round2(raw * clickMultiplier);
+	}, [coins, getEffectSnapshotAt, getGeneratorProductionPerDayAt, getOwnedCount, getRuntimeStats]);
+
+	const processDragonClick = useCallback(() => {
+		const reward = getClickReward();
+		if (reward <= 0) return 0;
+		coins.addCoins(reward);
+		scarLevel.addXP(coins.calculateFireXP(reward));
+		return reward;
+	}, [coins, getClickReward, scarLevel]);
+
+	const addItemToInventory = useCallback((id: string, qty = 1) => {
+		if (qty <= 0) return;
+		setOwnedItems(prev => ({ ...prev, [id]: (prev[id] || 0) + qty }));
+	}, []);
+
+	const purchaseItem = useCallback((id: string) => {
+		const item = getItemById(id);
+		if (!item) return false;
+		if ((item.scarLevelRequired ?? 0) > (scarLevel.currentScarLevel ?? 0)) return false;
+
+		const coinCost = getItemCoinCost(id);
+		const shardCost = getItemShardCost(id);
+
+		if (!coins.spendCoins(coinCost)) return false;
+		if (shardCost > 0 && !shards.spendShards(shardCost)) {
+			coins.addCoins(coinCost);
+			return false;
+		}
+
 		addItemToInventory(id, 1);
 		return true;
-	};
+	}, [addItemToInventory, coins, getItemById, getItemCoinCost, getItemShardCost, scarLevel.currentScarLevel, shards]);
 
-	const useItem = (id: string) => {
-		const qty = ownedItems[id] || 0;
-		if (qty <= 0) return false;
-		const item = shopItems.find(i => i.id === id);
+	const sellItem = useCallback((id: string) => {
+		const item = getItemById(id);
 		if (!item) return false;
+		if (item.type !== 'generator' && item.type !== 'clicker') return false;
+		const owned = ownedItems[id] ?? 0;
+		if (owned <= 0) return false;
 
-		// Apply effects based on item.type/effect
-		if (item.type === 'snack' && item.effect) {
-			if (item.effect.hp) {
-				dragon.healHp(item.effect.hp);
-			}
-			if (item.effect.regenDays) {
-				// For simplicity, immediately heal per-day amount once and rely on a background job later
-				dragon.healHp(item.effect.hp || 0);
-			}
-			if (typeof item.effect.fury === 'number') {
-				fury.addFury(item.effect.fury);
-			}
-		}
-
-		// Generators: add immediate coins equal to day's value on purchase (apply multiplier)
-		if (item.type === 'generator' && item.effect?.coinsPerDay) {
-			const yangValue = fury.furyMeter;
-			const dragonShardsCount = shards.shards ?? 0;
-			const scar = scarLevel.currentScarLevel ?? 0;
-			const snackMult = getActiveCoinMultiplier();
-			const isPremiumFlag = premium.isPremium ?? false;
-			const earned = Math.floor(item.effect.coinsPerDay * coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag));
-			coins.addCoins(earned);
-		}
-
-		// Apply duration-based effects (boosters, jeopardy, regen, etc.)
-		if (item.effect?.durationDays) {
-			const today = new Date();
-			const expires = new Date(today.getTime() + item.effect.durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-			// Determine effect type by id heuristics
-			if (item.id.startsWith('booster_')) {
-				const mult = item.id.includes('double') ? 2 : item.id.includes('triple') ? 3 : item.id.includes('quad') ? 4 : 1;
-				setActiveEffects(prev => [...prev, { id: `${item.id}_${Date.now()}`, type: 'coinMultiplier', multiplier: mult, expiresAt: expires, sourceItemId: item.id }]);
-			} else if (item.id.includes('jeopardy')) {
-				const mult = item.id.includes('double') ? 2 : item.id.includes('triple') ? 3 : item.id.includes('quad') ? 4 : 1;
-				setActiveEffects(prev => [...prev, { id: `${item.id}_${Date.now()}`, type: 'jeopardyMultiplier', multiplier: mult, expiresAt: expires, sourceItemId: item.id }]);
-			}
-		}
-
-		// Mood/Bipolar: randomize mood shift for bipolar
-		if (item.id === 'snack_bipolar') {
-			const delta = Math.floor(Math.random() * 101) - 50; // -50..+50
-			if (delta !== 0) fury.addFury(delta);
-		}
+		const growth = item.priceGrowth ?? 1;
+		const tierCost = item.price * Math.pow(growth, owned - 1);
+		const refund = round2(tierCost * 0.75);
 
 		setOwnedItems(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
-		return true;
-	};
-
-	const getActiveCoinMultiplier = () => {
-		const nowStr = new Date().toISOString().split('T')[0];
-		const active = activeEffects.filter(e => e.type === 'coinMultiplier' && (!e.expiresAt || e.expiresAt >= nowStr));
-		if (active.length === 0) return 1;
-		return active.reduce((acc, cur) => acc * (cur.multiplier || 1), 1);
-	};
-
-	const getActiveJeopardyMultiplier = () => {
-		const nowStr = new Date().toISOString().split('T')[0];
-		const active = activeEffects.filter(e => e.type === 'jeopardyMultiplier' && (!e.expiresAt || e.expiresAt >= nowStr));
-		if (active.length === 0) return 1;
-		return active.reduce((acc, cur) => acc * (cur.multiplier || 1), 1);
-	};
-
-	const sellItem = (id: string) => {
-		const qty = ownedItems[id] || 0;
-		if (qty <= 0) return false;
-		const item = shopItems.find(i => i.id === id);
-		if (!item) return false;
-
-		// Only generators are sellable for shards + coins (per spec)
-		if (item.type !== 'generator') return false;
-
-		// Remove one
-		setOwnedItems(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
-
-		// give 1 shard (if applicable)
 		shards.addShards(1);
-
-		// give 75% of coin price back
-		const refund = Math.floor(item.price * 0.75);
 		coins.addCoins(refund);
 		return true;
-	};
+	}, [coins, getItemById, ownedItems, shards]);
 
-	const processDailyPayouts = () => {
-		const todayStr = new Date().toISOString().split('T')[0];
-		if (lastPayoutDate === todayStr) return 0;
+	const simulateElapsedSeconds = useCallback((elapsedSeconds: number): SimResult => {
+		if (elapsedSeconds <= 0) return { coins: 0, fireXp: 0, shards: 0, furyDelta: 0, healthDelta: 0 };
 
-		const fromDate = lastPayoutDate ? new Date(lastPayoutDate) : new Date();
-		const toDate = new Date(todayStr);
-		const days = Math.max(1, Math.floor((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)));
+		const fromMs = lastProcessedMsRef.current;
+		const toMs = fromMs + elapsedSeconds * 1000;
+		const effects = activeEffectsRef.current;
+		const boundaries = [fromMs, toMs];
 
-		let total = 0;
-		shopItems.forEach(si => {
-			if (si.type === 'generator' && si.effect?.coinsPerDay) {
-				const qty = ownedItems[si.id] || 0;
-				if (qty <= 0) return;
-				const base = si.effect.coinsPerDay * qty;
-				const yangValue = fury.furyMeter;
-				const dragonShardsCount = shards.shards ?? 0;
-				const scar = scarLevel.currentScarLevel ?? 0;
-				const snackMult = getActiveCoinMultiplier();
-				const isPremiumFlag = premium.isPremium ?? false;
-				const multiplier = coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag);
-				total += Math.floor(base * multiplier * days);
+		for (const effect of effects) {
+			if (effect.startsAtMs > fromMs && effect.startsAtMs < toMs) boundaries.push(effect.startsAtMs);
+			if (effect.endsAtMs > fromMs && effect.endsAtMs < toMs) boundaries.push(effect.endsAtMs);
+		}
+
+		boundaries.sort((a, b) => a - b);
+		let coinsDelta = 0;
+		let furyDelta = 0;
+		let healthDelta = 0;
+
+		for (let index = 0; index < boundaries.length - 1; index += 1) {
+			const start = boundaries[index];
+			const end = boundaries[index + 1];
+			const seconds = (end - start) / 1000;
+			if (seconds <= 0) continue;
+			const midpoint = start + (end - start) / 2;
+			const snapshot = getEffectSnapshotAt(midpoint, effects);
+			const generatorPerDay = getGeneratorProductionPerDayAt(midpoint, effects);
+
+			coinsDelta += (generatorPerDay / DAY_SECONDS) * seconds;
+			furyDelta += (snapshot.furyPerDay / DAY_SECONDS) * seconds;
+			healthDelta += (snapshot.healthPerDay / DAY_SECONDS) * seconds;
+		}
+
+		coinsDelta = round2(coinsDelta);
+		furyDelta = round2(furyDelta);
+		healthDelta = round2(healthDelta);
+
+		let fireXp = 0;
+		if (coinsDelta > 0) {
+			coins.addCoins(coinsDelta);
+			fireXp = round2(coins.calculateFireXP(coinsDelta));
+			scarLevel.addXP(fireXp);
+		}
+
+		if (furyDelta !== 0) fury.addFury(furyDelta);
+		if (healthDelta > 0) dragon.healHp(healthDelta);
+		if (healthDelta < 0) dragon.damageHp(Math.abs(healthDelta));
+
+		setActiveEffects(prev => prev.filter(effect => effect.endsAtMs > toMs));
+		return { coins: coinsDelta, fireXp, shards: 0, furyDelta, healthDelta };
+	}, [coins, dragon, fury, getEffectSnapshotAt, getGeneratorProductionPerDayAt, scarLevel]);
+
+	const processDailyPayouts = useCallback(() => {
+		const anchor = Date.now();
+		lastProcessedMsRef.current = anchor;
+		const result = simulateElapsedSeconds(DAY_SECONDS);
+		lastProcessedMsRef.current = anchor;
+		return result.coins;
+	}, [simulateElapsedSeconds]);
+
+	const useItem = useCallback((id: string) => {
+		const item = getItemById(id);
+		if (!item || item.type !== 'snack') return false;
+		const owned = ownedItems[id] ?? 0;
+		if (owned <= 0) return false;
+
+		let topEffect = 'No effect';
+		const applyFury = (delta: number) => delta !== 0 && fury.addFury(delta);
+		const applyHealth = (delta: number) => {
+			if (delta > 0) dragon.healHp(delta);
+			if (delta < 0) dragon.damageHp(Math.abs(delta));
+		};
+
+		switch (id) {
+			case 'snack_survey_double_1d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 1d`, queueGroup: 'survey', surveyMultiplier: 2, days: 1 });
+				topEffect = 'Survey x2 for 1 day';
+				break;
+			case 'snack_survey_triple_3d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 3d`, queueGroup: 'survey', surveyMultiplier: 3, days: 3 });
+				topEffect = 'Survey x3 for 3 days';
+				break;
+			case 'snack_survey_quad_7d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 7d`, queueGroup: 'survey', surveyMultiplier: 4, days: 7 });
+				topEffect = 'Survey x4 for 7 days';
+				break;
+
+			case 'snack_mood_space': {
+				const delta = randInt(-25, 25);
+				applyFury(delta);
+				topEffect = `Fury ${delta >= 0 ? '+' : ''}${delta}`;
+				break;
 			}
+			case 'snack_mood_chill': {
+				const delta = -randInt(10, 15);
+				applyFury(delta);
+				topEffect = `Fury ${delta}`;
+				break;
+			}
+			case 'snack_mood_explosive': {
+				const delta = randInt(10, 15);
+				applyFury(delta);
+				topEffect = `Fury +${delta}`;
+				break;
+			}
+			case 'snack_therapy_10d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, furyPerDay: -10, days: 10 });
+				topEffect = 'Fury -10/day for 10 days';
+				break;
+
+			case 'snack_health_chocolate':
+				applyHealth(10);
+				topEffect = 'Health +10';
+				break;
+			case 'snack_super_health_chocolate': {
+				const hp = randInt(15, 25);
+				applyHealth(hp);
+				topEffect = `Health +${hp}`;
+				break;
+			}
+			case 'snack_dark_chocolate': {
+				const hp = Math.random() < 0.5 ? -10 : 20;
+				applyHealth(hp);
+				topEffect = `Health ${hp >= 0 ? '+' : ''}${hp}`;
+				break;
+			}
+			case 'snack_white_chocolate': {
+				const hp = randInt(-10, 20);
+				applyHealth(hp);
+				topEffect = `Health ${hp >= 0 ? '+' : ''}${hp}`;
+				break;
+			}
+			case 'snack_regen_10hp_10d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, healthPerDay: 10, days: 10 });
+				topEffect = 'Health +10/day for 10 days';
+				break;
+			case 'snack_regen_20hp_10d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, healthPerDay: 20, days: 10 });
+				topEffect = 'Health +20/day for 10 days';
+				break;
+			case 'snack_regen_50hp_10d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, healthPerDay: 50, days: 10 });
+				topEffect = 'Health +50/day for 10 days';
+				break;
+			case 'snack_regen_100hp_10d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, healthPerDay: 100, days: 10 });
+				topEffect = 'Health +100/day for 10 days';
+				break;
+
+			case 'snack_bipolar_10d': {
+				const delta = randInt(-20, 10);
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, furyPerDay: delta, days: 10 });
+				topEffect = `Fury/day ${delta >= 0 ? '+' : ''}${delta}`;
+				break;
+			}
+			case 'snack_jeopardy_double_1d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 1d`, queueGroup: 'jeopardy', jeopardyMultiplier: 2, days: 1 });
+				topEffect = 'Jeopardy x2 for 1 day';
+				break;
+			case 'snack_jeopardy_triple_3d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 3d`, queueGroup: 'jeopardy', jeopardyMultiplier: 3, days: 3 });
+				topEffect = 'Jeopardy x3 for 3 days';
+				break;
+			case 'snack_jeopardy_quad_7d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 7d`, queueGroup: 'jeopardy', jeopardyMultiplier: 4, days: 7 });
+				topEffect = 'Jeopardy x4 for 7 days';
+				break;
+
+			case 'snack_anti_coin_1d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 1d`, surveyMultiplier: 2, generatorMultiplier: 0.5, days: 1 });
+				topEffect = 'Survey x2 and Generator x0.5';
+				break;
+			case 'snack_anti_coin_3d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 3d`, surveyMultiplier: 2, generatorMultiplier: 0.5, days: 3 });
+				topEffect = 'Survey x2 and Generator x0.5';
+				break;
+			case 'snack_anti_coin_7d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 7d`, surveyMultiplier: 2, generatorMultiplier: 0.5, days: 7 });
+				topEffect = 'Survey x2 and Generator x0.5';
+				break;
+			case 'snack_gen_double_1d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 1d`, queueGroup: 'generator', generatorMultiplier: 2, days: 1 });
+				topEffect = 'Generator x2 for 1 day';
+				break;
+			case 'snack_gen_triple_3d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 3d`, queueGroup: 'generator', generatorMultiplier: 3, days: 3 });
+				topEffect = 'Generator x3 for 3 days';
+				break;
+			case 'snack_gen_quad_7d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 7d`, queueGroup: 'generator', generatorMultiplier: 4, days: 7 });
+				topEffect = 'Generator x4 for 7 days';
+				break;
+			case 'snack_click_double_1d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 1d`, queueGroup: 'clicker', clickerMultiplier: 2, days: 1 });
+				topEffect = 'Clicker x2 for 1 day';
+				break;
+			case 'snack_click_triple_3d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 3d`, queueGroup: 'clicker', clickerMultiplier: 3, days: 3 });
+				topEffect = 'Clicker x3 for 3 days';
+				break;
+			case 'snack_click_quad_7d':
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 7d`, queueGroup: 'clicker', clickerMultiplier: 4, days: 7 });
+				topEffect = 'Clicker x4 for 7 days';
+				break;
+
+			case 'snack_ice':
+				applyFury(-20);
+				applyHealth(-10);
+				topEffect = 'Fury -20, Health -10';
+				break;
+			case 'snack_fire':
+				applyFury(10);
+				applyHealth(5);
+				topEffect = 'Fury +10, Health +5';
+				break;
+			case 'snack_ice_injection':
+				applyFury(-100);
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 5d`, healthPerDay: -5, days: 5 });
+				topEffect = 'Fury -100 and Health -5/day';
+				break;
+			case 'snack_fire_injection':
+				applyHealth(100);
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 5d`, furyPerDay: 20, days: 5 });
+				topEffect = 'Health +100 and Fury +20/day';
+				break;
+			case 'snack_super':
+				applyFury(-10);
+				applyHealth(10);
+				addTimedEffect({ sourceItemId: id, name: `${item.name}, 10d`, surveyMultiplier: 2, generatorMultiplier: 2, clickerMultiplier: 2, days: 10 });
+				topEffect = 'Survey/Generator/Clicker x2';
+				break;
+			case 'snack_age':
+				dragon.incrementAge();
+				topEffect = 'Dragon Age +1';
+				break;
+			default:
+				return false;
+		}
+
+		setOwnedItems(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
+		setSnackToast({ name: item.name, topEffect });
+		return true;
+	}, [addTimedEffect, dragon, fury, getItemById, ownedItems]);
+
+	const consumeIdleSummary = useCallback(() => setPendingIdleSummary(null), []);
+	const consumeSnackToast = useCallback(() => setSnackToast(null), []);
+
+	const getEffectDisplayList = useCallback((): EffectDisplayEntry[] => {
+		const now = Date.now();
+		return activeEffects
+			.filter(effect => effect.endsAtMs > now)
+			.map(effect => {
+				const startsInSeconds = Math.max(0, Math.ceil((effect.startsAtMs - now) / 1000));
+				const remainingSeconds = Math.max(0, Math.ceil((effect.endsAtMs - Math.max(now, effect.startsAtMs)) / 1000));
+				const topEffect = effect.surveyMultiplier !== undefined ? `Survey x${round2(effect.surveyMultiplier)}` : effect.generatorMultiplier !== undefined ? `Generator x${round2(effect.generatorMultiplier)}` : effect.clickerMultiplier !== undefined ? `Clicker x${round2(effect.clickerMultiplier)}` : effect.jeopardyMultiplier !== undefined ? `Jeopardy x${round2(effect.jeopardyMultiplier)}` : effect.furyPerDay !== undefined ? `Fury/day ${effect.furyPerDay >= 0 ? '+' : ''}${round2(effect.furyPerDay)}` : effect.healthPerDay !== undefined ? `Health/day ${effect.healthPerDay >= 0 ? '+' : ''}${round2(effect.healthPerDay)}` : 'Effect active';
+				const strength = Math.max(Math.abs(effect.surveyMultiplier ?? 0), Math.abs(effect.generatorMultiplier ?? 0), Math.abs(effect.clickerMultiplier ?? 0), Math.abs(effect.jeopardyMultiplier ?? 0), Math.abs(effect.furyPerDay ?? 0) / 10, Math.abs(effect.healthPerDay ?? 0) / 10);
+				return { id: effect.id, name: effect.name, topEffect, remainingSeconds, startsInSeconds, strength };
+			})
+			.sort((a, b) => {
+				if (a.startsInSeconds === 0 && b.startsInSeconds > 0) return -1;
+				if (a.startsInSeconds > 0 && b.startsInSeconds === 0) return 1;
+				if (b.strength !== a.strength) return b.strength - a.strength;
+				return a.startsInSeconds - b.startsInSeconds;
+			});
+	}, [activeEffects]);
+
+	useEffect(() => {
+		const interval = setInterval(() => {
+			if (appStateRef.current !== 'active') return;
+			const now = Date.now();
+			const elapsed = (now - lastProcessedMsRef.current) / 1000;
+			if (elapsed <= 0) return;
+			simulateElapsedSeconds(elapsed);
+			lastProcessedMsRef.current = now;
+		}, 1000);
+		return () => clearInterval(interval);
+	}, [simulateElapsedSeconds]);
+
+	useEffect(() => {
+		const sub = AppState.addEventListener('change', nextState => {
+			const now = Date.now();
+			const wasActive = appStateRef.current === 'active';
+			const isActive = nextState === 'active';
+
+			if (wasActive && !isActive) {
+				const elapsed = (now - lastProcessedMsRef.current) / 1000;
+				if (elapsed > 0) simulateElapsedSeconds(elapsed);
+				lastProcessedMsRef.current = now;
+				backgroundStartedMsRef.current = now;
+			}
+
+			if (!wasActive && isActive) {
+				const startedAt = backgroundStartedMsRef.current ?? lastProcessedMsRef.current;
+				const elapsed = (now - startedAt) / 1000;
+				if (elapsed > 0) {
+					const result = simulateElapsedSeconds(elapsed);
+					if (result.coins > 0 || result.fireXp > 0 || result.furyDelta !== 0 || result.healthDelta !== 0 || result.shards > 0) {
+						setPendingIdleSummary({
+							elapsedSeconds: Math.round(elapsed),
+							coins: round2(result.coins),
+							fireXp: round2(result.fireXp),
+							shards: result.shards,
+							furyEarned: result.furyDelta > 0 ? round2(result.furyDelta) : 0,
+							furyLost: result.furyDelta < 0 ? round2(Math.abs(result.furyDelta)) : 0,
+							furyTotal: round2(clamp((fury.furyMeter ?? 0) + result.furyDelta, 0, 100)),
+							healthEarned: result.healthDelta > 0 ? round2(result.healthDelta) : 0,
+							healthLost: result.healthDelta < 0 ? round2(Math.abs(result.healthDelta)) : 0,
+							healthTotal: round2(clamp((dragon.hp ?? 0) + result.healthDelta, 0, dragon.maxHP ?? 0)),
+						});
+					}
+				}
+				lastProcessedMsRef.current = now;
+				backgroundStartedMsRef.current = null;
+			}
+
+			appStateRef.current = nextState;
 		});
+		return () => sub.remove();
+	}, [dragon.hp, dragon.maxHP, fury.furyMeter, simulateElapsedSeconds]);
 
-		if (total > 0) coins.addCoins(total);
-		setLastPayoutDate(todayStr);
-		return total;
-	};
+	const resetInventory = useCallback(() => {
+		setOwnedItems({});
+		setActiveEffects([]);
+		setPendingIdleSummary(null);
+		setSnackToast(null);
+		lastProcessedMsRef.current = Date.now();
+		backgroundStartedMsRef.current = null;
+	}, []);
 
-	const value: ItemsProviderContextProps = {
-		shopItems,
-		ownedItems,
-		purchaseItem,
-		useItem,
-		addItemToInventory,
-		sellItem,
-		processDailyPayouts,
-		resetInventory: () => {
-			setOwnedItems({});
-			setActiveEffects([]);
-		},
-		activeEffects,
-		getActiveCoinMultiplier,
-		getActiveJeopardyMultiplier,
-	};
-
-	return <ItemsProviderContext.Provider value={value}>{children}</ItemsProviderContext.Provider>;
+	return (
+		<ItemsProviderContext.Provider
+			value={{
+				shopItems,
+				ownedItems,
+				purchaseItem,
+				useItem,
+				addItemToInventory,
+				sellItem,
+				processDailyPayouts,
+				processDragonClick,
+				getClickReward,
+				getItemCoinCost,
+				getItemShardCost,
+				getGeneratorProductionPerDay,
+				getTotalGeneratorProductionPerDay,
+				activeEffects,
+				getActiveCoinMultiplier,
+				getActiveJeopardyMultiplier,
+				getSurveyMultiplier,
+				getGeneratorMultiplier,
+				getClickerMultiplier,
+				getEffectDisplayList,
+				pendingIdleSummary,
+				consumeIdleSummary,
+				snackToast,
+				consumeSnackToast,
+				resetInventory,
+			}}>
+			{children}
+		</ItemsProviderContext.Provider>
+	);
 }
