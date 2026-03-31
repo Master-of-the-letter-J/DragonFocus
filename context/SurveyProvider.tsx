@@ -32,6 +32,9 @@ interface SurveyContextType {
 	clearProgress: (type: 'morning' | 'night') => void;
 	recordNightSnapshot: (snapshot: { habitIds: string[]; todoIds: string[] }) => void;
 	getNightSnapshot: () => { habitIds: string[]; todoIds: string[] } | null;
+	getEveningPrompts: (date: string) => string[];
+	setEveningPrompts: (date: string, prompts: string[]) => void;
+	clearEveningPrompts: (date: string) => void;
 	// Options
 	options: SurveyOptions;
 	setOption: <K extends keyof SurveyOptions>(key: K, value: SurveyOptions[K]) => void;
@@ -49,6 +52,7 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	const [surveyProgress, setSurveyProgress] = useState(0); // 0-100
 	const [savedMorning, setSavedMorning] = useState<any | null>(null);
 	const [savedNight, setSavedNight] = useState<any | null>(null);
+	const [eveningPromptsByDate, setEveningPromptsByDate] = useState<Record<string, string[]>>({});
 	const [options, setOptions] = useState<SurveyOptions>({
 		showQuote: true,
 		enableJournalMorning: true,
@@ -116,6 +120,23 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 
 	const getNightSnapshot = () => savedNight?.lastSnapshot || null;
 
+	const getEveningPrompts = (date: string) => {
+		return eveningPromptsByDate[date] ?? [];
+	};
+
+	const setEveningPrompts = (date: string, prompts: string[]) => {
+		setEveningPromptsByDate(prev => ({ ...prev, [date]: prompts }));
+	};
+
+	const clearEveningPrompts = (date: string) => {
+		setEveningPromptsByDate(prev => {
+			if (!(date in prev)) return prev;
+			const next = { ...prev };
+			delete next[date];
+			return next;
+		});
+	};
+
 	const canTakeMorningSurvey = (): boolean => {
 		// You can always take the survey for the current day,
 		// even if completed (Retake mode).
@@ -161,6 +182,9 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 				clearProgress,
 				recordNightSnapshot,
 				getNightSnapshot,
+				getEveningPrompts,
+				setEveningPrompts,
+				clearEveningPrompts,
 				options,
 				setOption,
 				setSurveyType: setCurrentSurveyType,

@@ -62,6 +62,18 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const [currentScarLevel, setCurrentScarLevel] = useState(0);
 	const [currentXP, setCurrentXP] = useState(0);
 
+	const getLevelForXP = (xp: number) => {
+		let level = 0;
+		for (let i = 0; i < SCAR_LEVELS.length; i += 1) {
+			if (xp >= SCAR_LEVELS[i].levelUpRequiredXP) {
+				level = i;
+			} else {
+				break;
+			}
+		}
+		return level;
+	};
+
 	// -----------------------------
 	// LEVEL HELPERS
 	// -----------------------------
@@ -71,8 +83,9 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const getNextLevelInfo = () => (currentScarLevel < SCAR_LEVELS.length - 1 ? SCAR_LEVELS[currentScarLevel + 1] : null);
 
 	const getXPToNextLevel = () => {
-		const req = SCAR_LEVELS[currentScarLevel].levelUpRequiredXP;
-		return req === Infinity ? 0 : req - currentXP;
+		const next = getNextLevelInfo();
+		if (!next) return 0;
+		return Math.max(0, next.levelUpRequiredXP - currentXP);
 	};
 
 	// -----------------------------
@@ -80,35 +93,17 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	// -----------------------------
 
 	const addXP = (amount: number) => {
-		let xp = currentXP + amount;
-		let level = currentScarLevel;
-
-		while (true) {
-			const required = SCAR_LEVELS[level].levelUpRequiredXP;
-
-			if (xp >= required) {
-				xp -= required;
-				level += 1;
-
-				if (level >= SCAR_LEVELS.length - 1) {
-					level = SCAR_LEVELS.length - 1;
-					xp = 0;
-					break;
-				}
-			} else {
-				break;
-			}
-		}
-
+		const xp = Math.max(0, currentXP + amount);
+		const level = getLevelForXP(xp);
 		setCurrentXP(xp);
 		setCurrentScarLevel(level);
 	};
 
 	const levelUp = () => {
 		if (currentScarLevel >= SCAR_LEVELS.length - 1) return;
-
-		setCurrentScarLevel(prev => prev + 1);
-		setCurrentXP(0);
+		const nextLevel = currentScarLevel + 1;
+		setCurrentScarLevel(nextLevel);
+		setCurrentXP(SCAR_LEVELS[nextLevel].levelUpRequiredXP);
 	};
 
 	// -----------------------------
@@ -129,11 +124,13 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const setScarLevelValue = (level: number) => {
 		const clamped = Math.max(0, Math.min(level, SCAR_LEVELS.length - 1));
 		setCurrentScarLevel(clamped);
-		setCurrentXP(0); // XP resets when manually setting level
+		setCurrentXP(SCAR_LEVELS[clamped].levelUpRequiredXP);
 	};
 
 	const setXPValue = (xp: number) => {
-		setCurrentXP(Math.max(0, xp));
+		const safeXP = Math.max(0, xp);
+		setCurrentXP(safeXP);
+		setCurrentScarLevel(getLevelForXP(safeXP));
 	};
 
 	const resetScarLevel = () => {

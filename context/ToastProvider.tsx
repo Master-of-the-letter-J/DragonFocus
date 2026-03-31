@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
 export interface ToastOptions {
@@ -26,7 +26,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 	const [toast, setToast] = useState<ToastPayload | null>(null);
 	const fade = useRef(new Animated.Value(0)).current;
 	const translateY = useRef(new Animated.Value(12)).current;
-	const hideTimer = useRef<NodeJS.Timeout | null>(null);
+	const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const hideToast = useCallback(() => {
 		if (hideTimer.current) {
@@ -69,6 +69,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 	);
 
 	const value = useMemo(() => ({ showToast, hideToast }), [showToast, hideToast]);
+
+	useEffect(() => {
+		return () => {
+			if (hideTimer.current) {
+				clearTimeout(hideTimer.current);
+				hideTimer.current = null;
+			}
+		};
+	}, []);
 
 	return (
 		<ToastContext.Provider value={value}>

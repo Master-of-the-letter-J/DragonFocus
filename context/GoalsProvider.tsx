@@ -17,6 +17,7 @@ export interface HabitGoal {
 	numberFlair?: number;
 	timeFlair?: number; // minutes
 	category?: string;
+	categories?: string[];
 	// which days the habit shows up (e.g. ['Mon','Tue'])
 	daysOfWeek?: string[];
 	timesPerWeek?: number;
@@ -26,6 +27,8 @@ export interface HabitGoal {
 	challengeLength?: number;
 	challengeStartDate?: string | null;
 	challengeRewardClaimed?: boolean;
+	challengeStatus?: 'active' | 'completed' | 'failed';
+	challengeFailedDate?: string | null;
 	createdAt: number;
 }
 
@@ -42,6 +45,7 @@ export interface TodoGoal {
 	numberFlair?: number;
 	timeFlair?: number;
 	category?: string;
+	categories?: string[];
 	subGoals: SubGoal[];
 	dueDate?: string | null;
 	completedDate?: string | null;
@@ -54,6 +58,7 @@ export interface TodoGoal {
 	challengeRewardClaimed?: boolean;
 	rewardCoins?: number;
 	rewardShards?: number;
+	challengeStatus?: 'active' | 'completed' | 'failed';
 	createdAt: number;
 }
 
@@ -62,10 +67,12 @@ interface GoalsContextType {
 	todos: TodoGoal[];
 	addHabit: (h: Partial<HabitGoal>) => HabitGoal;
 	editHabit: (id: string, patch: Partial<HabitGoal>) => void;
+	reorderHabits: (habits: HabitGoal[]) => void;
 	deleteHabit: (id: string) => void;
 	completeHabitToday: (id: string) => void;
 	addTodo: (t: Partial<TodoGoal>) => TodoGoal;
 	editTodo: (id: string, patch: Partial<TodoGoal>) => void;
+	reorderTodos: (todos: TodoGoal[]) => void;
 	deleteTodo: (id: string) => void;
 	addSubGoal: (todoId: string, title: string) => void;
 	toggleSubGoal: (todoId: string, subId: string) => void;
@@ -159,18 +166,34 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 		}
 
 		const startDate = new Date().toISOString().split('T')[0];
-		setHabits(prev => prev.map(x => (x.id === id ? { ...x, isChallenge: true, challengeLength: length, challengeStartDate: startDate, challengeRewardClaimed: false } : x)));
+		setHabits(prev =>
+			prev.map(x =>
+				x.id === id
+					? {
+							...x,
+							isChallenge: true,
+							challengeLength: length,
+							challengeStartDate: startDate,
+							challengeRewardClaimed: false,
+							challengeStatus: 'active',
+							challengeFailedDate: null,
+						}
+					: x,
+			),
+		);
 		return { success: true };
 	};
 
 	const addHabit = (h: Partial<HabitGoal>) => {
+		const categories = h.categories ?? (h.category ? [h.category] : []);
 		const newHabit: HabitGoal = {
 			id: uid(),
 			title: h.title || 'New Habit',
 			importance: h.importance || 'Default',
 			numberFlair: h.numberFlair,
 			timeFlair: h.timeFlair,
-			category: h.category,
+			category: categories[0],
+			categories,
 			daysOfWeek: h.daysOfWeek || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
 			timesPerWeek: h.timesPerWeek || 7,
 			streak: 0,
@@ -179,6 +202,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 			challengeLength: h.challengeLength,
 			challengeStartDate: h.challengeStartDate || null,
 			challengeRewardClaimed: h.challengeRewardClaimed || false,
+			challengeStatus: h.challengeStatus || (h.isChallenge ? 'active' : undefined),
+			challengeFailedDate: h.challengeFailedDate || null,
 			createdAt: Date.now(),
 		};
 		setHabits(prev => [newHabit, ...prev]);
@@ -186,7 +211,22 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 	};
 
 	const editHabit = (id: string, patch: Partial<HabitGoal>) => {
-		setHabits(prev => prev.map(h => (h.id === id ? { ...h, ...patch } : h)));
+		setHabits(prev =>
+			prev.map(h => {
+				if (h.id !== id) return h;
+				const nextCategories = patch.categories ?? (patch.category !== undefined ? (patch.category ? [patch.category] : []) : h.categories ?? (h.category ? [h.category] : []));
+				return {
+					...h,
+					...patch,
+					categories: nextCategories,
+					category: nextCategories[0],
+				};
+			}),
+		);
+	};
+
+	const reorderHabits = (orderedHabits: HabitGoal[]) => {
+		setHabits(orderedHabits);
 	};
 
 	const deleteHabit = (id: string) => {
@@ -206,13 +246,15 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 	};
 
 	const addTodo = (t: Partial<TodoGoal>) => {
+		const categories = t.categories ?? (t.category ? [t.category] : []);
 		const newTodo: TodoGoal = {
 			id: uid(),
 			title: t.title || 'New To-Do',
 			importance: t.importance || 'Default',
 			numberFlair: t.numberFlair,
 			timeFlair: t.timeFlair,
-			category: t.category,
+			category: categories[0],
+			categories,
 			subGoals: t.subGoals || [],
 			dueDate: t.dueDate || null,
 			completedDate: null,
@@ -224,6 +266,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 			challengeRewardClaimed: t.challengeRewardClaimed || false,
 			rewardCoins: t.rewardCoins,
 			rewardShards: t.rewardShards,
+			challengeStatus: t.challengeStatus || (t.isChallenge ? 'active' : undefined),
 			createdAt: Date.now(),
 		};
 		setTodos(prev => [newTodo, ...prev]);
@@ -231,7 +274,22 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 	};
 
 	const editTodo = (id: string, patch: Partial<TodoGoal>) => {
-		setTodos(prev => prev.map(t => (t.id === id ? { ...t, ...patch } : t)));
+		setTodos(prev =>
+			prev.map(t => {
+				if (t.id !== id) return t;
+				const nextCategories = patch.categories ?? (patch.category !== undefined ? (patch.category ? [patch.category] : []) : t.categories ?? (t.category ? [t.category] : []));
+				return {
+					...t,
+					...patch,
+					categories: nextCategories,
+					category: nextCategories[0],
+				};
+			}),
+		);
+	};
+
+	const reorderTodos = (orderedTodos: TodoGoal[]) => {
+		setTodos(orderedTodos);
 	};
 
 	const deleteTodo = (id: string) => {
@@ -260,13 +318,36 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 		const now = new Date();
 		const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
 		if (diffDays < 1) return false;
-		setTodos(prev => prev.map(t => (t.id === id ? { ...t, completedDate: new Date().toISOString().split('T')[0] } : t)));
+		setTodos(prev =>
+			prev.map(t =>
+				t.id === id
+					? {
+							...t,
+							completedDate: new Date().toISOString().split('T')[0],
+							failed: false,
+							failedDate: null,
+							challengeStatus: t.isChallenge ? 'completed' : t.challengeStatus,
+						}
+					: t,
+			),
+		);
 		return true;
 	};
 
 	const failTodo = (id: string, fail: boolean) => {
 		const date = fail ? new Date().toISOString().split('T')[0] : null;
-		setTodos(prev => prev.map(t => (t.id === id ? { ...t, failed: fail, failedDate: date } : t)));
+		setTodos(prev =>
+			prev.map(t =>
+				t.id === id
+					? {
+							...t,
+							failed: fail,
+							failedDate: date,
+							challengeStatus: fail && t.isChallenge ? 'failed' : t.challengeStatus,
+						}
+					: t,
+			),
+		);
 	};
 
 	const createGoalFromTemplate = (template: string, type: 'habit' | 'todo') => {
@@ -312,10 +393,12 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 				todos,
 				addHabit,
 				editHabit,
+				reorderHabits,
 				deleteHabit,
 				completeHabitToday,
 				addTodo,
 				editTodo,
+				reorderTodos,
 				deleteTodo,
 				addSubGoal,
 				toggleSubGoal,

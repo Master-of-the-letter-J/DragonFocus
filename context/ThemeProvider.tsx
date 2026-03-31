@@ -1,7 +1,7 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 export type ThemeMode = 'light' | 'dark';
-export type BackgroundTheme = 'dungeon' | 'forest' | 'sky' | 'custom';
+export type BackgroundTheme = 'dungeon' | 'castlePlains' | 'space' | 'volcano' | 'forest' | 'sky' | 'custom';
 
 export interface ThemeColors {
 	// Basic

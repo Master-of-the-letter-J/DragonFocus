@@ -33,19 +33,17 @@ export function PopulationProvider({ children }: { children: ReactNode }) {
 			// +1% growth daily
 			newPop += prev * 0.01;
 
-			// Decrease based on yang (max 5% + (Age/73 clamped to 20)%)
+			// Decrease scales linearly once Yang exceeds 50.
 			if (yang > 50) {
-				const maxDecrease = 5 + Math.min(20, dragonAge / 73);
-				const decreasePercent = maxDecrease / 100;
+				const overYangRatio = Math.max(0, Math.min(1, (yang - 50) / 50));
+				const maxDecreasePercent = 5 + Math.min(20, dragonAge / 73);
+				const decreasePercent = (maxDecreasePercent / 100) * overYangRatio;
 				const popDecrease = Math.floor(prev * decreasePercent);
 				newPop -= popDecrease;
 				deaths += popDecrease;
-			}
-
-			// Flat 50,000 per day when yang is 100
-			if (yang >= 100) {
-				newPop -= 50_000;
-				deaths += 50_000;
+				const flatLoss = Math.floor(50_000 * overYangRatio);
+				newPop -= flatLoss;
+				deaths += flatLoss;
 			}
 
 			// Update death count

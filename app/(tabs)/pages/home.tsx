@@ -7,6 +7,7 @@ import { useDragon } from '@/context/DragonProvider';
 import { useItems } from '@/context/ItemsProvider';
 import { usePopulation } from '@/context/PopulationProvider';
 import { useSurvey } from '@/context/SurveyProvider';
+import { useToast } from '@/context/ToastProvider';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
@@ -30,6 +31,7 @@ export default function HomePage() {
 	const router = useRouter();
 	const survey = useSurvey();
 	const population = usePopulation();
+	const { showToast } = useToast();
 
 	const [snackModalOpen, setSnackModalOpen] = useState(false);
 	const [idleModalOpen, setIdleModalOpen] = useState(false);
@@ -49,9 +51,19 @@ export default function HomePage() {
 
 	useEffect(() => {
 		if (!items.snackToast) return;
-		const timeout = setTimeout(() => items.consumeSnackToast(), 1000);
-		return () => clearTimeout(timeout);
-	}, [items.consumeSnackToast, items.snackToast]);
+		showToast(
+			{
+				title: items.snackToast.name,
+				message: items.snackToast.topEffect,
+				shadowColor: '#0EA5E9',
+				textColor: '#111827',
+				shadowAmount: 16,
+				backgroundColor: '#F0F9FF',
+			},
+			{ durationMs: 1600 }
+		);
+		items.consumeSnackToast();
+	}, [items.consumeSnackToast, items.snackToast, showToast]);
 
 	useEffect(() => {
 		if (items.pendingIdleSummary) setIdleModalOpen(true);
@@ -75,30 +87,31 @@ export default function HomePage() {
 		<View style={styles.container}>
 			<TopHeader isHomePage={true} />
 
-			<Pressable style={styles.snackButton} onPress={() => setSnackModalOpen(true)}>
-				<Text style={styles.snackButtonText}>Snacks ({ownedSnacks.length})</Text>
-			</Pressable>
-
-			<View style={styles.effectsTopRight}>
-				{effectList.slice(0, 6).map(effect => (
-					<View key={effect.id} style={styles.effectCard}>
-						<Text style={styles.effectTitle}>{effect.name}</Text>
-						<Text style={styles.effectText}>{effect.topEffect}</Text>
-						<Text style={styles.effectTime}>{effect.startsInSeconds > 0 ? `Starts in ${formatDuration(effect.startsInSeconds)}` : `Ends in ${formatDuration(effect.remainingSeconds)}`}</Text>
-					</View>
-				))}
-			</View>
-
 			<ScrollView contentContainerStyle={styles.scrollContent}>
 				<View style={styles.statsHeader}>
-					<View style={styles.statBox}>
+					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'World Population', message: `${(population.population / 1_000_000_000).toFixed(2)}B dragonside estimate`, shadowColor: '#16A34A', backgroundColor: '#ECFDF5' })}>
 						<Text style={styles.statLabel}>World Population</Text>
 						<Text style={styles.statValue}>{(population.population / 1_000_000_000).toFixed(2)}B</Text>
-					</View>
-					<View style={styles.statBox}>
+					</Pressable>
+					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'Death Count', message: `${(population.deathCount || 0).toLocaleString()} recorded losses`, shadowColor: '#DC2626', backgroundColor: '#FEF2F2' })}>
 						<Text style={styles.statLabel}>Death Count</Text>
 						<Text style={styles.statValue}>{(population.deathCount || 0).toLocaleString()}</Text>
+					</Pressable>
+				</View>
+
+				<View style={styles.utilityRow}>
+					<View style={styles.effectsWrap}>
+						{effectList.slice(0, 6).map(effect => (
+							<View key={effect.id} style={styles.effectCard}>
+								<Text style={styles.effectTitle}>{effect.name}</Text>
+								<Text style={styles.effectText}>{effect.topEffect}</Text>
+								<Text style={styles.effectTime}>{effect.startsInSeconds > 0 ? `Starts in ${formatDuration(effect.startsInSeconds)}` : `Ends in ${formatDuration(effect.remainingSeconds)}`}</Text>
+							</View>
+						))}
 					</View>
+					<Pressable style={styles.snackButton} onPress={() => setSnackModalOpen(true)}>
+						<Text style={styles.snackButtonText}>Snacks ({ownedSnacks.length})</Text>
+					</Pressable>
 				</View>
 
 				<View style={styles.dragonArea}>
@@ -150,12 +163,6 @@ export default function HomePage() {
 				</View>
 			</ScrollView>
 
-			{items.snackToast && (
-				<View style={styles.toast}>
-					<Text style={styles.toastTitle}>{items.snackToast.name}</Text>
-					<Text style={styles.toastText}>{items.snackToast.topEffect}</Text>
-				</View>
-			)}
 
 			<Modal visible={snackModalOpen} transparent animationType="fade" onRequestClose={() => setSnackModalOpen(false)}>
 				<View style={styles.modalBackdrop}>
@@ -226,14 +233,15 @@ export default function HomePage() {
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#fff' },
 	scrollContent: { paddingBottom: 40, paddingHorizontal: 16 },
-	snackButton: { position: 'absolute', top: 76, left: 16, zIndex: 20, backgroundColor: '#0F766E', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
+	utilityRow: { marginBottom: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+	effectsWrap: { flex: 1, gap: 6 },
+	snackButton: { backgroundColor: '#0F766E', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: 'flex-start' },
 	snackButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-	effectsTopRight: { position: 'absolute', top: 76, right: 10, zIndex: 20, width: 170, gap: 6 },
 	effectCard: { backgroundColor: '#111827', borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
 	effectTitle: { color: '#fff', fontSize: 11, fontWeight: '700' },
 	effectText: { color: '#E5E7EB', fontSize: 10, marginTop: 2 },
 	effectTime: { color: '#93C5FD', fontSize: 10, marginTop: 2 },
-	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 58, marginBottom: 12 },
+	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 12, marginBottom: 12 },
 	statBox: { flex: 1, alignItems: 'center', padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0' },
 	statLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 4 },
 	statValue: { fontSize: 20, fontWeight: '800', color: '#333' },
@@ -254,9 +262,6 @@ const styles = StyleSheet.create({
 	statusBadge: { fontSize: 12, fontWeight: '600', color: '#4CAF50', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
 	progressBarSmall: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' },
 	progressFillSmall: { height: '100%', backgroundColor: '#4CAF50' },
-	toast: { position: 'absolute', bottom: 16, left: 16, right: 16, backgroundColor: '#1F2937', borderRadius: 10, padding: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4 },
-	toastTitle: { color: '#fff', fontWeight: '700', fontSize: 13 },
-	toastText: { color: '#E5E7EB', fontSize: 12, marginTop: 2 },
 	modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
 	modalCard: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 12, padding: 16 },
 	modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
