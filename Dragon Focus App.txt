@@ -1,0 +1,1617 @@
+﻿Coding Instructions
+Coding Instructions
+Here is a checklist for what to do (for an AI, such as Codex)
+The App is named Dragon Focus, and centers around 2 surveys - morning and night - affecting a dragon’s HP and fury level.
+
+
+________________
+
+
+What to Add Pt. 4 (Shorter+)
+Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it readable to a human.
+
+
+To-Do:
+1. Remove the Schedule and Alarm Sub-Pages Entirely
+2. Ensure the cheat buttons on the settings work (especially the one about new days)
+3. Ensure the survey buttons and the settings page for the surveys work and are updated when the options change (changes save automatically)
+4. Problem: Fix the buy button in the shop, and then the sell button. The Buy Button, instead of being disabled, should have a pop-up of “Need __ (resources) to buy __ (Object)”. Fix Any other Potential Problems with the Shop.
+5. Problem: Fix the Limit of the Habit and then the To-Do Goals not Working (the Values have been updated)
+6. Look at and Paste the Updated Survey Page. Here Are The Key Notes:
+   1. The Limits of Habit and To-Do Goals Increased Dramatically
+   2. Be Sure Challenges are Implemented Correctly - the cost of buying, buying the challenge, how the title and due date of goal are uneditable, and then the rewards after completed successfully. Deleting the reward removes the challenge without any reward. Have a warning before deleting any goal, with this warning.
+   3. The Survey Rewards Have Been Changed Significantly. Modify This. Take note of the new challenges.
+   4. Ensure that Surveys Can Be Refilled (that this functionality works), and that it counts as a refill if it’s the same day for that survey, and that refilled surveys omit certain questions from being answered (it grays them out), and has some/most rewards removed (only new goals completed, etc).
+   5. Ensure that all data is properly collected in the “Logs” Page.
+   6. Ensure there is a Reroll Button For Habit and To-Do Goals, and you can only reroll 3 times for each goal type, or an unlimited among of times with premium
+   7. In The Morning Survey, 
+      * Ensure the Designs are all Neat, and the 3 buttons aren’t blocked. Ensure the background is consistent (transparent background on top of the background of the importance color, which I think already works)
+      * Ensure the Edit Buttons are Functional and not blocked
+      * Ensure the Delete Button for an individual goal Works Properly, Giving a Big Popup Warning Before Deleting a Habit or To-Do Goal. There’ll be a trash button on the panel, as well as a red button at the bottom of each goal editor, that has the same effect.
+      * Ensure the Move Button Functionality (with the working draggable flatlist, not covered) Works For: Habit Goals, To-Do Goals, and To-Do Sub-Goals (each have panels/boxes in their respective expo draggable flatlist, movable by clicking and dragging the panel or the move button. It doesn’t necessarily have to be the move button - it can be the panel when clicking and dragging. Ensure the edit and delete buttons still have their functionality and aren’t overlapped, however)
+      * Ensure each Panel/Box of every Habit Goal has: Title (Categories, Importance), Delete, Edit, and Move Buttons Left to Right. Below, In Subtitle Text: Goal Streak #, Challenge Streak #/Challenge Streak Needed (If Activated). Background Color is Different Based on Importance.
+      * Ensure the Panel/Box of each individual To-Do Goals has: Title (Categories, Importance), Delete, Edit, and Move Buttons Left to Right. Below, Any Subgoals. These can be checked in the evening survey. Background Color is Different Based on Importance. (and changes when importance chances)
+      * Ensure the Panel/Box of each sub-goal has: Delete, Edit, and Move Buttons Left to Right.The Edit Button simply puts the cursor to the text, which can also be clicked and edited
+      * Remove the Coins for Suggested To-Do and Habit Goal Amounts, and Just have them added as a template.
+      * Ensure Editors Function Properly / Nothing is Blocked
+   8. In The Evening Survey,
+      * Ensure Formatting Remains Consistent. Goals are Checkable, and Give Their Respective Rewards On Survey Completion. Goals cannot be re-checked upon refilled surveys and are greyed out (completed to-do’s no longer show up)
+7. Look at and Paste the Updated Settings Page. Key Notes:
+   1. Generally Update the Survey Settings to Match New Changes, Keep it Organized
+   2. Ensure all buttons work
+   3. Ensure Cheat Buttons work, Maybe Add a Dev Mode
+   4. Paste with the Survey Page if Doable
+8. Look at and Paste the Updated Stats & Market Page. (Currencies / Statuses) Key Notes:
+   1. Added New Status Effects for the Snacks. Update How These Are Changed/Works
+   2. Add the New Currency: Dragon Souls, with a new icon on the top right (right of shards), in an amethyst (RGB(153, 102, 204)) or other grayish-purple-related) color. Add this on top of the ascension page, which shows the dragon souls # on top of the ascend button.
+   3. Added Milk and Super Milk, which remove all effects and all effects + ascension sickness.
+   4. Ensure Fire XP is still earned consistently *10 for every coin earned through any method.
+   5. The Scar Levels are the XP required for the next level. When leveled up, the Amount of Fire-XP you have is Reset. When max Leveled, Fire XP is no longer shown, and the bar is filled up saying “Maxed” (Or the Level you’re in, Ultimate Dragon Warrior)
+   6. Ensure Scar Level Naming and XP required and Unlocks are Updated.
+9. Look at and Paste the Updated Stats & Market Page. (Market) Key Notes:
+   1. Ensure the Bug With Buying New Items are Fixed. Ensure the Bug with the sell button not showing up/not working fixes (For Sell Button: only shows up and sells 1 item when clicked when at least 1 idler/clicker/soul multiplier is bought, doesn’t show up on snack, cosmetic, or background page)
+   2. Add Subtitles at the bottom of each Page
+   3. Ensure that Certain Items Require a Certain Scar Level to Be Bought, and if it’s unlocked it won’t show this. (it’ll be unlockable when the scar level is reached)
+   4. Ensure that Sorting Works for Scar Unlock (Default), and Price (Coins, Most/Least) For Each Page.
+   5. Look into the Snack Price Changes, and the Reset in Ascension Page. No Sell Button for Snack Page.
+   6. Look into the Idler/Clicker Increasing Costs. (The 1 Shard/Generator Remains). Also the Sell Button Should Show Up.
+   7. Add the New Soul Multipliers Shop Section. (Look at this with Ascension Page)
+   8. (Cosmetics are not yet refined, but make some costs much higher and some requiring shards as well)
+   9. (Backgrounds are not yet refined)
+10. Look at and Paste the New & Updated Dragon & Weather Page Add Art Instructions Below:
+   1. Add the Dragon’s Spawn when first entering the app
+   2. Update the Dragon’s Death, and the Revive Button and Graveyard Page Functions
+   3. Add Video For Dragon Spawning (make a temp. Excitable popup, since there’s no video yet)
+   4. Add Video For Dragon Death (make a temp. Excitable popup, since there’s no video yet)
+   5. Add Images of Stages for Each Dragon’s Age Stage (Make all of them dragon png for now, maybe different shades since the final images aren’t put in), as well as a grave placeholder on death, and the grave placeholder image on revive (but brighter). Death also gives Mourning I Effect for 3 Days.
+11. Update Ascensions in the Lair Section (Follow These Bullets)
+   1. To Ascend, your dragon must be at least a Juvenile (30 Days old), and you must be at least Scar Level 4. 
+   2. Once you ascend, you must wait at least 7 days to ascend again. 
+   3. This will sacrifice all your coins, coin generators (to 0), and dragon clickers (to 0), and convert them to dragon souls and dragon shards
+      * +(All Coins Earned during Ascension^0.75) Dragon Souls.
+   4. Ascensions will add 1 million people to the population. 
+   5. It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 7 days (each ascend, +1 days are added).
+   6. The Ascension Page will contain the dragon-heart.png in images, and then a button to ascend (which will show the requirements below, in a checklist format). The button is grayed out if you can’t ascend.
+   7. The Bottom of the Ascension Page Has a “Soul Convertor”, Where every time the button is clicked, Dragon Souls are converted to 1 Dragon Shard. It starts off with requiring 1 Dragon Souls, and multiplies by 1.02* For Every Click, Rounded Down (This Doesn’t Reset)
+   8. The Bottom of the Ascension Page Also Has a “Shop Resetor”, Where every time the button is clicked, The Snack Section of the Shop has the Costs Reset to Defaults. You Can Only Reset the Shop Once Per Ascension. It starts off with requiring 1000 Dragon Souls, and 100 Dragon Shards, Dragon Soul Costs multiplies by 1000* For Every Reset (Dragon Shards Cost Remains 100)
+12. Update & Ensure The Logs Section of the Lair Work
+13. Ensure the Survey Has (Put Each Data Point in Separate Script, Make Sure it is All Implemented In the Survey Itself):
+   1. 100+ Survey Advice
+   2. 100+ Habit/To-Do Goal Advice
+   3. 200+ Quotes For Each Topic
+   4. 100+ Short Answer Prompts For Each Topic
+   5. 100+ Suggested To-Do Goals For Each Category
+   6. 100+ Suggested Habit Goals For Each Category
+14. Update Pictures, Texts, With New Placeholder Image Files
+15. Go Through All Scripts, Go Through the Entire Document (Except the marketing and collaboration section) to Ensure All Changes Are Met On Top of Features, Make it Neat, Comments where Necessary, Concise, and Fix Any Bugs/Errors
+16. Look Into Final Steps (Not Needed to Be Implemented):
+   1. Bug Fixing / Any Other Changes
+   2. A Login Feature (Needed for Premium)
+   3. Premium - Costs, Subscriptions, and Benefits. How Would Users Buy Premium? (Planned: $1.99/Month, $9.99/Year Plan, $24.99/Permanent Plan)
+   4. Keep the App Name ‘Dragon Focus’?
+   5. Should the App Be Free? (Probably)
+   6. Prototype App With Friends, Peers, Others For Free. (Incentive: 10 Free 1-Year Premium for 10 Beta Testers)
+   7. Launch on App Store! (Android and Apple At the Same Date! Goal: End of Summer 2026)
+   8. Refine & Rebuild. Add more idle features. Balancing. User Bug Fixes
+   9. Other Ideas (The Blueprint of Multiple Dragon Apps): Keep the Core “Dragon Mechanics” (Maybe Change Some of Idlers and Clickers, and Ascensions Mechanics or Currency), And Have it be a: Meditation, App-Blocking, or Specialized Alarm App, and Create a new App on this system (instead of a survey completion, goal-tracking app). Alternatively, have just those features as stand-alone, as simplified as possible. Or Just have the dragon app be a stand-alone idle game.
+
+
+________________
+
+
+
+
+Introduction
+Dragon Focus App
+The App to Help Concentration: Gives a Customizable Survey at the End of the day on how Concentrated the User has been and becomes angry or happy depending on the result, accumulating over days and weeks.
+
+
+Check Out: Collaboration
+________________
+
+
+Premise:
+
+
+Summary
+Everyday, you have 2 surveys: one to fill in goals to accomplish, and another in the evening of completing them. You can also check them throughout the day. By completing goals, you change the status of a ‘dragon’ — it’s happiness , health, and age.
+
+
+* Function: To give motivation for achieving goals
+   * Surveys: There’s a day and a night survey, which are both editable
+   * Settings: You can make the Dragon More or Less Harsh on Reaction.
+* Main Stats: Fury Scale (0 is no Fury/Maxed Yin/Min Yang, 100 is max Fury/Maxed Yang/Min Yin), and World Population.
+* Monetization: A Subscription for More tools to make Scheduling, to Make Progression Faster, and to Buy In-Game Currency.
+* General Layout: A top panel for all pages. A Main Page Displaying the Dragon, then a Lair Page with Logs, Achievements, A Graveyard, and Ascension, then a Market Page, then a Premium Page, then a Settings/Options Page (Survey and General Settings)
+
+
+Competition
+Finch (An AI Pet) and Habitica (Gamified Routine) Could Challenge this App. 
+
+
+* Finch, Habitica        
+* Unlike These Apps, Dragon Focus is designed to be more volatile in actions, which therefore can make completing tasks more urgent and more demanding.
+* Dragon Focus is Also Designed for Simplicity, with a customizable task sheet that should be easy to use
+* Dragon Focus utilizes streaks and its personality, alongside many notifications to keep users engaged.
+* Overall, this makes for a simple, and extremely engaging app that attempts to have longevity, similarly to the engagement/surveys of Duolingo, with idle aspects similar to cookie clicker, and the main point being to-do and habit checklists similar to Finch, Habitica, or the Reminders app
+
+
+App Layout
+App Layout
+The Layout of The Foolproof App
+
+
+________________
+
+
+
+
+* Top Panel: Every Page Displays a Top Panel. From Left to Right, When a Stat is Clicked, a Bottom Popup will appear saying the name of the stat:
+   * Profile/Premium Button
+   * Settings Button
+   * Fire XP Bar (Text: Scar Level Name ~ Scar # ~ Current XP/ Required XP)
+   * (Full Bar in Home Page, Only a Heart Icon/Emoji with HP/Max HP) Dragon Health Bar (Text: Dragon HP/Max HP) 
+   * (Full Bar in Home Page, Only a Yin/Yang Icon with Fury #) Dragon Fury Bar (Text: Fury # HP/Max HP) 
+   * Streak # (on a Fire, or Fire Emoji Beside)
+   * Dragon Coins # (Coin Emoji)
+   * Dragon Shards # (Shards Emoji)
+   * Dragon Souls # (Soul Emoji)
+* Main/Home Page: Displays The Dragon, with a Central Object Sprite, and the Background, Alongside an Overlay (For Weather/Brightness).
+   * Population Panel: Panel on Top (Below the Top Panel)  that has the: Population Count (Top Left), and Death Count (Top Right)
+   * Top-Left: A Backpack Icon, which pops up a Menu all Snacks in columns, and a use button below each snack.
+   * Top-Right: A Downward Column of Every Current Effect/Effect Timer, with their Icons
+   * Center/Floor/Background: On the Center, is The Central Object (Default is the Earth). Above is Text With the Dragon’s Age. Below as animated flying around the central object, is the Dragon (When Resting, is on floor, when flying, flies around the central object. Note that the Central Object is in a layer above the dragon, and the text is above both.) The Spawn/Revive Button also is on top, if the dragon isn’t yet spawned, or if the dragon needs to be revived.
+   * Bottom: Take / Retake The Day or Night Surveys. These are Stacked Left/Right
+* The Lair
+   * Contains Multiple Pages - Check the Lair Section for more Details (Logs (Chart), Logs (Detailed) Achievements, Dragon Graveyard, and Ascension)
+* The Market
+   * The Market: The Market contains Snacks, Cosmetics, Idlers, Among Other Items
+   * SECTIONS: Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Soul Multipliers, Background & Themes, All Items
+   * COMPACT MODE: 2 Columns or 3-4 Columns (make the boxes smaller on compact mode)
+   * SORTING: Scar Level Unlock (Default) | Cost (Expensive, Coins + Souls) | Cost (Least Expensive, Coins + Souls)
+   * BOXES: Each Section of the Dragon Market will have Boxes into Columns (2 or 3). Boxes are Stacked Left-To-Right, then go down.:
+      * Snacks: Will Have The Name of Snack, Icon (Emoji or Image TBA), Below it is Buy For __ (Cost, Grayed out if too expensive), and Use (Blue). (No Selling Snacks)
+      * Cosmetics: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive) Green Button.
+      * Coin Generators: Name, Icon (Emoji or Image TBA), Below is Buy For __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+      * Dragon Clickers: Name, Icon (Emoji or Image TBA), Below is Buy For __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+      * Soul Multiplers: Name, Icon (Emoji or Image TBA), Below is Buy For __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+      * Background/Theme: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive) Green Button.
+   * See Market Section for more Details
+* Premium/Profile Page
+   * Shows Premium Pricing
+   * Also Shows the Login to your Profile. (with google, or etc to allow for use in multiple devices with same account)
+* The Settings
+   * Background, Outfit, and Music Settings
+   * Basic Settings (Volume, Etc.)
+   * Survey Settings/Unlocks
+
+
+________________
+
+
+
+
+The Survey
+Survey & User Experience
+Summarize the Survey, Including the Goals, and the User Experience Layout
+Trust me this App is Tuff:3
+Tips For Alphas: Knowledge, Empathy, and Confidence (Outgoingness)
+
+
+________________
+
+
+Survey Layout (Summary)
+All of these are adjustable and can be toggled on / off based on the user’s desire!
+
+
+Morning Survey
+
+
+1. Survey Advice: Gives Advice About Survey
+2. Question: How do you feel?
+3. Question: What Day Goals to Go Through?
+4. Question: What To-Do Goals to Go Through
+5. Write: Short Answers / Multiple Choice
+6. Write: Create Extra Prompts For Evening
+7. Write: Journal Entry
+8. Show a Quote
+9. Show the Results
+
+
+Evening Survey
+
+
+1. Survey Advice: Gives Advice About Survey
+2. Question: How do you feel?
+3. Question: What Day Goals to Go Through?
+4. Question: What To-Do Goals to Go Through
+5. Write: Short Answers / Multiple Choice
+6. Write: Journal Entry
+7. Write: Create Extra Prompts For Evening
+8. Show a Quote
+9. Show the Results
+
+
+________________
+
+
+The Process
+* A Morning survey would appear if you haven’t done it already.
+* After 3 pm, an evening survey will appear if you haven’t done it already.
+* You can retake any surveys anytime, though with no reward.
+* You can also view the journal in the ‘productivity’ tab
+* Lastly, you can set an alarm in the ‘productivity’ tab.
+
+
+
+
+________________
+
+
+Survey Layout (Detailed)
+Note: Some Features Are Not Unlocked Until they Are Unlocked in the “Productivity Settings”. These will be grayed out and text is shown that it is locked, buy for __ coins in the settings section of the app! Also, To-Do and Habit/Daily Goal Amount are Limited by Scar Level / is Premium Unlocked, Ensure these are shown.
+
+
+1. Survey Advice: Gives Advice About Survey
+   1. Don’t Wait For Motivation; Taking Action is a Precedent to Motivation. Discipline Builds Habits to Generate Results
+   2. Goalmaxxing: Try Separating Goals into Separate Topics
+   3. Goalmaxxing: SMART goals are Specific, Measurable, Achievable, Relevant, and Time-Bound. Plan the Actions and Form a Mindset.
+   4. Goalmaxxing: If you can’t complete a goal, reflect on what went wrong, break it down into smaller steps, adjust the strategy, and ultimately learn from the process.
+   5. You Can Do Anything, but You Can’t Do Everything. Try Your Best At It.
+   6. Effort & Discipline are muscles, and not a switch.
+   7. Empathy, Confidence, and Knowledge - Three Points in Relationships.
+   8. Finding Balance Between Empathy and Confidence
+2. Question: How Do You Feel? (Mood Question)
+   1. Survey: Optional Morning and Night
+   2. Mood: A Question about your mood, affecting the entity’s current character.
+      * Description: Multiple Choice Question About Your Current Mood. Gives -5, -3, 0, +3, and +5 Fury depending on the answer.
+         1. High Energy: Excited, Surprised, Shocked, Enraged / Disgusted 
+         2. Medium Energy: Fulfilled, Calm / Content, Uneasy / Confused, Anxious
+         3. Low Energy: Serene, Sleepy, Bored / Drained, Despair
+         4. Basic: Great, Good, Okay, Meh, Down, Sad, Angry
+3. Question: Edit Habit Goals / Check off Habit Goals!
+   1. Habit Goal Editor (Morning): Habit Goals that are checked daily.
+      * Layout: First, A Quick Habit Goal Advice on Top. Then, a List of Goals, Then, a ‘+’ Button to add another goal to the bottom Besides the ‘+’ Button there will be no warnings of (Current/Max Goals If No Premium, if Current). Lastly, it’ll show Suggested Habit goals below, with a reroll button (Up to 6 Shown at Once. Unlimited Rerolls with Premium, Otherwise Only 3). You can move the goals to any position using a ‘move’  3 lines button on the right.
+      * Individual Goal Format: Each Goal Will Have the Text (with streak below in gray text), Any Flairs, and “Delete Button” (With Warning)and “Edit” Button, and “Move” Button. The Color of the goal will depend on Importance. The Evening Survey Allows for checking the goal, and does not have an edit or move icon.
+      * Editing a Goal: Clicking the “Edit” button will pull up a modal (overlay) to edit the goal. You Can Do the Following:
+         1. You can edit the text of the goal
+         2. You Can edit the “Importance” of the Goal (Important+, Important, Default / Not Important)
+         3. You Can edit the Day of the Weeks the Goal is Required (Checkboxes: Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday). The Default is all 7 days Checked. They will only show those days in the evening survey, and you will not lose the streak on an unchecked day.
+         4. You Can add multiple “Category” Flairs (Personal, Mental, Physical, Career, Relationships, Contribution, Financial, Other, Custom)
+         5. You Can Enable a “Challenge” Mode for a Goal (7, 14, or 30 days) with the 3 buttons horizontal, and an “Enable Challenge for Cost __” Button (Costs are Below)
+         6. Lastly, You can Delete The Goal With a Red Delete button at the bottom (same as delete button on the individual goal panel, it shows a warning that it’ll delete the goal permanently, and remove any challenge(s) associated with it)
+      * Streak: Everyday You Complete a Daily Goal in Evening Survey, You Earn 5 Coins. You Can get a Streak (5+ Gives an Additional 5 Coins) For Completing Goals in Consecutive Days. The Streak text will show below the text, grayed out.
+      * Challenge: Spend Coins to Enable Challenge Mode for a 7, 14, or 30 Day Streak on a goal (See Costs/Rewards Below)
+      * Failure: When losing a streak doing a daily goal, or when missing a to-do goal, you get a prompt of why you couldn’t do it, and what you can do better. (evening survey).
+      * Limit: You Can Only Have {20 + Scar Level * 3} Daily’s at Once, Or Unlimited Daily’s With Premium. This is Shown at the bottom of the editor
+      * Note: When completed, the goals will show up in the journal, there will also be a section in the journal with the goals, and their completions and failures goals.
+   2. Day Goal Completion (Evening): Complete Day Goals In the Evening Survey, Which Are Checkable
+      * Sorting: You Can Sort The Goals by Categories, Importance, or Streak #. Challenge Goals Always Show Up On Top As Priority.
+      * The Importance (In Color), Categories (Beside the Goal), Streak (Shown with Number and Fire) and Challenge Streak (Shown Number/Required With Red Fire and Coins Potentially Earned) are all Shown.
+      * There will be a checkbox on the left to complete a day goal. Results Are Submitted when the Survey is Submitted, and it’ll appear grayed out if the completion date is the same as the current date
+4. Question: Edit To-Do Goals / Check off To-Do Goals!
+   1. To-Do Goal Editor: Goals that are checked once, earning rewards. They can be put in sub-goals
+      * Layout: First, A Quick To-Do Goal Advice on Top. Then, a List of Goals, Then, a ‘+’ Button to add another goal to the bottom. Besides the ‘+’ Button there will be any warnings of (Current/Max Goals If No Premium, if Current). Lastly, it’ll show Suggested To-Do goals below, with a reroll button  (Up to 6 Shown at Once. Unlimited Rerolls with Premium, Otherwise Only 3). You can move the goals to any position of the Body using the ‘move’ 3 lines button on the right.
+      * Individual Goal Format: Each Goal Will Have the Text (with streak below in gray text), Any Flairs, And “Delete Button” (With Warning), And “Edit” Button, and “Move” Button From Left to Right. The Color of the goal will depend on Importance. Below the box, there will be a ‘+’ to add sub-goals, which have an “Edit” and “Move” Button as well. The Evening Survey Allows for checking the goal and sub-goals, and does not have an edit or move icon.
+      * Editing a To-Do Goal: Clicking the “Edit” button will pull up a modal (overlay) to edit the goal. You Can Do the Following:
+         1. You can edit the title of the goal
+         2. You Can edit the “Importance” of the Goal (Important+, Important, Default / Not Important)
+         3. You Can add multiple “Category” Flairs (Personal, Mental, Physical, Career, Relationships, Contribution, Financial, Other, Custom)
+         4. You Can add/edit A Due Date (Default is None). With a To-Do Date, A ”Challenge Mode” Button will appear (Costs are Below, if Cannot Buy It’s Grayed Out) ) When You can Afford it, Click it, and a Popup will ask “Are you Sure? (and the cost) with a ‘yes’ and ‘no’, for which if you click ‘yes’. Challenge mode is activated. You can no longer edit the To-Do Goal’s Title Nor Due Date Once Clicked
+         5. You Can Add/Edit/Delete Sub-Goals. When Editing a Sub-Goal, You Can edit the text of the sub-goal by clicking on it. You can not check them until the night survey, but you can remove/add them at any time. (Even with Challenge Mode Activated). Each sub goal panel has a delete trash button functionality (with warning), an edit text (which auto-puts the cursor on the text) and a move functionality (can move within the sub-goal body, which sorts and etc)
+         6. Lastly, You can Delete The Goal With a Red Delete button at the bottom (same as delete button on the individual goal panel, it shows a warning that it’ll delete the goal permanently, and remove any challenge(s) associated with it)
+      * Due-Date: You Can Set a Due-Date to a To-Do. If not Completed, It’ll be marked as ‘late’, but still show up.
+      * Challenge: Spend Coins to Enable Challenge Mode for a to-do goal, Rewards Given When Completed On Time! (Depends on the length of the goal) (See Costs/Rewards Below)
+      * Limit: You Can Only Have {40 + Scar Level * 6} To-Do’s at Once, Or Unlimited To-Do’s With Premium. This is shown at the bottom of the editor. When exceeding the limit, Goals Can’t be added with “+” Nor with Suggested To-Do Goals
+      * Note: To-Do’s Show up in the goals section of the journal, with the completed to-do’s and late to-do’s.
+   2. To-Do Goal Completion
+      * You Can Sort The Goals by Categories, Importance, or Due Date (Earliest On Top). Challenge Goals Always Show Up On Top As Priority.
+      * The Importance (In Color), Categories (Beside the Goal), Challenge Activated (Shown With Coins Potentially Earned) and Sub-Goals (Checklistable, Below the To-Do Goal, Indented, and in smaller text) are all Shown.
+      * There will be a checkbox on the left to complete a day goal. Results Are Submitted when the Survey is Submitted, and it’ll appear grayed out if the completion date is the same as the current date
+      * Note: To-Do Goal Cannot be Checked until All Sub-Goals are Completed. (If Any, If Not It Can Be Checked Anyways) It’ll be Grayed Out if Otherwise. 
+      * Note: To-Do Goal Cannot be Checked Until there are only 3 days before The Due Date, or if that value is <1 Day, at Least 1 day Has Passed Since the Goal was Created (Whichever comes Later) to complete a to-do goal. (It’ll show a popup notifying this if clicked before, and grayed out). If there is no due date, you must wait at least 1 day to complete the due date (Again. Showing the popup, and being grayed out) . If the To-Do Goal is less than 1-Day long, however, and it is due the same day it was created, then it can be checked off.
+      * Rewards are Shown in the Survey Rewards Section.
+5. Write: Short Answer Prompts 
+   1. Description: Write a Short Answer Prompt that will be recorded on the table. Possibly Custom Made or Pre-Made prompts. 
+   2. Note: Can’t continue to next Question until 25+ characters typed
+   3. Topics: Self-Discovery, Reflection, Gratitude, Creative, Mindfulness, Productivity (What to Do), Relationships Motivational, What To Do, Etc
+6. Write: Create Extra Prompts For Evening
+   1. Description: Create Extra Prompts for the Evening (Up to 3, depending on section)
+   2. Note: Can’t continue to next Question until 10+ characters typed
+   3. Note: These Prompts will show up in the evening survey of the same day as additional short answer prompts, requiring 25+ characters.
+7. Trivia Questions: Multiple Choice Questions
+   1. Description: Multiple Choice Questions of Various Topics that Earn Rewards (Up to 3, Depending on Section)
+   2. Note: Can’t continue to next Question until submitted and results are shown (green for correct answer chosen, red if incorrect answer is chosen, and green for the correct answer)
+   3. Topics: General, Pop Culture / Art / Music / Sports, History, Geography, Science, etc
+8. Write: Journal Entry
+   1. Description: An Entry to put in the Journal
+9. Show a Quote
+   1. Description: The Quotes Will Be Split into Categories (All Are From Famous People, Or if Unknown From an Unknown Source)
+   2. Topics: Motivational, Advice, Fun Fact, Comedic
+10. Show the Results
+
+
+________________
+
+
+Refilling Surveys
+* Both the Morning/Night Surveys Can Be Refilled an Unlimited Number of Times at the same day, But With Some Questions Grayed Out.
+* Refilled Surveys Gray Out the Following Questions:
+   * Mood Question
+   * All Already Completed Day Goals
+   * All Already Completed Habit Goals
+   * Short Answers, Extra Short Answers
+* Surveys Reset Entirely and can be filled out normally the next day (always reset at midnight of the current date) 
+
+
+________________
+
+
+Rewards Calculation
+The Survey Gives Tons of Awesome Rewards, or Potential Losses
+Each of these Rewards Can Only Earned The Amount of times per parentheses, usually only once/day)
+Rewards Earned are Shown When the Survey is Submitted in a Popup
+Note: There are Coins, Shards, and Streak Rewards Cannot be Negative!
+
+
+Rewards
+* +10 Coins, +1 Shard | When Completing the Morning Survey (Re-Filled Surveys Don’t Count)
+* +10 Coins, +1 Shard | When Completing the Night Survey (Re-Filled Surveys Don’t Count)
+* +(10 + Streak) Coins, +1 Shard, +1 Streak, -(1 * Streak) Fury | Completing Both Night/Morning (Shown After Completion)
+* -4, -2, 0, +1, +2 Fury Depending on a Positive / Negative Mood Question
+* +5 Coins + Goal Streak (Max +5), -2 Fury | For Each Habit Goal Completed.
+* + | Challenge Habit Goals Reward (Look Below)
+* + | Challenge To-Do Goals Reward (Look Below)
+* +5 Coins | For Each 25+ Words in A Short Prompt (For Each Short Prompt, Including Custom-Made Ones Filled In Evenings)
+* +5 *Jeopardy Effect Coins | For Every Correct Trivia Prompt
+* -5 * Jeopardy Effect Coins | For Every Incorrect Trivia Prompt (Only When Jeopardy is Activated)
+* +5 Fury | When Missing the Morning Survey
+* +5 Fury | When Missing the Night Survey
+* +(2 * Daily Goals Missed) Fury | When Missing a Daily Goal 
+* +(2 * To-Do Goals Late ) Fury | For Every Day a To-Do Goal is Late
+* -10 Health | Missing BOTH the Morning and Night Survey
+Challenge Goals (With Normal Goal Rewards Added On Top)
+* Reward +100 Coins, +10 Shards | Cost: 50 Coins, 1 Shard | For a 7-Day Consecutive Habit Goal Streak With Challenge Activated
+* Reward +250 Coins, +25 Shards | Cost: 100 Coins, 2 Shards | For a 14-Day Consecutive Habit Goal Streak With Challenge Activated
+* Reward +750 Coins, +75 Shards | Cost: 250 Coins, 5 Shards | For a 30-Day Consecutive Habit Goal Streak With Challenge Activated
+* Reward +125 Coins, +5 Shards | Cost: 50 Coins, 1 Shard | For each 7-Day Challenge To-Do Goals Completed On Time
+* Reward +300 Coins, +15 Shards | Cost: 100 Coins, 2 Shards | For each 14-Day Challenge To-Do Goals Completed On Time
+* Reward +1000 Coins, +50 Shards | Cost: 250 Coins, 5 Shards | For each 30-Day Challenge To-Do Goals Completed On Time
+Normal Goals
+* Reward +60 Coins, -24 Fury | For Every Normal To‑Do Goal Completed On Time (Greater Than 30 Days)
+* Reward +20 Coins, -8 Fury | For Every Normal To‑Do Goal Completed On Time (Between 7 to 30 Days)
+* Reward +10 Coins, -4 Fury | For Every Normal To‑Do Goal Completed On Time (Less Than 7 Days, or Without a Due-Date)
+* Reward +5 Coins, -2 Fury | For Every Normal To‑Do Goal Completed Late (Less Than 1 Days)
+* Reward +10 Coins, -1 Fury | For Every Normal To‑Do Goal Completed Late (Greater Than 30 Days)
+* Reward +5 Coins, -1 Fury | For Every Normal To‑Do Goal Completed Late (Between 7 to 30 Days)
+* Reward +2 Coins, -1 Fury | For Every Normal To‑Do Goal Completed Late (Between 1 and 7 Days)
+* Reward +1 Coins, -1 Fury | For Every Normal To‑Do Goal Completed Late (Less Than 1 Days)
+Additional Calculations (To Totals)
+* +(Coins/Day * (Coins Earned In Survey)/100) * (1 + Survey Exploitation I Level) | After Each Survey Completion
+* +(Total Coins By Survey)^0.5 Shards * Survey Exploitation II Level | After Each Survey Completion
+*  +(1 Additional Random Unlocked Snack If Scar Level ≥ 3) * (1 + Survey Exploitation III Level) | After Each Completion
+   * The Super Snack and Age Snack Have a /10 Weight.
+* (*2 Shards, *2 Coins, and *2 Snacks) ^ (Survey Duplication Glitch Level) | After Each Survey Completion
+* +2 + (-Fury Gained) Health | After Each Survey Completion
+
+
+
+
+________________
+
+
+Lists of Pre-Filled Advice & Goals
+
+
+List of Goal Templates
+* (Activity / Exercise) for (Time) (Seconds / Minutes)
+* Do (Amount) (Exercise)
+* Learn (What To Learn)
+* Add More?
+
+
+List of Survey Advice
+* Try to Have At Least One Goal in Each Category!
+* Remember SMART Goals - Specific, Measurable, Achievable, Relevant, Time-Bound
+
+
+List of Suggested Challenge To-Do Goals (Omit the Coin Values, These are Standardized Above)
+* Physical
+   * Do 50/100/150/200 Pushups Over 1/2/3 Days (5-15 Coins Based on # Pushups)
+   * Do 10/20/30/40 Pull Ups / HandStand Pushups Over 1/2/3 Days (5-15 Coins Based on # Exercises)
+   * Do 100/150/200/300 Squats Over 1/2/3 Days (5-15 Coins Based on # Squats)
+   * Run a Mile Under 5/6/7/8/10 minutes (1 Day) (5-10 Coins Based on Time)
+   * Run 1-5 Miles (1 Day, 10 + Miles * 2 Coins)
+   * Run 10/20/30 Miles (7 Days, 10 + Miles Coins)
+   * Swim 3 Laps (1 Day, 5 Coins)
+   * Swim 10-30 Laps (7 Days, 10 + Laps Coins)
+   * Go Hiking (1 Day, 10 Coins)
+   * Go Biking (1 Day, 10 Coins)
+   * Play / Join a Sports Meet-Up (7 Days, 15 Coins)
+   * Win a Race (7 Days, 20 Coins)
+* Mental
+   * Wake Up Before 5/6/7/8/9 am (1 Day, 5-10 Coins)
+   * Sleep More Than 7/8/9 hours (1 Day, 5-15 Coins)
+   * Read 3-10 Pages of a Book (1 Day, 5 Coins)
+   * Read a Full Book (7 Days, 20 Coins)
+   * Do 10 Deep Breaths (1 Day, 5 Coins)
+   * 10 Minute Meditation (1 Day, 5 Coins)
+   * 30 Minute Meditation (1 Day, 10 Coins)
+   * 1 Hour Meditation (1 Day, 15 Coins)
+   * Cold Shower (1 Day, 5 Coins)
+   * 1 Hour Digital Detox (1 Day, 10 Coins)
+   * 3 Hour Digital Detox (1 Day, 15 Coins)
+   * 9 Hour (Full Day) Digital Detox (1 Day, 20 Coins)
+   * 1 New Vocab Word (1 Day, 5 Coins)
+   * 10 New Vocab Words (7 Days, 20 Coins)
+
+
+   * Watch Educational Video
+   * Write a Short Story (1 Day, 10 Coins)
+   * Write a Haiku (1 Day, 10 Coins)
+   * Write a Poem (1 Day, 10 Coins)
+   * Write a Song (1 Day, 10 Coins)
+   * Write a Rap Song (1 Day, 10 Coins)
+   * Write a Letter to Future Self (1 Day, 10 Coins)
+   * Create a Full Time-Capsule (3 Days, 20 Coins)
+* Personal
+   * Learn One New Short-Term Thing (7 Days, 20 Coins)
+   * Practice a New Instrument 7 Days Straight (7 Days, 30 Coins)
+   * Work on a Passion Project for 30 Minutes (1 Day, 5 Coins)
+   * Work on a Passion Project for 7 Days Straight (7 Days, 30 Coins)
+   * Build a Morning Routine (7 Days, 20 Coins)
+   * Build a Night Routine (7 Days, 20 Coins)
+   * Clean Your Room (1 Day, 10 Coins)
+   * Clean Your Desk (1 Day, 5 Coins)
+   * Create a Budget (1 Day, 10 Coins)
+   * Fix Something Broken (1 Day, 10 Coins)
+   * Buy Something That Was Broken (1 Day, 10 Coins)
+   * Cook a New Recipe (1 Day, 10 Coins)
+* Friendships
+   * Send a Text You’ve Been Avoiding (1 Day, 10 Coins)
+   * Invite Someone to Hangout (1 Day, 10 Coins)
+   * Write & Send a Thank-You Note (1 Day, 10 Coins)
+   * Share Something You’ve Created (1 Day, 10 Coins)
+   * Random Act of Kindness (1 Day, 10 Coins)
+   * Attend a Social Event (1 Day, 15 Coins)
+   * Check in on a Friend Over 1 Day (1 Day, 15 Coins)
+   * Check in on a Family Member (1 Day, 15 Coins)
+   * Have a Deep Conversation (1 Day, 15 Coins)
+   * Connect 2 Friends Together (1 Day, 15 Coins)
+   * Join a Club (7 Days, 20 Coins)
+   * Make a New Friend (7 Days, 20 Coins)
+   * Ask a Curious Question in Conversation Over 1 Day (10 Coins)
+   * Compliment 1 Person Genuinely (1 Day, 10 Coins)
+   * Compliment 2-10 People Genuinely (1 Day, 20 Coins)
+List of Prompts
+* Prompts (Written):
+   * Write a Fear: Why It’s Irrational 
+   * Write Something that makes you Happy, and Why
+   * Write 1 Thing You’re Grateful for
+   * Write 3 Things You’re Grateful for
+   * Write 1 Word to Describe Yourself
+   * 1 Word of How You Feel
+   * Write 3 Ideas
+   * Write 5 Ideas 
+   * Write a Short Reflection 
+* Trivia (Multiple Choice):
+   * 100 Men or 1 Gorilla
+   * 1 Hour Naked at Work or 2 Mile Naked Walk Home
+   * See 5 Years of Future or Yourself or 6 Months in Future of World
+   * 3 Feet Tall or 8 Feet Tall
+   * Super Hair Legs or Super Hairy Moustache for 1 Year
+   * Would you rather be a genius everyone thinks is an idiot or an idiot everyone thinks is a genius?
+   * Would you rather only be able to listen to Christmas songs all year round or only be able to watch nothing but horror movies?
+   * Would you rather fight a horse-sized duck or 100 duck-sized horses?
+   * Would you rather be constantly sticky or constantly itchy?
+   * Would you rather have a perfect memory or be able to forget anything you wanted at will?
+   * Would you rather know how you will die or know when you will die?
+   * Would you rather explore the deep sea or outer space?
+   * Would you rather eat only burgers for a week or only ice cream for a week?
+   * Would you rather live one 1,000-year life or 10 100-year lives?
+   * Would you rather have your life narrated by a witty online quiz maker or your actions captioned like a funny movie trailer?
+   * List of Quotes
+* Inspirational/Life
+   * "The only way to do great work is to love what you do." - Steve Jobs
+   * "Life is what happens when you're busy making other plans." - John Lennon
+   * "The future belongs to those who believe in the beauty of their dreams." - Eleanor Roosevelt
+   * "It is during our darkest moments that we must focus to see the light." - Aristotle
+   * "Success is not final, failure is not fatal: it is the courage to continue that counts." - Winston Churchill
+   * "Your time is limited, don't waste it living someone else's life." - Steve Jobs
+   * "In the end, it's not the years in your life that count. It's life in your years." - Abraham Lincoln 
+   * "Every sunrise is an invitation to rewrite your story."
+   * "Small steps become big victories when taken consistently."
+   * "Courage isn’t loud; sometimes it’s the quiet decision to try again tomorrow."
+   * "Your potential expands every time you choose growth over comfort."
+   * "The world changes when you decide to show up as your full self."
+   * "Dreams grow when you water them with discipline."
+   * "You don’t need permission to become who you were meant to be."
+   * "Progress is progress, even when no one is clapping."
+   * "Life rewards those who dare to begin."
+   * "You are stronger than the moment trying to break you."
+   * "Greatness often hides in the things you avoid doing."
+   * "The path becomes clearer once you take the first step."
+   * "Your future self is begging you to keep going."
+   * "Growth feels uncomfortable because you’re stretching into someone new."
+   * "The best time to believe in yourself is before anyone else does."
+   * "You don’t have to be fearless — just willing."
+   * "Every challenge is a chance to meet a stronger version of yourself."
+   * "Life blooms when you stop rushing and start living."
+   * "Your story isn’t over; it’s evolving."
+   * "The person you become is shaped by the choices you repeat."
+   * "Hope is the quiet voice that whispers, ‘Try again.’"
+   * "You can’t control the wind, but you can adjust your sails."
+   * "The journey matters more than the applause at the end."
+   * "Your energy introduces you before your words do."
+   * "Life gets brighter when you decide to shine."
+   * "You don’t need a perfect plan — just a persistent heart."
+   * "The future is built by the habits you practice today."
+   * "Let go of who you were to make room for who you’re becoming."
+   * "Your dreams are valid even if they scare you."
+   * "Sometimes the bravest thing you can do is rest."
+   * "Life is a canvas; paint boldly."
+   * "You are allowed to outgrow people, places, and past versions of yourself."
+   * "The climb is tough, but the view is worth it."
+   * "Your purpose is louder than your fear."
+   * "Every ending is a disguised beginning."
+   * "Be the person your younger self needed."
+   * "You don’t have to see the whole path to take the next step."
+   * "Life becomes extraordinary when you stop settling for ordinary."
+   * "Your mindset is the architect of your reality."
+   * "The world needs the magic only you can bring."
+   * "Success grows where consistency lives."
+   * "You are capable of more than you’ve ever imagined."
+   * "Life is too short to live on autopilot."
+   * "Your dreams deserve your effort, not your excuses."
+   * "The moment you decide to rise, everything shifts."
+   * "You can rewrite your story at any chapter."
+   * "Believe in the possibility of better days."
+   * "Your passion is your compass — follow it."
+   * "Life rewards those who choose intention over impulse."
+   * "You are a work in progress and a masterpiece at the same time."
+* Witty/Humorous
+   * "I am so clever that sometimes I don't understand a single word of what I am saying." - Oscar Wilde
+   * "I've learned that people will forget what you said, people will forget what you did, but people will never forget how you made them feel." - Maya Angelou
+   * "The best way to predict the future is to create it." - Peter Drucker 
+* Thought-Provoking/Philosophical
+   * "I think, therefore I am." - René Descartes
+   * "The unexamined life is not worth living." - Socrates
+   * "We are what we repeatedly do. Excellence, then, is not an act, but a habit." - Aristotle 
+   * "The mind becomes free the moment it questions itself."
+   * "We chase meaning because we fear emptiness."
+   * "Time is the only currency we spend without knowing the balance."
+   * "Reality is shaped less by truth and more by perception."
+   * "Silence often reveals what words try to hide."
+   * "We become what we choose to notice."
+   * "The greatest journeys happen within."
+   * "Wisdom grows when certainty fades."
+   * "You cannot discover new truths with old beliefs."
+   * "The world changes when you change the lens you view it through."
+   * "We fear the unknown because it mirrors our own uncertainty."
+   * "Freedom begins where expectation ends."
+   * "The mind is both the prison and the key."
+   * "We learn more from questions than from answers."
+   * "To understand others, first understand your own contradictions."
+   * "The present moment is the only place life actually happens."
+   * "We are shaped by the stories we tell ourselves."
+   * "Clarity comes when the noise inside you quiets."
+   * "The search for meaning is the meaning."
+   * "We grow wise when we stop needing to be right."
+   * "The universe whispers; the ego shouts."
+   * "You cannot outrun yourself — only meet yourself."
+   * "Truth is rarely loud; it’s usually patient."
+   * "We are temporary, but our impact is not."
+   * "The deepest answers live in the questions we avoid."
+Achievements
+* Surveys
+   * Egg Cracker — Complete first morning survey
+   * Night Owl Whisperer — Complete first night survey
+   * Balanced Yin — Complete both surveys in one day
+   * Routine Ruler — 7‑day streak
+   * Dragon Monk — 30‑day streak
+   * The Eternal Flame — 100‑day streak
+   * Unbroken Spirit — 365‑day streak
+   * Survey Speedrunner — Finish a survey in under 30 seconds
+   * Deep Thinker — Spend 3+ minutes on a survey
+   * Prompt Philosopher — Write 50 journal entries
+   * Checklist Champion — Complete 500 checklist items
+   * Goal Slayer — Complete 100 short‑answer goals
+* Dragon Stats
+   * Medic! — Heal from low HP to full
+   * Iron Scales — Keep HP above 90% for 30 days
+   * Walking ICU — Drop below 10% HP
+   * Zen Master — Maintain low Fury for 7 days
+   * Chaos Incarnate — Reach 100 Fury
+   * Fire Hazard — Reach 100 Fury three times
+   * Dragon Therapist — Reduce Fury from 100 → 0 in one day
+* Coins & Clicking
+   * Coin Collector — Earn 1,000 coins
+   * Treasure Hoarder — Earn 10,000 coins
+   * Draconic Millionaire — Earn 100,000 coins
+   * Clicking Gremlin — Hit daily click limit
+   * Finger of Steel — Tap dragon 10,000 times
+* Shop & Cosmetics
+   * Snack Sampler — Buy 10 snacks
+   * Snack Connoisseur — Buy every snack type
+   * Fashion Dragon — Equip first cosmetic
+   * Drip Overload — Equip 5 cosmetics at once
+   * Draconic Drip God — Own every cosmetic
+* Journal & Schedule
+   * Dear Diary… — Write first journal entry
+   * Ink Mage — Write 100 journal entries
+   * Archivist — View 100 past entries
+   * Planner Beginner — Create first schedule
+   * Time Wizard — Complete 100 scheduled tasks
+   * Master of Time — Complete 500 scheduled tasks
+* Mood Tracking
+   * Emotional Explorer — Log 10 moods
+   * Mood Master — Log 100 moods
+   * Emotional Rollercoaster — Log every mood type
+   * Stoic Dragon — Log same mood 7 days in a row
+* Dragon Age
+   * It’s Alive! — Hatch dragon
+   * Tiny Terror — Reach Hatchling
+   * Little Flame — Reach Dragonet
+   * Skybound Teen — Reach Juvenile
+   * Young Inferno — Reach Young Adult
+   * Ancient Scales — Reach Elder Dragon
+   * Wyrm Ascendant — Reach Wyrm
+   * Name of Power — Rename Wyrm
+* Scar Levels
+   * Marked by Fire — Reach Scar Level 1
+   * Battle‑Hardened — Reach Scar Level 3
+   * Dragon Pact — Reach Scar Level 5
+   * Legend of Scars — Reach Scar Level 10
+   * Traumatic Scars — Reach Scar Level 15
+   * Mummified — Reach Scar Level 20
+   * Dragon Steps to Ascendence — Reach Scar Level 25
+   * Ultimate Dragon Warrior — Reach final XP tier (Scar Level 30)
+* Challenges
+   * Perfect Day — 100% checklist + 100% schedule + 0 Fury
+   * The Impossible Day — 100% checklist + 100% schedule + 100 Fury
+   * Fire Juggler — Maintain Fury 40–60 for 7 days
+   * The Yin‑Yang Master — Keep Fury exactly at 50
+* Secret
+   * Grandma Does Not Have a Glock — Open app 100 times
+   * The Forbidden Snack — Use a snack at exactly 69 Fury
+   * The Ritual — Do morning survey between 4:44 to 5:55 AM
+   * The Night Watcher — Do night survey between 11:11-11:59 PM
+   * The Dragon Whisperer — Tap dragon 1,111 times
+   * The True Flame — Maintain streak through a holiday
+   * The Chosen One — End day with exactly 777 coins
+   * The Accountant — End day with 0 coins
+
+
+________________
+
+
+
+
+
+
+
+
+
+
+
+
+The Settings
+Settings Page
+Layout of the Settings Page
+There’s a Slider on the top switching the survey and general settings and the tutorial
+Each will have a relevant emoji beside it.
+________________
+
+
+General Settings (First)
+Main Settings
+* Volume Slider (0 to 100)
+* Sound Effects Slider (0 to 100)
+Theme Settings
+* Change the Theme
+* Change the Background
+* Change the Dragon’s Cosmetic (This is also in the Home/Main Page)
+* Enable Weather Effect: Rain
+* Enable Weather Effect: Tremors
+* Enable Weather Effect: Brightness Change
+Cheats
+* Enable Dev Mode (Not in Final Version of App)
+* (Any Cheat Buttons, which are un-grayed out with dev mode enabled)
+   * +1, 10, 100, 1000, 10000000, *2, *10 Coins
+   * +1, 10, 100, 1000, 10000000, *2, *10 Shards
+   * +1, 10, 100, 1000, 10000000, *2, *10 Souls
+   * +1, 10, 100, 1000, 10000000, *2, *10 Streak
+   * +1, 10, 100, 1000, 10000000, *2, *10 Fire XP
+   * -1000000, -1000, -100, -10, -1, +1, 10, 100, 1000, 10000000, *2, *10 Dragon Age (Cannot go Over/Under)
+   * -100, -10, -1, +1, +10, +100 Dragon Fury (Cannot go Over/Under)
+   * -100, -10, -1, +1, +10, +100 Dragon Health (Cannot go Over/Under)
+   * Simulate 1 Day Passing (Change Date in App Somehow By +1)
+   * Enable Premium Dragon Pact Toggle
+
+
+________________
+
+
+
+
+Survey Settings (Second)
+There will be Settings in the surveys for what you want and do not want in the surveys.
+
+
+Toggle: Give Survey Advice? (Unlock for 15 Coins)
+* In this Section, you can add Custom Advice in a ‘Custom Category’, or Check the “Random’ Category (Only One Category).
+* This shows up at the start of the survey
+Toggle: Ask a Mood Question? (Unlock for 15 Coins)
+* In this Section, you can add custom emoji and mood, and the amount of fury earned/lost (max +8, min -8)
+Toggle: Give Goal Advice? (Unlock for 15 Coins)
+* In this Section, you can add Custom Advice in a ‘Custom Category’, or Check the “Random’ Category (Only One Category).
+* This shows up at as a subheader to habit and to-do goals
+Habit AND To-Do Goals Unlocks (Applies for Both Morning/Evening Surveys)
+* Unlock Categories (Unlock for 10 Coins)
+* Unlock Importance (Unlock for 10 Coins)
+* Unlock Custom Categories (Unlock for 5 Coins) - You’ll be able to add Custom Categories
+* Unlock Challenges (Unlock for 20 Coins)
+Toggle: Enable Journal (Unlock for 30 Coins)
+* Unlock Journal, Where You Can Write Any Size Prompt
+* Unlocking the Journal Allows For Unlocking Short Answers and Trivia
+Slider/Edit Categories/Add Custom Category Short Answer Prompts (Unlock for 10 Coins)
+* For this Section, you can have 0 to Up to 3 Short Answer Prompts. (Slider)
+* For Each Short Answer Prompt, You Can:
+   * Have a Random Short Answer Based on Category(s) (Default)
+   * Have a ‘Custom’ Category That Randomizes the Prompt Based on Those Typed Below (Unlock for 5 Coins)
+Slider: Custom Short Answer Prompts For Evening Survey (Unlock for 10 Coins)
+* For this Section, you can have 0 to Up to 3 Custom-Made Short Answer Prompts. (Slider)
+* You fill in a Custom Prompt for the Morning Survey, and Answer them in the Evening Survey
+Edit: Trivia Questions (Unlock for 10 Coins)
+* For this Section, you can have 0 to Up to 3 Trivia Questions
+* For Each Trivia Question, You Can:
+   * Have a Random Trivia Question Based on Categories (Default)
+Toggle: Show a Quote? (Unlock for 15 Coins)
+* In this Section, you can add Custom Quotes in a ‘Custom Category’, or Check the Categories.
+Misc Settings
+* Dragon Invincibility - Make Dragon Invincible (So to not have regret when not using app) (Requires Scar Level 5+, Unlock for 100 Coins and 5 Shards)
+* Reset All Data - Wipes All Stats, Progress, and Everything Else From the Account. Will have 4+ Warnings before you reset everything!
+
+
+________________
+Tutorial (Last)
+
+
+Create a Tutorial With:
+* What are Habit Goals, To-Do Goals, And Challenge Goals?
+* Images of Habit Goal Editor and To-Do Goal Editors (To Be Added)
+* Every Dragon Statistic
+* Every Snack and a Short Description
+
+
+________________
+
+
+
+
+
+
+The Dragon & Weather
+The Dragon & Weather & Art
+What is he? Who is He? Does he like... Men?
+________________
+
+
+
+
+The Dragon & Dragon Art
+How to draw a dragon (that is kinda cool looking)?
+
+
+What To Draw:
+* Dragon Sprite: 8 Levels For the Age of the Dragon
+   * Design: A Mysterious (Default Red) Dragon You Must Keep In Touch
+   * Age 0-10: Egg (Max HP: 30) ~ The Dragon Starts off as An Egg, Which Isn’t Yet Hatched
+   * Age 10-20: Hatchling (Max HP: 40) ~ An Egg With a Baby Dragonet’s Head
+   * Age 20-30: Dragonet (Max HP: 50) ~ A Full Baby Dragon-Net
+   * Age 30-90: Juvinelle (Max HP: 75) ~ A More Grown Dragon Teenager. If It’s a Juvinelle…It can fly
+   * Age 90-180: Young Adult (Max HP: 100) ~ A Small Dragon That Can Fly. And Breath Fire.
+   * Age 180-270: Adult (Max HP: 150) ~ A Dragon, Flying, and Breathing Tons of Fire. Fire has Tremors
+   * Age 270-365: Elder Dragon (Max HP: 250) ~ a Dragon, Flying, and Breaths Blue Fire. Scales are Large, and Tremors +
+   * Age 365+: Great Wyrm (You Can Change the Name of the Dragon) (Max HP: 500) ~ a Massive Dragon, Small Wings, Breathing Red Fire With  Tremors++
+* Central Object Sprite: The “Planet” or Central Object of the Home Screen (Default is Earth), Depending on Theme
+* Dragon Heart: Found on Ascension Page
+* Underline Decoration: Underline Decoration Below Each Tab, and When a Bottom Popup Shows Up
+* Day Survey Decorated Button: Button Decorated, Found in Main Page 
+* Evening Survey Decorated Button: Button Decorated, Found in Main Page 
+* Shop Decorated Panels: Buttons Slightly Decorated, Found in Shop Page 
+* Achievement Decorated Panels: Buttons Slightly Decorated, Found in Achievements Page 
+* Special Decorated Buttons: Special Button Borders on Ascension Buttons, and The Buttons on Ascension Page
+* Dragon Grave: Found in the Graveyard Page
+* Color Overlay: Extreme Dim, Slight Dim, Normal, or Bright
+* Weather Effects Overlay (Rain. Fire Rain, Thunders)
+* Home Page and Ascension Page Background: All Themed Backgrounds for Home Page and Ascension Page.
+* Graveyard Background: Repeating Grassy and Sky Background for Graveyard Page
+* Other Pages Background: Background for Other Pages Are Slightly Themed (Example, Bricks), but Mostly are a Single Color
+* Text: Arial For Revive Button, Theme Text I for Survey Headers, Page Headers. Theme Text II For Everything Else (Descriptions, Infos, Icons, etc)
+* Emojis: For Most Icons
+* What To Draw:
+   * Regeneration: +5 * Level Health/Day for | __ Time (Days)
+   * Wither: -5 * Level Health/Day for | __ Time (Days)
+   * Ascension Sickness: -5 * Level * Min(Age, 3) Health/Day for | __ Time (Days)
+   * Therapy: -5 * Level Fury/Day | __ Time (Days)
+   * Rage: +5 * Level Fury/Day | __ Time (Days)
+   * Bipolar: (+5 or -10) * Level Fury/Day | __ Time (Days)
+   * Jeopardy: *4^(Level) Trivia Rewards or Loss /Day | __ Time (Days)
+   * Coin Generator Boosters: 2^Level Coins/Day | __ Time (Days)
+   * Coin Click Boosters: 2^Level Coins/Click | __ Time (Days)
+   * Survey Duplication: 2^Level (Survey Coins, Shards, Snacks) | __ Time (Days)
+   * Cursed Survey Duplication: 4^Level Coins/Survey and 0.5 / Level Coins/Day | __ Time (Days)
+   * Mourning (After Dragon Dies): +20 * Level Fury/Day, 0.5 / Level^2 Coins/Day | __ Time (Days, Usually 3 Days)
+   * Super Effect: 2^Level (Coins/Click, Coins/Day, and Coins/Survey) + 10 * Level Health/Day - 10 * Level Fury/ Day * Level | __Time (Days)
+
+
+Sound Effects:
+* Dragon Click Sound
+* Ascension Sound
+* Music (Happy, Secluded, Conflicted, Sad, Heavy Metal)
+* Weather Effects (Rain Noise, Thunder Noise, Tremors)
+
+
+Animations:
+Appears as a Popup Video, with an ‘X’ on the top right.
+* Spawning in the Dragon
+* Reviving the Dragon
+
+
+Age Levels For Dragon
+For Each Stage of Ages, the Mysterious Dragon…Develops.
+
+
+* Design: A Mysterious (Default Red) Dragon You Must Keep In Touch
+* Age 0-10: Egg (Max HP: 30) ~ The Dragon Starts off as An Egg, Which Isn’t Yet Hatched
+* Age 10-20: Hatchling (Max HP: 40) ~ An Egg With a Baby Dragonet’s Head
+* Age 20-30: Dragonet (Max HP: 50) ~ A Full Baby Dragon-Net
+* Age 30-90: Juvinelle (Max HP: 75) ~ A More Grown Dragon Teenager. If It’s a Juvinelle…It can fly
+* Age 90-180: Young Adult (Max HP: 100) ~ A Small Dragon That Can Fly. And Breath Fire.
+* Age 180-270: Adult (Max HP: 150) ~ A Dragon, Flying, and Breathing Tons of Fire. Fire has Tremors
+* Age 270-365: Elder Dragon (Max HP: 250) ~ a Dragon, Flying, and Breaths Blue Fire. Scales are Large, and Tremors +
+* Age 365+: Great Wyrm (You Can Change the Name of the Dragon) (Max HP: 500) ~ a Massive Dragon, Small Wings, Breathing Red Fire With  Tremors++
+
+
+Spawning / Reviving the Dragon
+Separate From Ascension
+
+
+* When First Opening the App, you must “Spawn” the Dragon / This Shows an Animation, and Spawns in the Dragon.The Spawn Button will never appear again after the first ‘revive/spawn’
+* When Dragon Health is 0, The Dragon Dies, and a New Grave Will Appear in the Dragon Graveyard Page.
+* You Must Revive the Dragon. When the Dragon is dead, a button automatically appears on top of the central object sprite with “Revive” in Arial Text. This doesn’t cost anything, and the button stays there until it is clicked (there is a dragon alive), no matter how many times the app resets. When Clicked, an Animation Appears, and the Dragon gets Revived at age 0 and 10 health remaining.
+
+
+________________
+
+
+Fury / Health Weather Effects
+Different Effects for the App
+
+
+* The Background & Music Changes based on the Dragon’s Fury Level, and based on the Dragon’s Health
+* Note: Tremors- Means No Tremors Unless Dragon is Adult or Above. Tremor Becomes Tremor+ At Adult. Tremor+ Means Tremors Have Extra Effect.
+* Note: Tremor+ and Tremor++ and Tremor+++ Have Same Effect, and is all just Tremor+
+* Note: Tremor is Very Slight. Tremor+ is the Normal Tremor Effect. These only affect the sprites on the screen.
+
+
+Table
+
+
+
+
+	67-100% Health
+	34-66% Health
+	0-33% Health
+	0-49% Fury
+	Colors: Normal
+Weather: None
+Music: Happy Music
+Behaviour: Resting or Flying
+	Colors: Slight Dimmer 
+Weather: Cloudy
+Music: Secluded
+Behaviour: Resting
+	Colors: Dimmer 
+Weather: Rainy
+Music: Sad Music
+Behaviour: Resting
+	50-89% Fury
+	Colors: Slight Bright
+Weather: None
+Music: Conflicted
+Behaviour: Fly, Fire, Tremors-
+	Colors: Normal
+Weather: Cloudy + Slight Th.
+Music: Conflicted
+Behaviour: Fly, Fire, Tremors-
+	Colors: Slight Dimmer 
+Weather: Rainy + Thunder
+Music: Sad Music
+Behaviour: Floor, Fire, Tremors-
+	90-100% Fury
+	Colors: Bright
+Weather: Fire
+Music: Heavy Metal
+Behaviour: Fly, Fire, Tremors
+	Colors: Slight Bright
+Weather: F.+ Sl. Lava Rain + Th.
+Music: Heavy Metal
+Behaviour: Fly, Fire, Tremors
+	Colors: Slight Bright
+Weather: Fire + Lava Rain + Th.
+Music: Heavy Metal
+Behaviour: Frantic, Fire, Tremors+
+	
+
+List
+*  0–49% Fury
+   * 67–100% Health
+      * Colors: Normal
+      * Weather: None
+      * Music: Happy Music
+      * Behaviour: Resting or Flying
+   * 34–66% Health
+      * Colors: Slight Dimmer
+      * Weather: Cloudy
+      * Music: Secluded
+      * Behaviour: Resting
+   * 0–33% Health
+      * Colors: Dimmer
+      * Weather: Rainy
+      * Music: Sad Music
+      * Behaviour: Resting
+* 50–89% Fury
+   * 67–100% Health
+      * Colors: Slight Bright
+      * Weather: None
+      * Music: Conflicted
+      * Behaviour: Fly, Fire, Tremors
+   * 34–66% Health
+      * Colors: Normal
+      * Weather: Cloudy + Slight Thunder
+      * Music: Conflicted
+      * Behaviour: Fly, Fire, Tremors
+   * 0–33% Health
+      * Colors: Slight Dimmer
+      * Weather: Rainy + Thunder
+      * Music: Sad Music
+      * Behaviour: Fly, Fire, Tremors
+* 90–100% Fury
+   * 67–100% Health
+      * Colors: Bright
+      * Weather: Fire
+      * Music: Heavy Metal
+      * Behaviour: Fly, Fire, Tremors
+   * 34–66% Health
+      * Colors: Slight Bright
+      * Weather: Fire + Slight Lava Rain + Thunder
+      * Music: Heavy Metal
+      * Behaviour: Fly, Fire, Tremors
+   * 0–33% Health
+      * Colors: Slight Bright
+      * Weather: Fire + Lava Rain + Thunder
+      * Music: Heavy Metal
+      * Behaviour: Frantic, Fire, Tremors+
+* 0% Health (Regardless of Fury)
+   * Colors: Extremely Dim, Black Background
+   * Weather: Rainy
+   * Music: No Music
+   * Behaviour: Grave, with a Revive Button
+________________
+
+
+
+
+The Stats & Market
+Dragon Stats & The Market
+Spend Mysterious Green Paper, that is thick…where did his dollar bill go?
+
+
+________________
+
+
+
+
+Dragon Stats & Currencies
+These Will Motivate to continue on the focus app
+
+
+Currencies
+* Dragon Coins (Or Gold)
+   * Main Currency of the App, Used to Buy Dragon Snacks/Cosmetics. Each of these is multiplied by the Coin Multiplier.
+   * Multiplier = (1 - Yang * 0.005) * (Dragon Shards * 0.01 ) * (1 + 0.1 * Scar Level) * (Multipliers From Snacks) * (2 if Premium) * (Any Additional Multipliers).
+   * View Survey Rewards For Challenge Goals and Other Goals Rewards, and Earning Coins in Survey
+   * From Shop:
+      1. Coin Generator - Coin Generators Can Be Unlocked in the Shop, Generating More Coins. 
+         * Multipliers - Snack Multipliers Allow For Temporary Boosts. Multipliers may also be bought in the shop
+         * Yang Debuff - The Generated Coins are Multiplied By (1 - Yang * 0.005), meaning 100 yang reduces output by 0.5*
+      1. Clicking Dragon - Earn Coins By Clicking the Dragon
+         * Multipliers - Snack Multipliers Allow For Temporary Boosts. Multipliers may also be bought in the shop
+         * Yang Debuff - The Clicked Coins are Multiplied By (1 - Yang * 0.005), meaning 100 yang reduces output by 0.5*
+   * Achievements - There May Be Achievements (Planned)
+   * Premium - Earn Double Coins with Premium
+* Dragon Shards
+   * A Secondary Currency That is Harder to Get Than Dragon Coins, Used in Shops
+   * Survey - You Earn +1 Shards When Doing a Morning Survey, and +1 Shards When Doing a Night Survey.
+   * View Survey Rewards For Challenge Goals and Other Goals Rewards, and Earning Shards in Survey
+   * Age - You Earn +1 Shards When Dragon Hits New Age
+   * Level Up - You Earn 1, 2, 4, 8, 16, 32, 64, 128, 256, 512 Shards When Leveling Up Scar Level
+   * Achievements - There May Be Achievements (Planned)
+   * Premium & Purchase - Users can purchase Dragon Shards with Cash, or Earn Double with Premium.
+* Dragon Souls
+   * A Currency That is Gotten Through Ascension
+   * Ascension - You Can Earn +(All Coins Earned during Ascension^0.75) Dragon Souls / Ascension
+Dragon Stats / Other Stats
+* Streak
+   * Every day you fill out a survey, a streak will go up. If broken, the streak resets to 0.
+   * Having a streak gives you cumulative amounts of dragon coins
+   * Breaking a Streak Makes the Dragon Sad. (Lose Health) :(
+* Fury Meter
+   * 0 for yin (passive), 100 for yang (aggressive). Yin = 100 - Fury #. Yang = Fury #.
+   * Increases When Not Doing Surveys (+5 / Missed Survey) and Not Completing Goals (+1 / Missed Goal)
+   * Decreases When Completing Goals (-2 / Completed Goal), and Every Day (-1 / Streak)
+   * View Survey Rewards
+   * Also, Can be Increased & Decreased With Snacks
+   * The Fury Meter is Shown on Top of the Screen, and Causes the Dragon / Dragon Heart to Change Animation & Appearance. 
+* Health
+   * You have different health depending on Dragon Age (starting at 30)
+   * You Regenerate Health as you Earn Yin (+2 Completing a Goal, +1 * Streak #)
+   * You Lose Health Daily when having high yang -(Floor(Yang Over 50 / 5))
+   * View Survey Rewards For Additional Health Gain/Loss - Notably -10 for Skipping Morning and Night Surveys
+   * You Can Also Gain Health from snacks in the shop (Insta-Heal, Extra Regeneration W/Surveys)
+   * Sadness: There are 3 Stages of Health, which change The Background & Music
+      1. <33% Depression
+      2. 33% - 66% Mediocre
+      3. 67% Jolly.
+* Age
+   * You raise a dragon, starting from an egg. You age the dragon by completing goals & surveys, but the dragon can lose health when becoming sad / being angry for too long. You can summon a dragon, being Dragon Jr #. 
+   * Age: Higher Dragon Age Brings More Fire * Coins Cumulatively. Every New Age Level (Egg => Hatchling), Dragon Regenerates +100 HP.
+      1. Age 0-10: Egg (Max HP: 30)
+      2. Age 10-20: Hatchling (Max HP: 40)
+      3. Age 20-30: Dragonet (Max HP: 50)
+      4. Age 30-90: Juvinelle (Max HP: 75)
+      5. Age 90-180: Young Adult (Max HP: 100)
+      6. Age 180-270: Adult (Max HP: 150)
+      7. Age 270-365: Elder Dragon (Max HP: 250)
+      8. Age 365+: Wyrm (You Can Change the Name of the Dragon) (Max HP: 500)
+* Population - a misc stat.
+   * The population starts at 8 billion, and increases by 1% of the total population each day.
+   * The population decreases when yang is above 50, up to 5% + (Age/73 (clamp 20))%/(yang above 50), and 50,000/(yang above 50)/day when 100 yang
+   * The population increases by +1 million when ascending
+   * The population increases by +1 when the dragon is clicked.
+* Death 
+   * The Dragon dies when its health is ≤ 0
+   * The Death of a Dragon Resets the Age, and Renames the Dragon to Dragon Jr -__. The Health Will be 10.
+   * The Debuffs From Death are the Mourning Effect for 3 Days :(
+
+
+Fire XP and Scar Level
+* Fire XP 
+   * EVERYTIME YOU EARN COINS, YOU EARN The Earned Coins * 10 (this includes generators, surveys, ALL METHODS)
+   * Daily - You earn an additional +(Age) * 10 XP a Day When The Streak is Added.
+* Scar Level: Your Scar Level Unlocks More Features in the App. There are 10 Scar Levels. Premium Will Unlock More Benefits (See below)
+   * Scar Level Benefits: Scar Levels Will Also Unlock Cosmetics, Idlers, and Clicker Upgrades in the Shop. Each Scar Level Also Multiplies the Current Coin Multiplier by (1 + Scar Level * 0.1) (see coin section for more details) .
+      1. Scar Level 0 - You Can Do All Surveys & Challenge Goals, And View the Journal (Logs, Ach. & Statistics) & Settings Page).
+      2. Scar Level 1 - You Unlock The Market Page. (+ Survey Boosters)
+      3. Scar Level 2 - You Unlock The Dragon Graveyard Sub-Page (+ Mood & Therapy Snacks)
+      4. Scar Level 3 - You Unlock The Rename Lair, and Get +1 Random Snacks In Survey (+ Health & Regen Snacks) (+Idlers, +Clickers)
+      5. Scar Level 4 - You Unlock The Dragon Ascension Page, and Extra Goals. (+ Bipolar & Jeopardy Snack) (+Soul Multipliers)
+      6. Scar Level 5 - You Unlock Invincible Dragon Mode, and the Scar Icon Starts to Glow.
+      7. Scar Level 6 - You Unlock (+ Coin Boosters)
+      8. Scar Level 7 - You Unlock Rename the Dragon When Wyrm.
+      9. Scar Level 8 - You Unlock Even more Extra Goals, Cosmetics. (+ Ice / Fire Snacks)
+      10. Scar Level 9 - Cosmetics. 
+      11. Scar Level 10 - You Unlock Max. Extra Goals, New Background, Best Icon. (+ Super & Age Snacks)
+      12. Premium Benefits - 2x Multiplier (on top of the scar multiplier), Better Table, Premium Cosmetics & Background. 2x Fire XP Multiplier, Unlimited Re-Roll Challenge Goals, and all unlocks of scar level 10 (except cosmetics). Unlimited To-Do and Habit Goals!
+      13. Multiplier:
+         * Scar Multiplier is multiplied by the total coin multiplier. Calculated by (1 + Scar Level # / 10), up to 2 in Scar Level 10, 4 in Scar Level 30
+         * Premium has an additional Double Coin Multiplier.
+      1. Habit Goals: 
+         * You Can Only Have {20 + Scar Level * 3} Daily’s at Once, Or Unlimited Daily’s With Premium. This is Shown at the bottom of the editor
+         * With Premium, This is Unlimited
+      1. To-Do Goals: 
+         * You Can Only Have {40 + Scar Level * 6} To-Do’s at Once, Or Unlimited To-Do’s With Premium. Shown at the bottom of the editor.
+         * With Premium, This is Unlimited
+      1. Market: 
+         * Scars 1, 2, 3, and all Even Scar Levels Up to 10 Unlock New Snacks.
+         * Scars 3+ Scar Levels Unlock new Idlers
+         * Scars 3+ Odd Scar Levels Unlock New Clickers
+         * Scars 4+ Unlocks Backgrounds, Also the Soul Multipliers
+         * You Earn Cosmetics For Every New Scar Level.
+         * Check the Market Section for More Info!
+   * Scar Level Progression: (Fire XP is required to get to the next level)
+1. Beginner I -  100 XP
+2. Beginner II - 250 XP
+3. Apprentice I - 500 XP
+4. Apprentice II - 750 XP
+5. Journeyman I - 1,000 XP
+6. Journeyman II - 2,500 XP
+7. Warrior I  - 5,000 XP
+8. Warrior II - 10,000 XP
+9. Warlord I  - 25,000 XP
+10. Warlord II - 50,000 XP
+11. Rider I - 100,000 XP
+12. Rider II - 200,000 XP
+13. Whisperer I - 500,000 XP
+14. Whisperer II - 1,000,000 XP
+15. Trainer I - 2,000,000 XP
+16. Trainer II - 5,000,000 XP
+17. Mage I - 10,000,000 XP
+18. Mage II - 25,000,000 XP
+19. Archmage I - 100,000,000 XP
+20. Archmage II - 1,000,000,000 XP
+21. Warden I - 1 Billion XP
+22. Warden II - 1 Trillion XP
+23. Guardian - 1 Quadrillion XP
+24. Commander - 1 Quintillion XP
+25. Captain - 1 Sextillion XP
+26. Colonel - 1 Septillion XP
+27. Dragon Warrior - 1 Octillion XP
+28. Dragon Slayer - 1 Nonillion XP
+29. Dragon Master - 1  Decillion  XP
+30. Dragon Grandmaster - 1,000 Decillion XP
+31. Ultimate Dragon Warrior
+32. Premium - Premium Dragon Pact - 3 day free trail / $1.99 / month, $9.99 / year
+________________
+
+
+
+
+The Dragon Market
+Shopping, Not Gambling. There is no Gambling in Dragon Focus.
+
+
+Layout
+The Market: The Market contains Snacks, Cosmetics, Idlers, Among Other Items
+
+
+SECTIONS: Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Soul Multipliers, Background & Themes, All Items
+COMPACT MODE: 2 Columns or 3-4 Columns (make the boxes smaller on compact mode)
+SORTING: Scar Level Unlock (Default) | Cost (Expensive, Coins + Souls) | Cost (Least Expensive, Coins + Souls)
+BOXES: Each Section of the Dragon Market will have Boxes into Columns (2 or 3). Boxes are Stacked Left-To-Right, then go down.:
+* Snacks: Will Have The Name of Snack, Icon (Emoji or Image TBA), Below it is Buy For __ (Cost, Grayed out if too expensive), and Use (Blue). (No Selling Snacks)
+* Cosmetics: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive) Green Button.
+* Coin Generators: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+* Dragon Clickers: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+* Soul Multiplers: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+* Background/Theme: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive) Green Button.
+
+
+SELLING: Selling Gives 100% of Dragon Shards, 75% of Coins, and 75% of Dragon Souls.
+SNACK COST MULTIPLIERS: Every time a Scar Level <10 Snack is Bought, the Coin Cost is Multiplier by 1.02^Times Bought. Scar Level 10 Snacks are 1.1^Times Bought.
+OTHER COST MULTIPLIERS: Shown Below.
+
+
+
+
+Dragon Snacks
+Note: Each Snack with a Duration will have its own separate effect for each snack, added up (for instance, using 2 ice injections give those effects for 10 days. For __ boosters, using a double and triple coin booster will first have 1 day of triple coin generation, then 1 day of double coin generation. The Super Snack has a stackable Double Coin Booster as well. Using a super snack will add up with other super snacks, etc. The effect name will be Snack, Duration.)
+
+
+All Coin Amounts are multiplied by 1.02^Times Bought For Each Purchase For Each Individual Snack. These Reset Every Ascension. Shard Amounts Remain the Same.
+
+
+* Scar Level 1:
+   * Survey Duplication I Snack Basic | 1 Day | 20 Coins, 1 Shard
+   * Survey Duplication I, Duplication II, Duplication III Snacks | 7 Days, 3 Days, 1 Day | 100 Coins, 5 Shards
+* Scar Level 2:
+   * Space Nuggets | -25 to 25 Fury (Random) | 25 Coins
+   * Chill Nuggets | -10 to -15 Fury (Random) | 50 Coins, 1 Shard
+   * Explosive Nuggets | +10 to +15 Fury (Random) | 10 Coins
+   * Therapy Nuggets | -10 + (Oscillates +5 to -5) Fury/Day Up to 10 Days. | 500 Coins, 5 Shards
+* Scar Level 3:
+   * Health Chocolates | +10 Health | 20 Coins, 1 Shards
+   * Super Health Chocolates | +15 to +25 Health | 40 Coins, 1 Shards
+   * Dark Health Chocolates | -10 OR +20 Health | 20 Coins, 1 Shard
+   * White Health Chocolate | -10 to +20 Health | 20 Coins, 1 Shard
+   * Regeneration Snacks | +10, 20, 50, 100 Health/Day | 10 Days Each | 40, 100, 250, 600 Coins, 2, 3, 4, 5 Shards
+* Scar Level 4:
+   * Bipolar Nuggets | -20 to +10 Fury/Day | 10 Days | 200 Coins, 2 Shards
+   * Jeopardy I, II, III Smoothie | 7 Days, 3 Days, 1 Day | 50 Coins, 3 Shards
+* Scar Level 6:
+   * Coin Generator Booster  I | 1 Day | 400 Coins, 4 Shards
+   * Coin Clicker Boosters  I | 1 Day | 400 Coins, 4 Shards
+   * Cursed Survey Duplication  I | 1 Day | 200 Coins, 2 Shards
+   * Coin Generator Boosters I, II, III | 7 Days, 3 Days, 1 Day | 2000 Coins, 16 Shards
+   * Coin Clicker Boosters I, II, III | 7 Days, 3 Days, 1 Day | 2000 Coins, 16 Shards
+   * Cursed Survey Duplication  I, II, III | 7 Days, 3 Days, 1 Day | 1000 Coins, 8 Shards
+* Scar Level 8:
+   * Ice Snack | -20 Fury, -10 Health | 80 Coins
+   * Fire Snack | +10 Fury, +5 Health | 80 Coins
+   * Ice Injection | -100 Fury, -5 Health/Day for +5 Days | 800 Coins, 2 Shards
+   * Fire Injection |  +100 Health, +20 Fury/Day for +5 Days | 800 Coins, 2 Shards
+* Scar Level 10: (Note: Multipliers for These are 1.1 Instead of 1.02)
+   * Milk: Clears All Effects (Positive and Negative), Except for Ascension Sickness | 5,000 Coins, 50 Shards
+   * Super Milk: Clears All Effects (Positive and Negative), Including Ascension Sickness | 5,000,000 Coins, 500 Shards
+   * Super Snack: -10 Fury, +10 Health, Extra Double Multiplier of Survey AND Generator AND Clicker Rewards & Coins for 10 Days | 10,000 Coins, 100 Shards
+   * Age Snack: +1 Dragon Age | 1,000,000 Coins, 100 Shards
+Cosmetics
+* Hats
+* Ties
+* Sunglasses
+* Etc.
+
+
+Coin Generators
+Additional Costs: Each coin generator will cost 1 Dragon Shard, on top of the default cost. 
+Selling: You can also sell coin generators, only getting 1 dragon shard and 75% of coins. 
+Each Upgrade Adds the Effect.
+Although it says per day, coins are automatically added per second 1/86400 * Coins Per Day. This Then Adds Up Offline/
+
+
+* Scar Level 3:
+   * Coin Treasury: +1 Coins / Day * Multiplier | Costs 5 coins * 1.08/Upgrade
+* Scar Level 4:
+   * Forge: +(2 + Yang/50) Coins / Day * Multiplier | Costs 10 coins * 1.12/Upgrade
+   * Freezer: +(2 + Yin/50) Coins / Day * Multiplier | Costs 10 coins * 1.12/Upgrade
+   * Dragon NFT +(3 + Streak / 30) Coins / Day * Multiplier | Costs 15 coins * 1.16/Upgrade
+   * Coin Mountain: +3 Coins / Day * Multiplier | Costs 15 coins * 1.08 / Upgrade
+* Scar Level 5:
+   * Anti-Treasury: +(4 + Anti-Treasury #) Coins / Day * Multiplier. Anti-Treasury Reduces All Other Coin Production by 0.9^(Anti-Treasury #) | Costs 20 coins * 1.2/Upgrade
+   * Super Treasury: +4 Coins / Day * Multiplier | Costs 20 coins * 1.08/Upgrade
+   * Black Hole: +(5 + Scar Level) Coins / Day * Multiplier | Costs 25 coins * 1.14/Upgrade.
+* Scar Level 6:
+   * Golden Saddle: +(6 + Age/10) Coins / Day * Multiplier | Costs 30 coins * 1.3/Upgrade
+   * Coin Continent: +6 Coins / Day * Multiplier | Costs 30 coins * 1.08 / Upgrade
+* Scar Level 7:
+   * Dragon Anti-Charm: +(7+log10(Pop. Destroyed) Coins / Day * Multiplier | Costs 35 coins * 1.1 / Upgrade
+   * Dragon Charm: +(8+log10(Pop)) Coins / Day * Multiplier | Costs 40 coins * 1.1 / Upgrade
+* Scar Level 8:
+   * Coin Planet: +9 Coins / Day * Multiplier | Costs 45 coins * 1.07 / Upgrade
+   * Coin Galaxy: +90 Coins / Day * Multiplier | Costs 600 coins * 1.06 / Upgrade
+   * Coin Universe: +900 Coins / Day * Multiplier | Costs 9000 coins * 1.05 / Upgrade
+* Scar Level 9:
+   * Ultimate Dragon Bracelet: +(10 + Building #) Coins / Day * Multiplier | Costs 50 coins * 1.18 / Upgrade
+* Scar Level 10:
+   * Big Stick: +10 Coins / Day * Multiplier^2 | Costs 100 coins * 1.05 / Upgrade
+
+
+Dragon Clickers
+* Scar Level 3: Dragon Clicks - Each Dragon Click Bought Gives +0.01 Coins | Costs 10 coins * 1.04/Upgrade
+* Scar Level 5: Dragon Age Multiplier - Each Age Multiplies Dragon Clicks By +0.01*Age | Costs 10 coins * 10/Upgrade
+* Scar Level 7: Demonic Dragon Clicks - Each of these Bought Gives +0.001% of Coin Generation / Day Clicks | Costs 100 coins * 1.2/Upgrade
+* Scar Level 9: Mega-Dragon Clicks - Each Dragon Click Bought Gives +0.1 Coins | Costs 1000 coins * 1.02/Upgrade
+* Scar Level 12: Impossible Dragon Clicks - Each Dragon Click Bought Gives +1 Coins | Costs 1,000,000 coins * 1.01/Upgrade
+
+
+Dragon Soul Multipliers
+Each Upgrade Adds the Multiplier
+Ascension Unlocks At Scar Level 5
+
+
+* Infernal Universal Multiplier: Increases Effects all Multipliers By *1.5 | Costs 100 Dragon Souls * 1.3/Upgrade
+* Infernal Universal Crucible: Increases Effects a Specific Multipliers By *(1 + # Of A Multiplier / 100) | Costs 250 Dragon Souls * 1.45/Upgrade
+* Infernal Click Multiplier: Increases Effects all Clicks By *2 | Costs 100 Dragon Souls * 1.4/Upgrade
+* Infernal Ritual Multiplier: Increases Effects of Dragon Clicks and Mega Dragon and Impossible Dragon Clicks By *10 | Costs 100 Dragon Souls * 1.5/Upgrade
+* Impossible Effects: All Status Effect Effects *2 | Costs 500 Dragon Souls * 1.5/Upgrade
+* Eternal Shards: Shard Multiplier Effect *2 | Costs 1000 Dragon Souls * 1.5/Upgrade
+* Survey Exploitation I: +(Coins/Day)*(Coins Earned By Survey)/100 | Costs 25 Dragon Souls * 1.2/Upgrade
+* Survey Exploitation II: Surveys Give +(Total Coins By Survey)^0.5 Shards | Costs 250 Dragon Souls * 1.5/Upgrade
+* Survey Exploitation III: Surveys Give +1 Additional Random Unlocked Snack | Costs 2500 Dragon Souls * 2/Upgrade
+* Survey Duplication Glitch: Surveys Give *2 Shards, *2 Coins, and *2 Snacks | Costs 25000 Dragon Souls * 2/Upgrade
+   * The Survey Duplication Glitch Multiplies this Effect, Instead of Adding Like the Other Multipliers
+   * Notice How Fury Isn’t in the Calculation
+* Infernal __ Multiplier - Doubled Effects: Increases Effects of __ Multiplier By *2 | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernal __ Crucible: Generation of __  Universal Coin Multiplier (Infernal Multiplier) By (Coin Generation/Day)^0.1 | Costs 1000 Dragon Souls * 1.2/Upgrade
+
+
+Background & Themes
+* Dungeon Theme
+* Castle & Plains Theme
+* Space Theme
+* Volcano Theme
+* Add More?
+
+
+________________
+
+
+Status Effects
+A List of All Status Effects, Which are Listed on the Right of the Home Screen
+When An Effect of Higher Level is Applied, The Timer for All Levels Below are Paused and the one with higher level takes effect
+When An Effect of Same Level as an Active/Deactive Timer is Applied, that Timer has __ Added Time to the Effect
+Additionally, When An Effect of the Different Oscillation is applied but has the Same Level, the Higher Oscillation takes effect and the other timer is paused.
+Note: Milk Clears all Timers, Regardless of Active or Not,. Super Milk is Required for Ascension Sickness.
+
+
+Modifiers
+* Level Of Effect: The Level of the Effect
+* Oscillation Effect: Adds +x Level to -x Level Effect For Everytime the Modifier Is Applied (Hidden, Default is 0)
+Effects
+* Regeneration: +5 * Level Health/Day for | __ Time (Days)
+* Wither: -5 * Level Health/Day for | __ Time (Days)
+* Ascension Sickness: -5 * Level * Min(Age, 3) Health/Day for | __ Time (Days)
+* Therapy: -5 * Level Fury/Day | __ Time (Days)
+* Rage: +5 * Level Fury/Day | __ Time (Days)
+* Bipolar: (+5 or -10) * Level Fury/Day | __ Time (Days)
+* Jeopardy: *4^(Level) Trivia Rewards or Loss /Day | __ Time (Days)
+* Coin Generator Boosters: 2^Level Coins/Day | __ Time (Days)
+* Coin Click Boosters: 2^Level Coins/Click | __ Time (Days)
+* Survey Duplication: 2^Level (Survey Coins, Shards, Snacks) | __ Time (Days)
+* Cursed Survey Duplication: 4^Level Coins/Survey and 0.5 / Level Coins/Day | __ Time (Days)
+* Mourning (After Dragon Dies): +20 * Level Fury/Day, 0.5 / Level^2 Coins/Day | __ Time (Days, Usually 3 Days)
+* Super Effect: 2^Level (Coins/Click, Coins/Day, and Coins/Survey) + 10 * Level Health/Day - 10 * Level Fury/ Day * Level | __Time (Days)
+
+
+________________
+
+
+
+
+The Lair
+Dragon Lair
+The Page for the Dragon’s Lair, which contains Journal Entries, Logs, Statistics, Achievements, and a Graveyard, and Ascension
+
+
+________________
+
+
+Logs (Table View) (Unlock For 5 Coins)
+* The Table View of the Logs will have: A Header Row with a stat, and Each Row Would Have A day of statistics from the morning + evening surveys.
+* Columns (Don’t add {} to Row): Date, Mood (Morning), Mood (Evening), # {Day Goals} Comp., # {Day Goals} Incomp, % {Day Goals} Comp., # To-Do, # To-Do F. {Failed}. #To-Do Remain, Rewards {Coins, Shards, XP, Fury}, VIEW JOURNAL INFO {Button For Trivia, Prompt, and Journal Entry}
+* Note 1: Date is a Date, Mood is an Emoji, Everything else is numbers. Then the View Journal Button is a button Opening a modal
+* Note 2: Table Page Should be Scrollable Vertically and Horizontally
+* Note 3: The Modal is a Menu Showing: Prompt & Response, The Trivia Question & Results, and Then the Journal Entry, all Labeled.
+Logs (List View) (Unlock For 5 Coins)
+* The List View of the Logs will have: All the Info for Surveys are Listed out in boxes. The Header will be the Date, and at first it’ll show the info that is on the table (# goals & rewards, etc). There’ll then be a dropdown, showing the potential responses & your response of each question (Mood Morning, Mood Night Question, Which Goals Completed & Incompleted, Which To-Do Goals Completed & Failed & Still Needs Done, Prompt, Trivia, Journal Entry, etc) It should be neat, organized, concise, and have emojis.
+Achievements & Statistics (Unlock For 5 Coins)
+* The Top of the Page will Contain Varying Statistics Based on the Surveys Taken. These will be in an organized, decorated box on top of the achievements. (maybe have each of the stats in boxes as well, and decorated, some with emojis):
+   * Surveys Header, Then: All-Time Habit Goals Incompleted, All-Time Day Goals Completed, All-Time Day Goals Incompleted, Average Morning Mood, Average Evening Mood, Best Day Goal Streak, Total Prompts Answered, Total Trivia Questions Answered, Trivia Accuracy Rate, Total Journal Entries Written
+   * Rewards Header, Then: Total Coins Earned, Total Shards Earned, Total XP Earned, Total Fury Earned, Average Rewards Per Day, Highest Reward Day Ever
+* All the Achievements will Show below these, in 4 columns.
+Dragon Graveyard (Scar Level 2+, Unlock For 10 Coins)
+* The Dragon Graveyard contains info of all passed dragons.
+* Each Graveyard contains the Dragon Name, Age, and Stage, and Cause of Death (Randomized?)
+Ascension (Scar Level 4+, Unlock For 50 Coins)
+* To Ascend, your dragon must be at least a Juvenile (30 Days old), and you must be at least Scar Level 4. 
+* Once you ascend, you must wait at least 7 days to ascend again. 
+* This will sacrifice all your coins, coin generators (to 0), and dragon clickers (to 0), and convert them to dragon souls and dragon shards
+   * +(All Coins Earned during Ascension^0.75) Dragon Souls.
+* Ascensions will add 1 million people to the population. 
+* It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 7 days (each ascend, +1 days are added).
+* The Ascension Page will contain the dragon-heart.png in images, and then a button to ascend (which will show the requirements below, in a checklist format). The button is grayed out if you can’t ascend. Above the Ascension Button will the the # of Dragon Souls in text (Similar to the Age of dragon in the main page)
+* The Bottom of the Ascension Page Has a “Soul Convertor”, Where every time the button is clicked, Dragon Souls are converted to 1 Dragon Shard. It starts off with requiring 1 Dragon Souls, and multiplies by 1.02* For Every Click, Rounded Down (This Doesn’t Reset)
+* The Bottom of the Ascension Page Also Has a “Shop Resetor”, Where every time the button is clicked, The Snack Section of the Shop has the Costs Reset to Defaults. You Can Only Reset the Shop Once Per Ascension. It starts off with requiring 1000 Dragon Souls, and 100 Dragon Shards, Dragon Soul Costs multiplies by 1000* For Every Reset (Dragon Shards Cost Remains 100)
+
+
+Marketing Posts
+The Reddit Post:
+
+
+________________
+
+
+
+
+Hey Reddit,
+(There's a tl;dr at the bottom ofc)
+I have a focus app idea where you fill in 2 surveys: one in the morning to set goals to do, and one at night to see if they were accomplished. There's an AI, which is the twist, and doing surveys will affect the AI's mood. Not doing surveys makes the AI big sad :(. There's an adjustable table / journal to see past survey data, and a shop for cosmetics and ai mood. Lemme break it down:
+Surveys
+There will be 2 Customizable Surveys: A Morning Survey and A Night Survey. Some Questions are optional, meaning you can disable them in the survey. Here's How the Question Will Be:
+Morning Survey
+1. Mood Multiple Choice (Optional): How do you feel This Morning? 
+2. Day Checklist: You can choose 1 or more checklists on any given day.
+   1. Day Goals Checklist (Simple, Can Use a Pre-Saved/Pre-Set Version)?
+   2. Day Goals Checklist (Importance Separated by up to 5 Levels)?
+   3. Day Goals Checklist (Categories, Separated into Categories: Personal, Mental, Physical / Gym Goals, Work, Etc)?
+      1. Note: Goals can be simple checkboxes, or they can be a number-scale, or a custom dropdown.
+      2. Example: Building Legos, Dropdown. 100 pushups, Number Scale.
+3. Schedule (Optional): A Schedule would be a checklist, but with an added field for time.  You can view/edit the schedule in a schedule page, or finish filling it out in the evening survey.
+4. Create Custom Checklist(s) (Optional): You Can Create a Custom Checklist of Your Own, using a template above, but set the deadline to another date. We might add a feature to group multiple checklists into a 'project'. You can also set these to show up every __ days for the evening survey.
+5. (Optional): Fill In Some of the Checklists (like the evening survey, it would prompt you if you want to fill in certain checklist(s))
+6. (Optional) Short-Answer Prompts: There will be some short answer prompts (why do you feel ___, what are you grateful for, etc) which are all optional, and you can set how many of these will be in a survey (default: 1)
+   1. Note: There can be adjustable Custom and Pre-MadePrompts
+   2. Note: These may be added to the journal entry.
+7. (Optional) Short-Answer Prompts With Goals: Similar to the one before, but your response can be a singular checklist/number/dropdown goal (default: 0)
+   1. Note: There can be adjustable Custom and Pre-MadePrompts
+8. (Optional): Create Prompts for the Evening
+9. (Optional): Create a Journal Entry.
+10. (Optional): Show a Quote
+11. Results: What you filled in, how it changed AI Goals
+Evening Survey - It would be the same as the Morning Survey, but instead of creating checklists, you would fill them in. It'll also have similar options for the prompt.
+1. Mood Multiple Choice (Optional)
+2. Fill in Day Checklist(s)
+3. Fill in the Survey (If Created)
+4. Fill in Custom Checklists (get the option of which ones to go over)
+5. Short Answer Prompts (Optional)
+6. Results: How it Changed the AI
+Journal / Table
+* The Data from the Surveys will be put in a table
+* You can have a simple view or a more complex view.
+* You can view Journal Entries via the table or look in a journal view. The journal might be editable.
+The AI
+* Design: Here are a few designs I have, I guess some ideas for which one to use:
+   * Evil Robot: It'll look kinda like Megatron's face. Or the terminator.
+   * Glitched Face: It'll be a black glitched face with maybe a minimalist face/emoji
+   * Monster: It'll be a cute-ish monster pet that can get sad.
+   * Pet / Animal: Could be a dog or a cat, or another animal.
+   * Something Else
+   * The ability to change designs could be planned for the future.
+* Corruption Meter: Track how well you complete goals, and your mood
+   * 0 for corrupt to 100 for not corrupt.
+   * Decreases when not doing goals
+   * Increases when doing goals, and with a good mood, and shop items
+   * Low Corruption makes App Glitched, Changes AI Responses, and Maybe App Features..?
+* Mood Meter: Tracks how consistently you use app
+   * 0 for sad to 100 for happy.
+   * Decreases only when you skip surveys.
+   * Increases with doing surveys, setting goals, and shop items.
+   * Changes AI response, Face, and Background
+* Idea 1: AI Chat: Similar to ChatGPT, but With...Personality. (Work in Progress)
+   * It can be used in the process of creating new goals (in morning survey or when editing a survey)
+   * It can be used as a normal chat, such as ChatGPT, and maybe have niches (more structured or creative responses)
+   * Its response depends on corruption and mood meter, adding anger or happiness as if talking to a real, evil machine. It'll all have equal accuracy, however.
+* Idea 2: AI 'Hacks' Phone: The AI will make noise, and might shut down some apps on the phone when it is sad or corrupt (Similar to screen time, but it can be bypassed.?
+   * Example: If Corrupt and Sad, It Shuts down Discord and Sends Notifications. This could just be annoying, but also motivating?
+   * This started as a joke. lmk if this would work.
+* Idea 3: AI Gives Quotes / Advice: Similar to a Chat, but instead it would give off advice and quotes automatically, instead of an AI chat.
+* Idea 4: Meditation or Other Tool: AI provides meditation or other feature that would improve with a better mood/corruption
+* The Shop: The Shop would contain cosmetics from points earned from surveys (and happy AI). It will also contain 'snacks', which can improve AI's mood/corruption faster when doing surveys. Or earn more points.
+~~
+Conclusion
+This would be a free app in the app store using Expo React Native. There would be a subscription plan that can improve the AI (more complex), or to improve/add the survey options (example: put an option for a custom schedule behind a paywall), and remove ads.
+The Layout of the App Would be a Landing Page, Then Show a Survey if Not Done, then a Page Displaying the AI / AI Chat / AI Mood Meter, and Tabs for a Shop (Cosmetics and to make the AI happy), a table/schedule page, and Survey / General Settings.
+~~~
+tl;dr & Feedback Points:
+1. What focus apps do you use (if any, including notes app)? What do you mainly use it for (Goals, Schedule, Calendar, To-Do, etc)
+2. Would you use an app like this? Or an alternative (What Can be Used to Help..?)
+3. Would the Gamification of AI help with the focus? Maybe Adjust It?
+4. Should I Keep AI Hacking the Phone?
+5. Should I Keep an AI Chat?
+6. Are Ideas 3 and 4 valid for the AI / Are there other ideas?
+7. Should I Keep the Table / Journal Entries
+8. The Surveys: What to Keep or Remove?
+   1. The Simple Checklist
+   2. The Importance / Categories Checklist
+   3. The Schedule
+   4. Custom Checklists
+   5. Short Answer Prompts / Prompt + Goals
+   6. A Quote
+   7. The Table
+   8. Journal Entries (In Surveys)
+9. Should I Keep the Snack / Cosmetics Shop? Any Ideas for Items?
+10. What Design to Use for AI? (Robot, Glitch, etc..)
+11. Would You Spend Money on an App Like This (In what ways?)
+12. What Other Features Can Be Added / What Others to Remove?
+13. Anything Else?
+tl;dr:
+* I have a focus app idea where you fill in 2 surveys: one in the morning to set goals to do, and one at night to see if they were accomplished.
+* These are recorded in a graph (multiple view settings), which can open journal entries
+* There's an AI, which is the twist, and doing surveys will affect the AI's mood/corruption.
+   * Idea 1: The AI can be used as a chatbot for creating goals in surveys. This may cost if # prompts exceeded?
+   * Idea 2: The AI would 'hack' the phone, such as shutting down apps in screen time.
+   * Idea 3: The AI gives general quotes / advice depending on mood, and changes the atmosphere of the app depending on mood.
+   * Idea 4: The AI gives another feature such as meditation depending on its mood
+* There will be a shop from points gained from AI's mood, which can be used for AI cosmetics or to improve AI's mood faster.
+* The Layout would be: Landing => Survey => Tabs: Ai Chat / Graph & Schedule / Shop / Survey Edit
+* The App will be free on the App Store, with a subscription for better AI (maybe not), more survey options, and to remove ads.
+   * Addition 1: You can buy an additional subscription to earn more points cumulatively
+   * Addition 2: You can buy the points directly
+   * Addition 3: Use points to buy a lower-tiered subscription
+Hmu if you want to help develop ideas / develop the app.
+~~
+Preciate it, Reddit.
+- Jutothronicle (name is wip)
+
+
+________________
+
+
+Draft 2: Collaboration
+I don’t wanna ruin the vibes of this civil environment, but I got a business pitch of our time.
+Opening Statement: Imagine a world where your phone doesn’t steal time; it earns it.  
+Name Statement: Hey, my name is Jonathan Dawson. An...Auburn Freshman as well, my boy.
+Third Sentence: I am opening up good feedback for my new app called (drumroll boys)
+The App Name: *Dragon* 🐉 Focus.
+Diagram: 🐉🎯📝 ⇐ Caption: 7th word on fourth line, 15th word on the third line.
+Premise: The user fills in habit-goals, to-do goals, a journal, and limits apps based on their most-desired goals, in which the app is gamified. The prospect: an elusive dragon 🐉 ages, for which it has a bar for health, a bar for yin/yang (how sad the dragon is). By completing more goals, the user earns coins/shards (not real cash, unfortunately), which gives cosmetics (which also earn more coins), which is the process that helps grow likee the dragon 🐉, and unlocks more features of the likee the dragon🐉 app. If they aren’t accomplished, the dragon will enter its villain arc and start eating short people! wait… 
+Think: Clicker Heroes + Incentive to Complete Surveys and Goals
+The Goal (Autism Mode Activated): Ever since I was a 8 years old selling lemonade, distractions have been my greatest bottleneck. While a rock remains stagnant and a river meanders, the *dragon* 🐉 requires versatility with a clear path forward. By gamifying focus, the *dragon* 🐉 can turn discipline into a high-performance habit and crush goals with speed. With to-do goals, the *dragon* 🐉 has a list of habits to get done right. With habit goals, the *dragon* 🐉 is forced to commit to their agenda daily. Lastly, with trivia/journaling, the *dragon* 🐉 gets knowledgeable from the cerebral cortex to the gluteus.
+Break Statement: Any Questions?
+Pages: There are 7 Pages in This App
+* Home Page: The Dragon, The World, and Stats. If you click the dragon, you Earn Coins. Every day, the Dragon Earns Stats / Population grows/shrinks. The Secret: It’s just to keep user engagement 
+* Market Page: The items in this page help to generate more coins, or are cosmetics, or a background to change the app. 
+* Habit Page: The user checks habit goals to keep track of goals they accomplish daily
+* To-Do Page: The user checks to-do goals to keep track of longer-term goals
+* Trivia/Journal Page: The user fills in trivia or a journal for their own sake
+* Settings Page: The settings for the theme/volume/dragon invincible mode of the app
+* Planned Pages: App-Limit, Achievements, and Alarm-Clock Pages: Self-Explanatory.
+Break Statement: Any Questions?
+How we Earn Money: User engagement, and a premium to introduce unlimited habits, to-do goals, etc. :)
+Ending Statement: Love for any feedback on the idea (Completion: ~50%), possible assistance, and probably post up for beta-testing, and the OG-launch date of before Fall 2026.
+Peace & Love - Jonathan Dawson
+
+
+
+
+________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Collaboration
+Collaboration
+Preciate it to all the brochachos :3
+
+
+________________
+
+
+
+
+Project assignments
+	 People 
+ Name
+	Email
+	 Dropdowns 
+ Role(s)
+	 Dropdowns 
+ Availability
+	 Dropdowns 
+ Contributions
+	Jonathan Dawson
+	jonafunny6@gmail.com 
+	Project Management
+	Very High
+	Prototyping
+	Person
+	
+
+	Coding
+	High
+	Specifications
+	Person
+	
+
+	Art
+	High
+	Research
+	Person
+	
+
+	Millionare Marketing
+	High
+	Project planning
+	Person
+	
+
+	Design / Planning
+	High
+	Prototyping
+	Person
+	
+
+	Millionare Marketing
+	High
+	Prototyping
+	Person
+	
+
+	*Other Promo*
+	High
+	Prototyping
+	Person
+	
+
+	*Other Promo*
+	High
+	Prototyping
+	Person
+	
+
+	*Other Promo*
+	High
+	Prototyping
