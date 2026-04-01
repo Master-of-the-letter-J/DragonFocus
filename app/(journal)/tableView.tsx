@@ -1,71 +1,87 @@
 import { useJournal } from '@/context/JournalProvider';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function TableView() {
-	const { entries } = useJournal();
-	const [open, setOpen] = useState<any>(null);
+	const { getEntriesByDay } = useJournal();
+	const [openDate, setOpenDate] = useState<string | null>(null);
+	const dayEntries = getEntriesByDay();
+
+	const activeDay = useMemo(() => dayEntries.find(day => day.date === openDate) ?? null, [dayEntries, openDate]);
 
 	return (
 		<View style={{ flex: 1 }}>
-			<Text style={styles.header}>📊 Logs — Table View</Text>
+			<Text style={styles.header}>Logs - Table View</Text>
 
 			<ScrollView horizontal>
 				<View style={styles.table}>
-					{/* Header */}
 					<View style={[styles.row, styles.headerRow]}>
-						<Text style={[styles.cell, { minWidth: 120 }]}>Date</Text>
-						<Text style={styles.cell}>Mood 🌅</Text>
-						<Text style={styles.cell}>Mood 🌙</Text>
-						<Text style={styles.cell}>Day Comp</Text>
-						<Text style={styles.cell}>Day Incomp</Text>
-						<Text style={styles.cell}>% Day</Text>
-						<Text style={styles.cell}># To‑Do</Text>
-						<Text style={styles.cell}># To‑Do F.</Text>
-						<Text style={styles.cell}># To‑Do Rem</Text>
-						<Text style={[styles.cell, { minWidth: 160 }]}>Rewards</Text>
-						<Text style={[styles.cell, { minWidth: 80 }]}>Journal Info</Text>
+						<Text style={[styles.cell, { minWidth: 110 }]}>Date</Text>
+						<Text style={styles.cell}>Mood AM</Text>
+						<Text style={styles.cell}>Mood PM</Text>
+						<Text style={styles.cell}>Habit Plan</Text>
+						<Text style={styles.cell}>Goals Done</Text>
+						<Text style={styles.cell}>Goals Left</Text>
+						<Text style={styles.cell}>To-Dos</Text>
+						<Text style={styles.cell}>To-Do Fail</Text>
+						<Text style={styles.cell}>Rewards</Text>
+						<Text style={[styles.cell, { minWidth: 90 }]}>Details</Text>
 					</View>
 
-					{entries.map(e => (
-						<View key={e.id} style={styles.row}>
-							<Text style={[styles.cell, { minWidth: 120 }]}>{e.date}</Text>
-							<Text style={styles.cell}>{e.moodMorning || '—'}</Text>
-							<Text style={styles.cell}>{e.moodEvening || '—'}</Text>
-							<Text style={styles.cell}>{e.goalsCompleted || 0}</Text>
-							<Text style={styles.cell}>{e.goalsIncomplete || 0}</Text>
-							<Text style={styles.cell}>{e.schedulePercent ?? 0}%</Text>
-							<Text style={styles.cell}>{e.todoCount ?? 0}</Text>
-							<Text style={styles.cell}>{e.todoFailed ?? 0}</Text>
-							<Text style={styles.cell}>{Math.max(0, (e.todoCount || 0) - (e.todoCompleted || 0) - (e.todoFailed || 0))}</Text>
-							<Text style={[styles.cell, { minWidth: 160 }]}>{`💰 ${e.rewards?.coins || 0}, ✨ ${e.rewards?.xp || 0}, 🔥 ${e.rewards?.fury || 0}`}</Text>
-							<Pressable style={styles.viewButton} onPress={() => setOpen(e)}>
-								<Text>View Journal Info</Text>
-							</Pressable>
-						</View>
-					))}
+					{dayEntries.map(day => {
+						const morning = day.morning;
+						const evening = day.evening;
+						const plannedGoals = morning?.goalsCompleted ?? 0;
+						const completedGoals = evening?.goalsCompleted ?? 0;
+						const todoCount = evening?.todoCount ?? morning?.todoCount ?? 0;
+						const todoCompleted = evening?.todoCompleted ?? 0;
+						const todoFailed = evening?.todoFailed ?? 0;
+						const totalCoins = (morning?.rewards.coins ?? 0) + (evening?.rewards.coins ?? 0);
+						const totalXp = (morning?.rewards.fireXp ?? morning?.rewards.xp ?? 0) + (evening?.rewards.fireXp ?? evening?.rewards.xp ?? 0);
+						const totalShards = (morning?.rewards.shards ?? 0) + (evening?.rewards.shards ?? 0);
+
+						return (
+							<View key={day.date} style={styles.row}>
+								<Text style={[styles.cell, { minWidth: 110 }]}>{day.date}</Text>
+								<Text style={styles.cell}>{morning?.moodMorning || '-'}</Text>
+								<Text style={styles.cell}>{evening?.moodEvening || '-'}</Text>
+								<Text style={styles.cell}>{plannedGoals}</Text>
+								<Text style={styles.cell}>{completedGoals}</Text>
+								<Text style={styles.cell}>{Math.max(0, plannedGoals - completedGoals)}</Text>
+								<Text style={styles.cell}>{todoCount}</Text>
+								<Text style={styles.cell}>{todoFailed}</Text>
+								<Text style={[styles.cell, { minWidth: 140 }]}>{`${totalCoins}c • ${totalShards}sh • ${totalXp}xp`}</Text>
+								<Pressable style={styles.viewButton} onPress={() => setOpenDate(day.date)}>
+									<Text style={styles.viewButtonText}>Open</Text>
+								</Pressable>
+							</View>
+						);
+					})}
 				</View>
 			</ScrollView>
 
-			<Modal visible={!!open} animationType="slide" transparent={false}>
-				<View style={{ flex: 1, padding: 12 }}>
-					<Pressable onPress={() => setOpen(null)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-						<Text style={{ fontSize: 18 }}>✕ Close</Text>
-					</Pressable>
-					{open && (
-						<View>
-							<Text style={{ fontSize: 20, fontWeight: '700' }}>{open.date} — Details</Text>
-							<Text style={{ marginTop: 12, fontWeight: '700' }}>📝 Prompt & Response</Text>
-							<Text style={{ marginTop: 6 }}>{open.promptText || '—'}</Text>
-
-							<Text style={{ marginTop: 12, fontWeight: '700' }}>❓ Trivia</Text>
-							<Text style={{ marginTop: 6 }}>{open.triviaQuestion || '—'}</Text>
-							<Text style={{ marginTop: 6 }}>{open.triviaResult || '—'}</Text>
-
-							<Text style={{ marginTop: 12, fontWeight: '700' }}>📓 Journal Entry</Text>
-							<Text style={{ marginTop: 6 }}>{open.text || '—'}</Text>
-						</View>
-					)}
+			<Modal visible={!!activeDay} animationType="slide" transparent onRequestClose={() => setOpenDate(null)}>
+				<View style={styles.modalBackdrop}>
+					<View style={styles.modalCard}>
+						<Pressable onPress={() => setOpenDate(null)} style={styles.closeRow}>
+							<Text style={styles.closeText}>Close</Text>
+						</Pressable>
+						{activeDay && (
+							<>
+								<Text style={styles.modalTitle}>{activeDay.date}</Text>
+								<Text style={styles.modalSection}>Morning Prompt</Text>
+								<Text style={styles.modalBody}>{activeDay.morning?.promptText || '-'}</Text>
+								<Text style={styles.modalSection}>Evening Prompt</Text>
+								<Text style={styles.modalBody}>{activeDay.evening?.promptText || '-'}</Text>
+								<Text style={styles.modalSection}>Trivia</Text>
+								<Text style={styles.modalBody}>{activeDay.evening?.triviaResult || activeDay.morning?.triviaResult || '-'}</Text>
+								<Text style={styles.modalSection}>Morning Journal</Text>
+								<Text style={styles.modalBody}>{activeDay.morning?.text || '-'}</Text>
+								<Text style={styles.modalSection}>Evening Journal</Text>
+								<Text style={styles.modalBody}>{activeDay.evening?.text || '-'}</Text>
+							</>
+						)}
+					</View>
 				</View>
 			</Modal>
 		</View>
@@ -73,10 +89,18 @@ export default function TableView() {
 }
 
 const styles = StyleSheet.create({
-	header: { fontSize: 18, fontWeight: '700', padding: 12 },
+	header: { fontSize: 18, fontWeight: '800', padding: 12 },
 	table: { padding: 8 },
-	row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee' },
-	headerRow: { backgroundColor: '#f7f7f7' },
-	cell: { minWidth: 80, paddingHorizontal: 8 },
-	viewButton: { padding: 6, backgroundColor: '#eee', borderRadius: 6, marginLeft: 8 },
+	row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+	headerRow: { backgroundColor: '#F9FAFB' },
+	cell: { minWidth: 80, paddingHorizontal: 8, fontSize: 12 },
+	viewButton: { marginLeft: 8, backgroundColor: '#111827', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
+	viewButtonText: { color: '#fff', fontWeight: '700' },
+	modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 16 },
+	modalCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, maxHeight: '80%' },
+	closeRow: { alignSelf: 'flex-end', marginBottom: 8 },
+	closeText: { color: '#2563EB', fontWeight: '700' },
+	modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
+	modalSection: { fontSize: 14, fontWeight: '800', marginTop: 10, color: '#111827' },
+	modalBody: { fontSize: 13, lineHeight: 20, color: '#4B5563', marginTop: 4 },
 });

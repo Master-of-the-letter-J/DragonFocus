@@ -1,6 +1,7 @@
 import ProgressBar from '@/components/ProgressBar';
 import type { HabitGoal, TodoGoal } from '@/context/GoalsProvider';
 import { useGoals } from '@/context/GoalsProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -14,8 +15,9 @@ export interface HabitEditorProps {
 
 export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 	const goals = useGoals();
+	const questions = useQuestions();
 	const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-	const CATEGORIES = ['Health', 'Fitness', 'Learning', 'Work', 'Creativity', 'Social', 'Meditation', 'Reading', 'Other'];
+	const CATEGORIES = [...new Set([...questions.questionSettings.habitGoals.suggestedCategories, ...questions.questionSettings.habitGoals.customCategories, habit.category || ''].filter(Boolean))];
 
 	const [form, setForm] = useState({
 		title: habit.title,
@@ -60,13 +62,27 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 		}
 	};
 
+	const handleDelete = () => {
+		Alert.alert('Delete Habit Goal', 'Warning: deleting this habit removes the goal, its streak, and any challenge reward tied to it. Continue?', [
+			{ text: 'Cancel', style: 'cancel' },
+			{
+				text: 'Delete',
+				style: 'destructive',
+				onPress: () => {
+					goals.deleteHabit(habit.id);
+					onClose();
+				},
+			},
+		]);
+	};
+
 	return (
 		<View style={styles.container}>
 			<ScrollView contentContainerStyle={styles.formContent}>
 				<Text style={styles.title}>Edit Habit Goal</Text>
 
 				<Text style={styles.label}>Title</Text>
-				<TextInput value={form.title} onChangeText={t => setForm({ ...form, title: t })} placeholder="Goal title" style={styles.input} />
+				<TextInput editable={!habit.isChallenge} value={form.title} onChangeText={t => setForm({ ...form, title: t })} placeholder="Goal title" style={styles.input} />
 
 				<Text style={styles.label}>Importance</Text>
 				<View style={styles.buttonGroup}>
@@ -131,6 +147,9 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 					<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleSave}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Save</Text>
 					</Pressable>
+					<Pressable style={[styles.button, styles.buttonDanger]} onPress={handleDelete}>
+						<Text style={[styles.buttonText, styles.buttonTextLight]}>Delete</Text>
+					</Pressable>
 					<Pressable style={[styles.button, styles.buttonSecondary]} onPress={onClose}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Cancel</Text>
 					</Pressable>
@@ -149,7 +168,8 @@ export interface TodoEditorProps {
 
 export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 	const goals = useGoals();
-	const CATEGORIES = ['Work', 'Personal', 'Health', 'Learning', 'Shopping', 'Finance', 'Home', 'Creative', 'Other'];
+	const questions = useQuestions();
+	const CATEGORIES = [...new Set([...questions.questionSettings.todoGoals.suggestedCategories, ...questions.questionSettings.todoGoals.customCategories, todo.category || ''].filter(Boolean))];
 
 	const [form, setForm] = useState({
 		title: todo.title,
@@ -160,6 +180,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 
 	const [subGoals, setSubGoals] = useState(todo.subGoals || []);
 	const [newSubGoal, setNewSubGoal] = useState('');
+	const [editingSubGoalId, setEditingSubGoalId] = useState<string | null>(null);
 
 	const addSubGoal = () => {
 		if (!newSubGoal.trim()) return;
@@ -178,6 +199,10 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 
 	const deleteSubGoal = (id: string) => {
 		setSubGoals(subGoals.filter(sg => sg.id !== id));
+	};
+
+	const updateSubGoalTitle = (id: string, title: string) => {
+		setSubGoals(subGoals.map(sg => (sg.id === id ? { ...sg, title } : sg)));
 	};
 
 	const progress = subGoals.length === 0 ? 0 : subGoals.filter(sg => sg.completed).length / subGoals.length;
@@ -204,7 +229,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 	};
 
 	const handleDelete = () => {
-		Alert.alert('Delete To-Do', 'Are you sure you want to delete this to-do?', [
+		Alert.alert('Delete To-Do Goal', 'Warning: deleting this to-do removes its sub-goals, due date, and any pending challenge reward tied to it. Continue?', [
 			{ text: 'Cancel', style: 'cancel' },
 			{
 				text: 'Delete',
@@ -223,7 +248,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 				<Text style={styles.title}>Edit To-Do</Text>
 
 				<Text style={styles.label}>Title</Text>
-				<TextInput value={form.title} onChangeText={t => setForm({ ...form, title: t })} placeholder="To-do title" style={styles.input} />
+				<TextInput editable={!todo.isChallenge} value={form.title} onChangeText={t => setForm({ ...form, title: t })} placeholder="To-do title" style={styles.input} />
 
 				<Text style={styles.label}>Importance</Text>
 				<View style={styles.buttonGroup}>
@@ -252,7 +277,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 				</View>
 
 				<Text style={styles.label}>Due Date (optional)</Text>
-				<TextInput value={form.dueDate} onChangeText={t => setForm({ ...form, dueDate: t })} placeholder="YYYY-MM-DD" style={styles.input} />
+				<TextInput editable={!todo.isChallenge} value={form.dueDate} onChangeText={t => setForm({ ...form, dueDate: t })} placeholder="YYYY-MM-DD" style={styles.input} />
 
 				{/* SUB-GOALS SECTION */}
 				<Text style={styles.label}>Sub-Goals</Text>
@@ -274,50 +299,86 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 					onDragEnd={({ data }) => setSubGoals(data)}
 					nestedScrollEnabled={true}
 					renderItem={({ item, drag, isActive }) => (
-						<Pressable
-							onLongPress={drag}
+						<View
 							style={{
-								flexDirection: 'row',
-								alignItems: 'center',
-								paddingVertical: 8,
+								paddingVertical: 10,
 								opacity: isActive ? 0.6 : 1,
 								borderBottomWidth: 1,
 								borderColor: '#eee',
 							}}>
-							{/* Checkbox */}
-							<Pressable
-								onPress={() => toggleSubGoal(item.id)}
-								style={{
-									width: 22,
-									height: 22,
-									borderRadius: 4,
-									borderWidth: 1,
-									borderColor: '#999',
-									backgroundColor: item.completed ? '#4CAF50' : 'transparent',
-									marginRight: 12,
-								}}
-							/>
-
-							<Text
-								style={{
-									flex: 1,
-									fontSize: 15,
-									textDecorationLine: item.completed ? 'line-through' : 'none',
-									color: item.completed ? '#777' : '#000',
-								}}>
-								{item.title}
-							</Text>
-
-							<Pressable onPress={() => deleteSubGoal(item.id)}>
-								<Text
+							<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+								<Pressable
+									onPress={() => deleteSubGoal(item.id)}
 									style={{
-										color: '#f44336',
-										fontWeight: '600',
+										marginRight: 12,
 									}}>
-									Delete
-								</Text>
-							</Pressable>
-						</Pressable>
+									<Text
+										style={{
+											color: '#f44336',
+											fontWeight: '700',
+										}}>
+										Delete
+									</Text>
+								</Pressable>
+								<Pressable
+									onPress={() => setEditingSubGoalId(item.id)}
+									style={{
+										marginRight: 12,
+									}}>
+									<Text
+										style={{
+											color: '#1565C0',
+											fontWeight: '700',
+										}}>
+										Edit
+									</Text>
+								</Pressable>
+								<Pressable onLongPress={drag} delayLongPress={120}>
+									<Text
+										style={{
+											color: '#6B7280',
+											fontWeight: '700',
+										}}>
+										Move
+									</Text>
+								</Pressable>
+							</View>
+
+							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+								<Pressable
+									onPress={() => toggleSubGoal(item.id)}
+									style={{
+										width: 22,
+										height: 22,
+										borderRadius: 4,
+										borderWidth: 1,
+										borderColor: '#999',
+										backgroundColor: item.completed ? '#4CAF50' : 'transparent',
+										marginRight: 12,
+									}}
+								/>
+
+								<TextInput
+									value={item.title}
+									onChangeText={text => updateSubGoalTitle(item.id, text)}
+									onFocus={() => setEditingSubGoalId(item.id)}
+									onBlur={() => setEditingSubGoalId(current => (current === item.id ? null : current))}
+									editable={true}
+									placeholder="Sub-goal title"
+									style={{
+										flex: 1,
+										fontSize: 15,
+										paddingVertical: 6,
+										paddingHorizontal: 8,
+										borderWidth: editingSubGoalId === item.id ? 1 : 0,
+										borderColor: '#D1D5DB',
+										borderRadius: 8,
+										textDecorationLine: item.completed ? 'line-through' : 'none',
+										color: item.completed ? '#777' : '#000',
+									}}
+								/>
+							</View>
+						</View>
 					)}
 				/>
 

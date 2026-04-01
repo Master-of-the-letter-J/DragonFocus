@@ -1,380 +1,190 @@
 import { useQuestions } from '@/context/QuestionProvider';
+import { useSurvey } from '@/context/SurveyProvider';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
-function SurveySettingsContent() {
-	const { questionSettings, updateAdviceSettings, updateQuotesSettings, toggleMood, addCustomEmotion, removeCustomEmotion, updateHabitCategories, addHabitCategory, removeHabitCategory, updateTodoCategories, addTodoCategory, removeTodoCategory, addCustomPrompt, removeCustomPrompt, updatePromptsEnabled, setTriviaCount, setJournalEntry, togglePromptCategory, toggleTriviaCategory } = useQuestions();
-
-	const PROMPT_CATEGORIES = ['Self-Discovery', 'Reflection', 'Gratitude', 'Fun & Creative', 'Mindfulness', 'Productivity', 'Relationships'];
-	const TRIVIA_CATEGORIES = ['General Knowledge', 'Pop Culture', 'History', 'Science', 'Geography', 'Sports', 'Literature / Arts', 'Food'];
-	// helpers to map display category names to settings keys
-	const promptKey = (cat: string) => {
-		switch (cat) {
-			case 'Self-Discovery':
-				return 'SelfDiscovery';
-			case 'Reflection':
-				return 'Reflection';
-			case 'Gratitude':
-				return 'Gratitude';
-			case 'Fun & Creative':
-				return 'FunCreative';
-			case 'Mindfulness':
-				return 'Mindfulness';
-			case 'Productivity':
-				return 'Productivity';
-			case 'Relationships':
-				return 'Relationships';
-			default:
-				return '';
-		}
-	};
-
-	const triviaKey = (cat: string) => {
-		switch (cat) {
-			case 'General Knowledge':
-				return 'GeneralKnowledge';
-			case 'Pop Culture':
-				return 'PopCulture';
-			case 'History':
-				return 'History';
-			case 'Science':
-				return 'Science';
-			case 'Geography':
-				return 'Geography';
-			case 'Sports':
-				return 'Sports';
-			case 'Literature / Arts':
-				return 'LiteratureArts';
-			case 'Food':
-				return 'Food';
-			default:
-				return '';
-		}
-	};
-
-	const [customHabitCatInput, setCustomHabitCatInput] = useState('');
-	const [customTodoCatInput, setCustomTodoCatInput] = useState('');
-	const [newMoodEmoji, setNewMoodEmoji] = useState('');
-	const [newMoodDesc, setNewMoodDesc] = useState('');
-	const [newMoodFury, setNewMoodFury] = useState('0');
-
-	return (
-		<View>
-			{/* 1. Advice Question */}
-			<View style={styles.questionBox}>
-				<View style={styles.questionHeader}>
-					<Text style={styles.questionTitle}>💡 Survey Advice</Text>
-					<Switch value={questionSettings.advice.enabled} disabled />
-				</View>
-				<Text style={styles.questionHint}>Adjust types of advice shown at survey start</Text>
-				<View style={styles.typeToggleRow}>
-					<Pressable style={[styles.typeToggle, questionSettings.advice.types.inspirational && styles.typeToggleActive]} onPress={() => updateAdviceSettings({ ...questionSettings.advice.types, inspirational: !questionSettings.advice.types.inspirational })}>
-						<Text style={[styles.typeToggleText, questionSettings.advice.types.inspirational && styles.typeToggleTextActive]}>✨ Inspirational</Text>
-					</Pressable>
-					<Pressable style={[styles.typeToggle, questionSettings.advice.types.witty && styles.typeToggleActive]} onPress={() => updateAdviceSettings({ ...questionSettings.advice.types, witty: !questionSettings.advice.types.witty })}>
-						<Text style={[styles.typeToggleText, questionSettings.advice.types.witty && styles.typeToggleTextActive]}>😄 Witty</Text>
-					</Pressable>
-					<Pressable style={[styles.typeToggle, questionSettings.advice.types.philosophical && styles.typeToggleActive]} onPress={() => updateAdviceSettings({ ...questionSettings.advice.types, philosophical: !questionSettings.advice.types.philosophical })}>
-						<Text style={[styles.typeToggleText, questionSettings.advice.types.philosophical && styles.typeToggleTextActive]}>🤔 Philosophical</Text>
-					</Pressable>
-				</View>
-			</View>
-
-			{/* 2. Quotes Question */}
-			<View style={styles.questionBox}>
-				<View style={styles.questionHeader}>
-					<Text style={styles.questionTitle}>💬 End Survey Quotes</Text>
-					<Switch value={questionSettings.quotes.enabled} disabled />
-				</View>
-				<Text style={styles.questionHint}>Adjust types of quotes shown at survey end</Text>
-				<View style={styles.typeToggleRow}>
-					<Pressable style={[styles.typeToggle, questionSettings.quotes.types.inspirational && styles.typeToggleActive]} onPress={() => updateQuotesSettings({ ...questionSettings.quotes.types, inspirational: !questionSettings.quotes.types.inspirational })}>
-						<Text style={[styles.typeToggleText, questionSettings.quotes.types.inspirational && styles.typeToggleTextActive]}>✨ Inspirational</Text>
-					</Pressable>
-					<Pressable style={[styles.typeToggle, questionSettings.quotes.types.witty && styles.typeToggleActive]} onPress={() => updateQuotesSettings({ ...questionSettings.quotes.types, witty: !questionSettings.quotes.types.witty })}>
-						<Text style={[styles.typeToggleText, questionSettings.quotes.types.witty && styles.typeToggleTextActive]}>😄 Witty</Text>
-					</Pressable>
-					<Pressable style={[styles.typeToggle, questionSettings.quotes.types.philosophical && styles.typeToggleActive]} onPress={() => updateQuotesSettings({ ...questionSettings.quotes.types, philosophical: !questionSettings.quotes.types.philosophical })}>
-						<Text style={[styles.typeToggleText, questionSettings.quotes.types.philosophical && styles.typeToggleTextActive]}>🤔 Philosophical</Text>
-					</Pressable>
-				</View>
-			</View>
-
-			{/* 3. Mood Question */}
-			<View style={styles.questionBox}>
-				<View style={styles.questionHeader}>
-					<Text style={styles.questionTitle}>😊 Mood Question</Text>
-					<Switch value={questionSettings.mood.enabled} onValueChange={toggleMood} />
-				</View>
-				<Text style={styles.questionHint}>Customize mood options and emotions</Text>
-				{questionSettings.mood.customEmotions && (
-					<View style={{ marginTop: 8 }}>
-						{questionSettings.mood.customEmotions.map(e => (
-							<View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
-								<Text>
-									{e.emoji} {e.description}
-								</Text>
-								{e.custom && (
-									<Pressable onPress={() => removeCustomEmotion(e.id)}>
-										<Text style={{ color: '#E65100', fontWeight: '700' }}>Remove</Text>
-									</Pressable>
-								)}
-							</View>
-						))}
-					</View>
-				)}
-
-				{/* Add custom mood */}
-				<View style={{ marginTop: 8 }}>
-					<View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-						<TextInput placeholder="Emoji" style={[styles.categoryInput, { width: 80 }]} onChangeText={setNewMoodEmoji} value={newMoodEmoji} />
-						<TextInput placeholder="Description" style={[styles.categoryInput, { flex: 1 }]} onChangeText={setNewMoodDesc} value={newMoodDesc} />
-					</View>
-					<View style={{ marginBottom: 8 }}>
-						<Text style={{ fontSize: 12, fontWeight: '600', color: '#666', marginBottom: 4 }}>Fury Value: {newMoodFury}</Text>
-						<View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
-							{[-10, -5, -2, 2, 5, 10].map(val => (
-								<Pressable key={val} style={[styles.furyBtn, parseInt(newMoodFury || '0') === val && styles.furyBtnActive]} onPress={() => setNewMoodFury(val.toString())}>
-									<Text style={[styles.furyBtnText, parseInt(newMoodFury || '0') === val && styles.furyBtnTextActive]}>
-										{val > 0 ? '+' : ''}
-										{val}
-									</Text>
-								</Pressable>
-							))}
-						</View>
-					</View>
-					<Pressable
-						style={styles.addButton}
-						onPress={() => {
-							if (!newMoodEmoji.trim() || !newMoodDesc.trim()) return;
-							addCustomEmotion({ id: `c${Date.now()}`, emoji: newMoodEmoji.trim(), description: newMoodDesc.trim().slice(0, 50), furyChange: parseInt(newMoodFury || '0', 10), custom: true });
-							setNewMoodEmoji('');
-							setNewMoodDesc('');
-							setNewMoodFury('0');
-						}}>
-						<Text style={styles.addButtonText}>+ Add Mood</Text>
-					</Pressable>
-				</View>
-			</View>
-
-			{/* 4. Habit Goals Categories */}
-			<View style={styles.questionBox}>
-				<Text style={styles.questionTitle}>🎯 Habit Goal Categories (Required)</Text>
-				<Text style={styles.questionHint}>Add custom categories to supplement defaults</Text>
-				<View style={styles.categoryRow}>
-					{questionSettings.habitGoals.suggestedCategories.map(cat => (
-						<Text key={cat} style={styles.categoryTag}>
-							{cat}
-						</Text>
-					))}
-				</View>
-				<View style={styles.addCategoryRow}>
-					<TextInput style={styles.categoryInput} placeholder="Add custom category" value={customHabitCatInput} onChangeText={setCustomHabitCatInput} placeholderTextColor="#999" />
-					<Pressable
-						style={styles.addButton}
-						onPress={() => {
-							if (customHabitCatInput.trim()) {
-								addHabitCategory(customHabitCatInput);
-								setCustomHabitCatInput('');
-							}
-						}}>
-						<Text style={styles.addButtonText}>+ Add</Text>
-					</Pressable>
-				</View>
-				<View style={styles.customCategoryRow}>
-					{questionSettings.habitGoals.customCategories.map(cat => (
-						<View key={cat} style={styles.customCategoryTag}>
-							<Text style={styles.customCategoryText}>{cat}</Text>
-							<Pressable onPress={() => removeHabitCategory(cat)}>
-								<Text style={styles.removeX}>✕</Text>
-							</Pressable>
-						</View>
-					))}
-				</View>
-			</View>
-
-			{/* 5. To-Do Goals Categories */}
-			<View style={styles.questionBox}>
-				<Text style={styles.questionTitle}>☑️ To-Do Goal Categories (Required)</Text>
-				<Text style={styles.questionHint}>Add custom categories to supplement defaults</Text>
-				<View style={styles.categoryRow}>
-					{questionSettings.todoGoals.suggestedCategories.map(cat => (
-						<Text key={cat} style={styles.categoryTag}>
-							{cat}
-						</Text>
-					))}
-				</View>
-				<View style={styles.addCategoryRow}>
-					<TextInput style={styles.categoryInput} placeholder="Add custom category" value={customTodoCatInput} onChangeText={setCustomTodoCatInput} placeholderTextColor="#999" />
-					<Pressable
-						style={styles.addButton}
-						onPress={() => {
-							if (customTodoCatInput.trim()) {
-								addTodoCategory(customTodoCatInput);
-								setCustomTodoCatInput('');
-							}
-						}}>
-						<Text style={styles.addButtonText}>+ Add</Text>
-					</Pressable>
-				</View>
-				<View style={styles.customCategoryRow}>
-					{questionSettings.todoGoals.customCategories.map(cat => (
-						<View key={cat} style={styles.customCategoryTag}>
-							<Text style={styles.customCategoryText}>{cat}</Text>
-							<Pressable onPress={() => removeTodoCategory(cat)}>
-								<Text style={styles.removeX}>✕</Text>
-							</Pressable>
-						</View>
-					))}
-				</View>
-			</View>
-
-			{/* 6. Trivia */}
-			<View style={styles.questionBox}>
-				<Text style={styles.questionTitle}>🧠 Trivia Questions</Text>
-				<Text style={styles.questionHint}>Set how many trivia questions per survey (0-3 each)</Text>
-				<View style={styles.triviaRow}>
-					<Text style={styles.triviaLabel}>Morning Trivia:</Text>
-					<View style={styles.triviaButtons}>
-						{[0, 1, 2, 3].map(n => (
-							<Pressable key={`m${n}`} style={[styles.triviaBtn, questionSettings.trivia.morningCount === n && styles.triviaBtnActive]} onPress={() => setTriviaCount(n, questionSettings.trivia.eveningCount)}>
-								<Text style={styles.triviaBtnText}>{n}</Text>
-							</Pressable>
-						))}
-					</View>
-				</View>
-				<View style={styles.triviaRow}>
-					<Text style={styles.triviaLabel}>Evening Trivia:</Text>
-					<View style={styles.triviaButtons}>
-						{[0, 1, 2, 3].map(n => (
-							<Pressable key={`e${n}`} style={[styles.triviaBtn, questionSettings.trivia.eveningCount === n && styles.triviaBtnActive]} onPress={() => setTriviaCount(questionSettings.trivia.morningCount, n)}>
-								<Text style={styles.triviaBtnText}>{n}</Text>
-							</Pressable>
-						))}
-					</View>
-				</View>
-			</View>
-
-			{/* 7. Journal Entry */}
-			<View style={styles.questionBox}>
-				<Text style={styles.questionTitle}>📓 Journal Entry</Text>
-				<Text style={styles.questionHint}>Choose when journaling appears in surveys</Text>
-				<View style={styles.journalOptions}>
-					{(['morning', 'evening', 'both', 'none'] as const).map(setting => (
-						<Pressable key={setting} style={[styles.journalOption, questionSettings.journalEntry.setting === setting && styles.journalOptionActive]} onPress={() => setJournalEntry(setting, questionSettings.journalEntry.template)}>
-							<Text style={[styles.journalOptionText, questionSettings.journalEntry.setting === setting && styles.journalOptionTextActive]}>{setting === 'both' ? '🌅🌙 Both' : setting === 'morning' ? '🌅 Morning' : setting === 'evening' ? '🌙 Evening' : '⊘ None'}</Text>
-						</Pressable>
-					))}
-				</View>
-				<TextInput style={styles.templateInput} placeholder="Optional: Journal template text..." value={questionSettings.journalEntry.template} onChangeText={t => setJournalEntry(questionSettings.journalEntry.setting, t)} multiline placeholderTextColor="#999" />
-			</View>
-
-			{/* Trivia categories toggles */}
-			<View style={[styles.questionBox, { marginTop: 8 }]}>
-				<Text style={styles.questionTitle}>🧩 Trivia Categories</Text>
-				<Text style={styles.questionHint}>Enable or disable trivia categories</Text>
-				<View style={styles.typeToggleRow}>
-					{TRIVIA_CATEGORIES.map(cat => {
-						const k = triviaKey(cat) as keyof typeof questionSettings.trivia.types;
-						const active = !!questionSettings.trivia.types[k];
-						return (
-							<Pressable key={cat} style={[styles.typeToggle, active && styles.typeToggleActive]} onPress={() => toggleTriviaCategory(cat)}>
-								<Text style={[styles.typeToggleText, active && styles.typeToggleTextActive]}>{cat}</Text>
-							</Pressable>
-						);
-					})}
-				</View>
-			</View>
-
-			{/* 2b. Prompts */}
-			<View style={styles.questionBox}>
-				<View style={styles.questionHeader}>
-					<Text style={styles.questionTitle}>✍️ Random Prompts</Text>
-					<Switch value={questionSettings.prompts.enabled} onValueChange={updatePromptsEnabled} />
-				</View>
-				<Text style={styles.questionHint}>Enable prompts and choose categories</Text>
-				{questionSettings.prompts.enabled && (
-					<View style={styles.typeToggleRow}>
-						{PROMPT_CATEGORIES.map(cat => {
-							const k = promptKey(cat) as keyof typeof questionSettings.prompts.types;
-							const active = !!questionSettings.prompts.types[k];
-							return (
-								<Pressable key={cat} style={[styles.typeToggle, active && styles.typeToggleActive]} onPress={() => togglePromptCategory(cat)}>
-									<Text style={[styles.typeToggleText, active && styles.typeToggleTextActive]}>{cat}</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-				)}
-			</View>
-		</View>
-	);
-}
-
-// The SurveySettings page is rendered inside the settings index (which provides TopHeader)
 export default function SurveySettings() {
 	const router = useRouter();
+	const survey = useSurvey();
+	const questions = useQuestions();
+
+	const [habitCategoryInput, setHabitCategoryInput] = useState('');
+	const [todoCategoryInput, setTodoCategoryInput] = useState('');
 
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.title}>Survey Settings</Text>
+			<Text style={styles.subtitle}>Changes apply immediately and update the morning/night survey flow automatically.</Text>
 
-			<View style={{ marginBottom: 12 }}>
-				<Pressable style={styles.tutorialButton} onPress={() => router.push('/survey/tutorial' as any)}>
-					<Text style={styles.tutorialButtonText}>📘 Open Full Tutorial</Text>
-				</Pressable>
+			<Pressable style={styles.tutorialButton} onPress={() => router.push('/survey/tutorial' as any)}>
+				<Text style={styles.tutorialButtonText}>Open Full Tutorial</Text>
+			</Pressable>
+
+			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Survey Flow</Text>
+				<ToggleRow label="Show advice section" value={survey.options.enableAdvice ?? true} onValueChange={value => survey.setOption('enableAdvice', value)} />
+				<ToggleRow label="Show mood question" value={survey.options.enableMoodQuestion} onValueChange={value => survey.setOption('enableMoodQuestion', value)} />
+				<ToggleRow label="Show quote section" value={survey.options.showQuote} onValueChange={value => survey.setOption('showQuote', value)} />
+				<ToggleRow label="Show quote in morning survey" value={survey.options.quoteMorning ?? true} onValueChange={value => survey.setOption('quoteMorning', value)} />
+				<ToggleRow label="Enable short-answer prompts" value={survey.options.enableProjectQuestion} onValueChange={value => survey.setOption('enableProjectQuestion', value)} />
+				<ToggleRow label="Enable trivia questions" value={survey.options.enableRandomMC ?? true} onValueChange={value => survey.setOption('enableRandomMC', value)} />
+				<ToggleRow label="Morning journal entry" value={survey.options.enableJournalMorning} onValueChange={value => survey.setOption('enableJournalMorning', value)} />
+				<ToggleRow label="Night journal entry" value={survey.options.enableJournalNight} onValueChange={value => survey.setOption('enableJournalNight', value)} />
 			</View>
 
-			<SurveySettingsContent />
+			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Advice & Quotes</Text>
+				<Text style={styles.helper}>The advice and quote pools use these type toggles. Keep at least one enabled for each section.</Text>
+				<ToggleRow label="Inspirational advice" value={questions.questionSettings.advice.types.inspirational} onValueChange={() => questions.updateAdviceSettings({ ...questions.questionSettings.advice.types, inspirational: !questions.questionSettings.advice.types.inspirational })} />
+				<ToggleRow label="Witty advice" value={questions.questionSettings.advice.types.witty} onValueChange={() => questions.updateAdviceSettings({ ...questions.questionSettings.advice.types, witty: !questions.questionSettings.advice.types.witty })} />
+				<ToggleRow label="Philosophical advice" value={questions.questionSettings.advice.types.philosophical} onValueChange={() => questions.updateAdviceSettings({ ...questions.questionSettings.advice.types, philosophical: !questions.questionSettings.advice.types.philosophical })} />
+				<ToggleRow label="Inspirational quotes" value={questions.questionSettings.quotes.types.inspirational} onValueChange={() => questions.updateQuotesSettings({ ...questions.questionSettings.quotes.types, inspirational: !questions.questionSettings.quotes.types.inspirational })} />
+				<ToggleRow label="Witty quotes" value={questions.questionSettings.quotes.types.witty} onValueChange={() => questions.updateQuotesSettings({ ...questions.questionSettings.quotes.types, witty: !questions.questionSettings.quotes.types.witty })} />
+				<ToggleRow label="Philosophical quotes" value={questions.questionSettings.quotes.types.philosophical} onValueChange={() => questions.updateQuotesSettings({ ...questions.questionSettings.quotes.types, philosophical: !questions.questionSettings.quotes.types.philosophical })} />
+			</View>
+
+			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Prompts & Trivia Counts</Text>
+				<ToggleRow label="Enable random prompt section" value={questions.questionSettings.prompts.enabled} onValueChange={questions.updatePromptsEnabled} />
+				<View style={styles.inlineRow}>
+					<Text style={styles.inlineLabel}>Random prompts per survey</Text>
+					<View style={styles.segmentRow}>
+						{[0, 1, 2, 3].map(count => (
+							<Pressable key={count} style={[styles.segmentButton, (survey.options.randomPromptCount ?? 1) === count && styles.segmentActive]} onPress={() => survey.setOption('randomPromptCount', count)}>
+								<Text style={[styles.segmentText, (survey.options.randomPromptCount ?? 1) === count && styles.segmentTextActive]}>{count}</Text>
+							</Pressable>
+						))}
+					</View>
+				</View>
+				<View style={styles.inlineRow}>
+					<Text style={styles.inlineLabel}>Morning trivia</Text>
+					<View style={styles.segmentRow}>
+						{[0, 1, 2, 3].map(count => (
+							<Pressable key={`morning-${count}`} style={[styles.segmentButton, questions.questionSettings.trivia.morningCount === count && styles.segmentActive]} onPress={() => questions.setTriviaCount(count, questions.questionSettings.trivia.eveningCount)}>
+								<Text style={[styles.segmentText, questions.questionSettings.trivia.morningCount === count && styles.segmentTextActive]}>{count}</Text>
+							</Pressable>
+						))}
+					</View>
+				</View>
+				<View style={styles.inlineRow}>
+					<Text style={styles.inlineLabel}>Night trivia</Text>
+					<View style={styles.segmentRow}>
+						{[0, 1, 2, 3].map(count => (
+							<Pressable key={`night-${count}`} style={[styles.segmentButton, questions.questionSettings.trivia.eveningCount === count && styles.segmentActive]} onPress={() => questions.setTriviaCount(questions.questionSettings.trivia.morningCount, count)}>
+								<Text style={[styles.segmentText, questions.questionSettings.trivia.eveningCount === count && styles.segmentTextActive]}>{count}</Text>
+							</Pressable>
+						))}
+					</View>
+				</View>
+			</View>
+
+			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Goal Categories</Text>
+				<Text style={styles.helper}>Habit and To-Do suggestions read from these category lists.</Text>
+				<Text style={styles.groupTitle}>Habit categories</Text>
+				<View style={styles.tagRow}>
+					{[...questions.questionSettings.habitGoals.suggestedCategories, ...questions.questionSettings.habitGoals.customCategories].map(category => (
+						<View key={category} style={styles.tag}>
+							<Text style={styles.tagText}>{category}</Text>
+							{questions.questionSettings.habitGoals.customCategories.includes(category) && (
+								<Pressable onPress={() => questions.removeHabitCategory(category)}>
+									<Text style={styles.removeText}>X</Text>
+								</Pressable>
+							)}
+						</View>
+					))}
+				</View>
+				<View style={styles.inputRow}>
+					<TextInput value={habitCategoryInput} onChangeText={setHabitCategoryInput} placeholder="Add habit category" style={styles.input} />
+					<Pressable
+						style={styles.addButton}
+						onPress={() => {
+							if (!habitCategoryInput.trim()) return;
+							questions.addHabitCategory(habitCategoryInput.trim());
+							setHabitCategoryInput('');
+						}}>
+						<Text style={styles.addButtonText}>Add</Text>
+					</Pressable>
+				</View>
+
+				<Text style={styles.groupTitle}>To-Do categories</Text>
+				<View style={styles.tagRow}>
+					{[...questions.questionSettings.todoGoals.suggestedCategories, ...questions.questionSettings.todoGoals.customCategories].map(category => (
+						<View key={category} style={styles.tag}>
+							<Text style={styles.tagText}>{category}</Text>
+							{questions.questionSettings.todoGoals.customCategories.includes(category) && (
+								<Pressable onPress={() => questions.removeTodoCategory(category)}>
+									<Text style={styles.removeText}>X</Text>
+								</Pressable>
+							)}
+						</View>
+					))}
+				</View>
+				<View style={styles.inputRow}>
+					<TextInput value={todoCategoryInput} onChangeText={setTodoCategoryInput} placeholder="Add to-do category" style={styles.input} />
+					<Pressable
+						style={styles.addButton}
+						onPress={() => {
+							if (!todoCategoryInput.trim()) return;
+							questions.addTodoCategory(todoCategoryInput.trim());
+							setTodoCategoryInput('');
+						}}>
+						<Text style={styles.addButtonText}>Add</Text>
+					</Pressable>
+				</View>
+			</View>
+
+			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Journal Placement</Text>
+				<Text style={styles.helper}>Choose where the journal entry section appears.</Text>
+				<View style={styles.segmentRow}>
+					{(['none', 'morning', 'evening', 'both'] as const).map(option => (
+						<Pressable key={option} style={[styles.segmentButton, questions.questionSettings.journalEntry.setting === option && styles.segmentActive]} onPress={() => questions.setJournalEntry(option, questions.questionSettings.journalEntry.template)}>
+							<Text style={[styles.segmentText, questions.questionSettings.journalEntry.setting === option && styles.segmentTextActive]}>{option}</Text>
+						</Pressable>
+					))}
+				</View>
+				<TextInput value={questions.questionSettings.journalEntry.template} onChangeText={value => questions.setJournalEntry(questions.questionSettings.journalEntry.setting, value)} placeholder="Optional journal prompt template" style={[styles.input, { marginTop: 12, minHeight: 72 }]} multiline />
+			</View>
 		</ScrollView>
+	);
+}
+
+function ToggleRow({ label, value, onValueChange }: { label: string; value: boolean; onValueChange: (value: boolean) => void }) {
+	return (
+		<View style={styles.toggleRow}>
+			<Text style={styles.toggleLabel}>{label}</Text>
+			<Switch value={value} onValueChange={onValueChange} />
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: { padding: 16, paddingBottom: 40 },
-	title: { fontSize: 22, fontWeight: '800', marginBottom: 12 },
-	section: { marginBottom: 18 },
-	sectionTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
-	subTitle: { fontSize: 16, fontWeight: '700', marginTop: 10, marginBottom: 6 },
-	paragraph: { color: '#444', fontSize: 13, lineHeight: 20, marginBottom: 8 },
-	bullet: { color: '#444', fontSize: 13, fontWeight: '700', marginTop: 6 },
-	questionBox: { marginBottom: 16, padding: 12, backgroundColor: '#F9F9F9', borderRadius: 8, borderWidth: 1, borderColor: '#E0E0E0' },
-	questionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-	questionTitle: { fontSize: 16, fontWeight: '700', color: '#333' },
-	questionHint: { fontSize: 12, color: '#666', marginBottom: 8, fontStyle: 'italic' },
-	typeToggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-	typeToggle: { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#EEE', borderRadius: 6, borderWidth: 1, borderColor: '#DDD' },
-	typeToggleActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-	typeToggleText: { fontSize: 11, fontWeight: '600', color: '#666' },
-	typeToggleTextActive: { color: '#fff' },
-	categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 8 },
-	categoryTag: { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#E8F5E9', borderRadius: 6, fontSize: 12, fontWeight: '600', color: '#2E7D32' },
-	addCategoryRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-	categoryInput: { flex: 1, paddingHorizontal: 8, paddingVertical: 6, backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: '#DDD', fontSize: 12 },
-	addButton: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#4CAF50', borderRadius: 6 },
-	addButtonText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-	customCategoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-	customCategoryTag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FFF3E0', borderRadius: 6, borderWidth: 1, borderColor: '#FF9800' },
-	customCategoryText: { fontSize: 12, fontWeight: '600', color: '#E65100' },
-	removeX: { marginLeft: 6, fontSize: 14, color: '#E65100', fontWeight: '700' },
-	triviaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-	triviaLabel: { fontSize: 13, fontWeight: '600', color: '#333', flex: 1 },
-	triviaButtons: { flexDirection: 'row', gap: 4 },
-	triviaBtn: { width: 32, height: 32, borderRadius: 4, backgroundColor: '#EEE', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#DDD' },
-	triviaBtnActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-	triviaBtnText: { fontSize: 12, fontWeight: '700', color: '#333' },
-	journalOptions: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 8 },
-	journalOption: { paddingHorizontal: 8, paddingVertical: 6, backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: '#DDD' },
-	journalOptionActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-	journalOptionText: { fontSize: 12, fontWeight: '600', color: '#333' },
-	journalOptionTextActive: { color: '#fff' },
-	templateInput: { padding: 8, backgroundColor: '#fff', borderRadius: 6, borderWidth: 1, borderColor: '#DDD', fontSize: 12, minHeight: 60, marginTop: 6 },
-	furyBtn: { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#EEE', borderRadius: 4, borderWidth: 1, borderColor: '#DDD' },
-	furyBtnActive: { backgroundColor: '#FF5722', borderColor: '#FF5722' },
-	furyBtnText: { fontSize: 11, fontWeight: '600', color: '#333' },
-	furyBtnTextActive: { color: '#fff' },
-	// Tutorial button
-	tutorialButton: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#1976D2', borderRadius: 8, alignSelf: 'flex-start', marginBottom: 8 },
-	tutorialButtonText: { color: '#fff', fontWeight: '700' },
+	title: { fontSize: 24, fontWeight: '800', color: '#111827' },
+	subtitle: { marginTop: 6, marginBottom: 12, color: '#6B7280', lineHeight: 20 },
+	tutorialButton: { alignSelf: 'flex-start', backgroundColor: '#2563EB', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 14 },
+	tutorialButtonText: { color: '#fff', fontWeight: '800' },
+	card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, marginBottom: 14 },
+	cardTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 10 },
+	helper: { fontSize: 12, color: '#6B7280', lineHeight: 18, marginBottom: 12 },
+	toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+	toggleLabel: { flex: 1, paddingRight: 12, color: '#374151', fontWeight: '600' },
+	inlineRow: { marginBottom: 12 },
+	inlineLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 },
+	segmentRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+	segmentButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#fff' },
+	segmentActive: { backgroundColor: '#166534', borderColor: '#166534' },
+	segmentText: { color: '#4B5563', fontWeight: '700', textTransform: 'capitalize' },
+	segmentTextActive: { color: '#fff' },
+	groupTitle: { fontSize: 13, fontWeight: '800', color: '#111827', marginBottom: 8, marginTop: 6 },
+	tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+	tag: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#F3F4F6' },
+	tagText: { color: '#374151', fontWeight: '700' },
+	removeText: { color: '#DC2626', fontWeight: '800' },
+	inputRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+	input: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#fff', color: '#111827' },
+	addButton: { backgroundColor: '#111827', borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' },
+	addButtonText: { color: '#fff', fontWeight: '800' },
 });

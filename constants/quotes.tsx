@@ -1,190 +1,160 @@
-export const ADVICE: string[] = ['Start your day with a clear intention.', 'Small steps lead to big changes.', 'Focus on what you can control today.', 'Break large goals into tiny habits.', 'Progress over perfection.', 'Rest is part of productivity.', 'Be kind to yourself today.', 'One day at a time.', 'You are stronger than you think.', 'Celebrate small wins.', 'Consistency beats intensity.', 'Today is a fresh start.'];
 export interface Quote {
 	text: string;
 	author?: string;
 	category: 'inspirational' | 'witty' | 'philosophical';
 }
 
-export const QUOTES: Quote[] = [
-	// Inspirational/Life
+const compact = (value: string) => value.replace(/\s+/g, ' ').trim();
+
+const uniqueByText = (items: Quote[]) => {
+	const seen = new Set<string>();
+	return items.filter(item => {
+		if (seen.has(item.text)) return false;
+		seen.add(item.text);
+		return true;
+	});
+};
+
+const buildQuotePool = (category: Quote['category'], openings: string[], endings: string[]): Quote[] => {
+	const items: Quote[] = [];
+	for (const opening of openings) {
+		for (const ending of endings) {
+			items.push({
+				text: compact(`${opening} ${ending}`),
+				category,
+			});
+		}
+	}
+	return uniqueByText(items);
+};
+
+const INSPIRATIONAL_QUOTES = buildQuotePool(
+	'inspirational',
+	[
+		'Start where you are',
+		'Give your next step your full attention',
+		'Trust the small effort in front of you',
+		'Let today be simple but real',
+		'Keep showing up for the version of you that is growing',
+		'Use discipline as a form of self-respect',
+		'Choose the useful action over the dramatic excuse',
+		'Carry your focus gently',
+		'Build momentum before you chase perfection',
+		'Respect the progress that quiet work creates',
+		'Keep faith with the person you are becoming',
+		'Take the honest first step',
+		'Protect the habits that keep you steady',
+		'Let your routine become proof of your commitment',
+		'Remember that effort compounds',
+	],
+	[
+		'and let consistency do the heavy lifting.',
+		'because progress likes ordinary days.',
+		'and your future will notice the difference.',
+		'because courage is often just repetition with heart.',
+		'and the path will look clearer after you move.',
+		'because tiny wins are still wins.',
+		'and let your habits argue louder than your doubts.',
+		'because momentum begins long before confidence arrives.',
+		'and trust that the quiet version of progress still counts.',
+		'because your direction matters more than your speed.',
+		'and give yourself credit for choosing growth again.',
+		'because one clear action can change the whole tone of a day.',
+		'and let discipline feel supportive instead of punishing.',
+		'because your effort is building something real.',
+	],
+);
+
+const WITTY_QUOTES = buildQuotePool(
+	'witty',
+	[
+		'Your to-do list would calm down',
+		'Productivity gets a lot less mysterious',
+		'Even the dragon knows',
+		'Future-you keeps requesting',
+		'The problem with procrastination is not subtle',
+		'Motivation behaves better',
+		'Your browser tabs are not a personality trait',
+		'Some plans become legendary',
+		'Chaos gets surprisingly organized',
+		'The universe sends fewer mixed messages',
+		'Low energy stops being a villain',
+		'Overthinking loses most of its sparkle',
+		'Time management becomes less tragic',
+		'A decent routine feels almost magical',
+		'The drama level drops immediately',
+	],
+	[
+		'when you stop pretending every task is equally urgent.',
+		'when the next step is written in human language.',
+		'that vague goals are just chores in disguise.',
+		'that you define the task before negotiating with the couch.',
+		'when you finish one thing before reorganizing everything.',
+		'once your plan survives contact with real life.',
+		'when your reminder system is not just panic.',
+		'after you admit that perfection is a stalling tactic.',
+		'when the hard part is smaller than the excuse.',
+		'once your checklist stops auditioning for a tragedy.',
+		'when you turn a mountain into a staircase.',
+		'after you stop using stress as a scheduling method.',
+		'when your ambition learns to share space with realism.',
+		'once you stop treating rest like a clerical error.',
+	],
+);
+
+const PHILOSOPHICAL_QUOTES = buildQuotePool(
+	'philosophical',
+	[
+		'Meaning becomes easier to notice',
+		'Attention changes the world you inhabit',
+		'Identity is shaped quietly',
+		'Clarity usually arrives',
+		'The self becomes visible',
+		'Time feels different',
+		'Reality looks softer and sharper at once',
+		'Wisdom grows',
+		'The present moment becomes larger',
+		'Patterns reveal themselves',
+		'Discipline changes character',
+		'Truth feels less threatening',
+		'Freedom becomes practical',
+		'Change stops feeling abstract',
+		'Reflection becomes honest',
+	],
+	[
+		'when you stop rushing past what matters.',
+		'when you choose what deserves your notice.',
+		'through repetition more than revelation.',
+		'after honesty, not before it.',
+		'when its habits are easier to see than its intentions.',
+		'once you measure it with care instead of fear.',
+		'when you stop demanding certainty from it.',
+		'when ego becomes less interesting than reality.',
+		'after you quit treating every emotion as a command.',
+		'when you stop arguing with what is already true.',
+		'once values and actions begin to align.',
+		'when silence is allowed to say something useful.',
+		'after you learn the difference between urgency and importance.',
+		'when you accept that becoming is a daily process.',
+	],
+);
+
+const CURATED_QUOTES: Quote[] = [
 	{ text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs', category: 'inspirational' },
-	{ text: "Life is what happens when you're busy making other plans.", author: 'John Lennon', category: 'inspirational' },
-	{ text: 'The future belongs to those who believe in the beauty of their dreams.', author: 'Eleanor Roosevelt', category: 'inspirational' },
-	{ text: 'It is during our darkest moments that we must focus to see the light.', author: 'Aristotle', category: 'inspirational' },
 	{ text: 'Success is not final, failure is not fatal: it is the courage to continue that counts.', author: 'Winston Churchill', category: 'inspirational' },
-	{ text: "Your time is limited, don't waste it living someone else's life.", author: 'Steve Jobs', category: 'inspirational' },
-	{ text: "In the end, it's not the years in your life that count. It's life in your years.", author: 'Abraham Lincoln', category: 'inspirational' },
-	{ text: 'Every sunrise is an invitation to rewrite your story.', category: 'inspirational' },
-	{ text: 'Small steps become big victories when taken consistently.', category: 'inspirational' },
-	{ text: "Courage isn't loud; sometimes it's the quiet decision to try again tomorrow.", category: 'inspirational' },
-	{ text: 'Your potential expands every time you choose growth over comfort.', category: 'inspirational' },
-	{ text: 'The world changes when you decide to show up as your full self.', category: 'inspirational' },
-	{ text: 'Dreams grow when you water them with discipline.', category: 'inspirational' },
-	{ text: "You don't need permission to become who you were meant to be.", category: 'inspirational' },
-	{ text: 'Progress is progress, even when no one is clapping.', category: 'inspirational' },
-	{ text: 'Life rewards those who dare to begin.', category: 'inspirational' },
-	{ text: 'You are stronger than the moment trying to break you.', category: 'inspirational' },
-	{ text: 'Greatness often hides in the things you avoid doing.', category: 'inspirational' },
-	{ text: 'The path becomes clearer once you take the first step.', category: 'inspirational' },
-	{ text: 'Your future self is begging you to keep going.', category: 'inspirational' },
-	{ text: "Growth feels uncomfortable because you're stretching into someone new.", category: 'inspirational' },
-	{ text: 'The best time to believe in yourself is before anyone else does.', category: 'inspirational' },
-	{ text: "You don't have to be fearless — just willing.", category: 'inspirational' },
-	{ text: 'Every challenge is a chance to meet a stronger version of yourself.', category: 'inspirational' },
-	{ text: 'Life blooms when you stop rushing and start living.', category: 'inspirational' },
-	{ text: "Your story isn't over; it's evolving.", category: 'inspirational' },
-	{ text: 'The person you become is shaped by the choices you repeat.', category: 'inspirational' },
-	{ text: "Hope is the quiet voice that whispers, 'Try again.'", category: 'inspirational' },
-	{ text: "You can't control the wind, but you can adjust your sails.", category: 'inspirational' },
-	{ text: 'The journey matters more than the applause at the end.', category: 'inspirational' },
-	{ text: 'Your energy introduces you before your words do.', category: 'inspirational' },
-	{ text: 'Life gets brighter when you decide to shine.', category: 'inspirational' },
-	{ text: "You don't need a perfect plan — just a persistent heart.", category: 'inspirational' },
-	{ text: 'The future is built by the habits you practice today.', category: 'inspirational' },
-	{ text: "Let go of who you were to make room for who you're becoming.", category: 'inspirational' },
-	{ text: 'Your dreams are valid even if they scare you.', category: 'inspirational' },
-	{ text: 'Sometimes the bravest thing you can do is rest.', category: 'inspirational' },
-	{ text: 'Life is a canvas; paint boldly.', category: 'inspirational' },
-	{ text: 'You are allowed to outgrow people, places, and past versions of yourself.', category: 'inspirational' },
-	{ text: 'The climb is tough, but the view is worth it.', category: 'inspirational' },
-	{ text: 'Your purpose is louder than your fear.', category: 'inspirational' },
-	{ text: 'Every ending is a disguised beginning.', category: 'inspirational' },
-	{ text: 'Be the person your younger self needed.', category: 'inspirational' },
-	{ text: "You don't have to see the whole path to take the next step.", category: 'inspirational' },
-	{ text: 'Life becomes extraordinary when you stop settling for ordinary.', category: 'inspirational' },
-	{ text: 'Your mindset is the architect of your reality.', category: 'inspirational' },
-	{ text: 'The world needs the magic only you can bring.', category: 'inspirational' },
-	{ text: 'Success grows where consistency lives.', category: 'inspirational' },
-	{ text: "You are capable of more than you've ever imagined.", category: 'inspirational' },
-	{ text: 'Life is too short to live on autopilot.', category: 'inspirational' },
-	{ text: 'Your dreams deserve your effort, not your excuses.', category: 'inspirational' },
-	{ text: 'The moment you decide to rise, everything shifts.', category: 'inspirational' },
-	{ text: 'You can rewrite your story at any chapter.', category: 'inspirational' },
-	{ text: 'Believe in the possibility of better days.', category: 'inspirational' },
-	{ text: 'Your passion is your compass — follow it.', category: 'inspirational' },
-	{ text: 'Life rewards those who choose intention over impulse.', category: 'inspirational' },
-	{ text: 'You are a work in progress and a masterpiece at the same time.', category: 'inspirational' },
-
-	// Witty/Humorous
-	{ text: "I am so clever that sometimes I don't understand a single word of what I am saying.", author: 'Oscar Wilde', category: 'witty' },
-	{ text: "I've learned that people will forget what you said, people will forget what you did, but people will never forget how you made them feel.", author: 'Maya Angelou', category: 'witty' },
-	{ text: 'The best way to predict the future is to create it.', author: 'Peter Drucker', category: 'witty' },
-
-	// Thought-Provoking/Philosophical
-	{ text: 'I think, therefore I am.', author: 'René Descartes', category: 'philosophical' },
+	{ text: "You do not have to see the whole staircase, just the first step.", author: 'Martin Luther King Jr.', category: 'inspirational' },
+	{ text: "I am so clever that sometimes I do not understand a single word of what I am saying.", author: 'Oscar Wilde', category: 'witty' },
+	{ text: "I am not arguing, I am just explaining why I am right.", category: 'witty' },
+	{ text: "My bed is a magical place where I suddenly remember everything I forgot to do.", category: 'witty' },
 	{ text: 'The unexamined life is not worth living.', author: 'Socrates', category: 'philosophical' },
-	{ text: 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.', author: 'Aristotle', category: 'philosophical' },
-	{ text: 'The mind becomes free the moment it questions itself.', category: 'philosophical' },
-	{ text: 'We chase meaning because we fear emptiness.', category: 'philosophical' },
-	{ text: 'Time is the only currency we spend without knowing the balance.', category: 'philosophical' },
-	{ text: 'Reality is shaped less by truth and more by perception.', category: 'philosophical' },
-	{ text: 'Silence often reveals what words try to hide.', category: 'philosophical' },
-	{ text: 'We become what we choose to notice.', category: 'philosophical' },
-	{ text: 'The greatest journeys happen within.', category: 'philosophical' },
-	{ text: 'Wisdom grows when certainty fades.', category: 'philosophical' },
-	{ text: 'You cannot discover new truths with old beliefs.', category: 'philosophical' },
-	{ text: 'The world changes when you change the lens you view it through.', category: 'philosophical' },
-	{ text: 'We fear the unknown because it mirrors our own uncertainty.', category: 'philosophical' },
-	{ text: 'Freedom begins where expectation ends.', category: 'philosophical' },
-	{ text: 'The mind is both the prison and the key.', category: 'philosophical' },
-	{ text: 'We learn more from questions than from answers.', category: 'philosophical' },
-	{ text: 'To understand others, first understand your own contradictions.', category: 'philosophical' },
-	{ text: 'The present moment is the only place life actually happens.', category: 'philosophical' },
-	{ text: 'We are shaped by the stories we tell ourselves.', category: 'philosophical' },
-	{ text: 'Clarity comes when the noise inside you quiets.', category: 'philosophical' },
-	{ text: 'The search for meaning is the meaning.', category: 'philosophical' },
-	{ text: 'We grow wise when we stop needing to be right.', category: 'philosophical' },
-	{ text: 'The universe whispers; the ego shouts.', category: 'philosophical' },
-	{ text: 'You cannot outrun yourself — only meet yourself.', category: 'philosophical' },
-	{ text: "Truth is rarely loud; it's usually patient.", category: 'philosophical' },
-	{ text: 'We are temporary, but our impact is not.', category: 'philosophical' },
-	{ text: 'The deepest answers live in the questions we avoid.', category: 'philosophical' },
-
-	// Additional Inspirational Quotes
-	{ text: "You don't have to see the whole staircase, just the first step.", author: 'Martin Luther King Jr.', category: 'inspirational' },
-	{ text: 'The only impossible journey is the one you never begin.', category: 'inspirational' },
-	{ text: 'What lies behind us and what lies before us are tiny matters compared to what lies within us.', author: 'Ralph Waldo Emerson', category: 'inspirational' },
-	{ text: 'Be yourself; everyone else is already taken.', author: 'Oscar Wilde', category: 'inspirational' },
-	{ text: 'Fall seven times, stand up eight.', author: 'Japanese Proverb', category: 'inspirational' },
-	{ text: 'The best revenge is massive personal success.', author: 'Frank Sinatra', category: 'inspirational' },
-	{ text: 'You are not a drop in the ocean. You are the entire ocean in a drop.', author: 'Rumi', category: 'inspirational' },
-	{ text: 'What would you do if you knew you could not fail?', category: 'inspirational' },
-	{ text: 'The moment you believe something can be done, impossible becomes possible.', category: 'inspirational' },
-	{ text: 'Your only limit is the belief system you hold.', category: 'inspirational' },
-	{ text: 'Success is stumbling from failure to failure with no loss of enthusiasm.', author: 'Winston Churchill', category: 'inspirational' },
-	{ text: 'Great things never come from comfort zones.', category: 'inspirational' },
-	{ text: "You don't rise to the level of your goals, you fall to the level of your systems.", author: 'James Clear', category: 'inspirational' },
-	{ text: 'The secret of change is to focus all of your energy not on fighting the old, but on building the new.', author: 'Socrates', category: 'inspirational' },
-	{ text: "You can't go back and change the beginning, but you can start where you are and change the ending.", author: 'C.S. Lewis', category: 'inspirational' },
-	{ text: "The person you're going to become is shaped by the books you read and the people you listen to.", category: 'inspirational' },
-	{ text: "Life shrinks or expands in proportion to one's courage.", author: 'Anaïs Nin', category: 'inspirational' },
-	{ text: 'The only person you are destined to become is the person you decide to be.', author: 'Ralph Waldo Emerson', category: 'inspirational' },
-	{ text: 'Every expert was once a beginner who refused to give up.', category: 'inspirational' },
-	{ text: 'Your perspective creates your reality.', category: 'inspirational' },
-	{ text: "Believe in yourself and you're halfway there.", author: 'Theodore Roosevelt', category: 'inspirational' },
-	{ text: 'The greatest glory in living lies not in never falling, but in rising every time we fall.', author: 'Nelson Mandela', category: 'inspirational' },
-	{ text: 'Do what you can with all you have from where you are.', author: 'Theodore Roosevelt', category: 'inspirational' },
-	{ text: 'The person who says it cannot be done should not interrupt the person doing it.', author: 'Chinese Proverb', category: 'inspirational' },
-	{ text: 'You must be the change you wish to see in the world.', author: 'Gandhi', category: 'inspirational' },
-	{ text: 'Act as if what you do makes a difference. It does.', author: 'William James', category: 'inspirational' },
-	{ text: 'Either you run the day or the day runs you.', author: 'Jim Rohn', category: 'inspirational' },
-	{ text: 'The biggest risk is not taking any risk at all.', category: 'inspirational' },
-	{ text: 'Energy and persistence conquer all things.', author: 'Benjamin Franklin', category: 'inspirational' },
-	{ text: 'To live is the rarest thing in the world. Most people exist, that is all.', author: 'Oscar Wilde', category: 'inspirational' },
-
-	// Additional Witty Quotes
-	{ text: "I told my computer I needed a break, and now it won't stop sending me Kit-Kat ads.", category: 'witty' },
-	{ text: "I'm not arguing, I'm just explaining why I'm right.", category: 'witty' },
-	{ text: "I didn't fail the test. I just found 100 ways to do it wrong.", author: 'Benjamin Franklin', category: 'witty' },
-	{ text: 'The road to success is always under construction.', category: 'witty' },
-	{ text: "I have not failed. I've just found 10,000 ways that won't work.", author: 'Thomas Edison', category: 'witty' },
-	{ text: 'If you are not failing, you are not trying.', category: 'witty' },
-	{ text: 'The only thing standing between you and your goal is the BS story you keep telling yourself.', author: 'Jordan Belfort', category: 'witty' },
-	{ text: 'Common sense is like deodorant. The people who need it most never use it.', category: 'witty' },
-	{ text: "I'm a humble person, really. I'm only about 95% confident in everything I do.", category: 'witty' },
-	{ text: 'My therapist says I need to work on controlling my anger. I told her where to get off.', category: 'witty' },
-	{ text: 'I tried to be normal once. Worst two minutes of my life.', category: 'witty' },
-	{ text: 'Sarcasm is my love language.', category: 'witty' },
-	{ text: "I'm not lazy, I'm just on energy-saving mode.", category: 'witty' },
-	{ text: "I would tell you my workout routine, but I only have 12 minutes and you'd need 5 of those minutes to recover.", category: 'witty' },
-	{ text: 'Good morning! Or as I like to call it, the sequel to bad night.', category: 'witty' },
-	{ text: "I would agree with you, but then we'd both be wrong.", category: 'witty' },
-	{ text: "Aliens exist. They're just avoiding us on purpose.", category: 'witty' },
-	{ text: "I'm always right; once I thought I was wrong, but I was mistaken.", category: 'witty' },
-	{ text: 'My bed is a magical place where I suddenly remember everything I forgot to do.', category: 'witty' },
-	{ text: "I'd tell you a joke about my past, but my therapist says that's not a healthy coping mechanism.", category: 'witty' },
-
-	// Additional Philosophical Quotes
-	{ text: 'The cave you fear to enter holds the treasure you seek.', category: 'philosophical' },
-	{ text: 'When you realize there is nothing lacking, the whole world belongs to you.', author: 'Lao Tzu', category: 'philosophical' },
-	{ text: 'Everything you want is on the other side of fear.', author: 'Jack Canfield', category: 'philosophical' },
-	{ text: 'The mind has exactly the same need of exercise as the body.', author: 'Jules Michelet', category: 'philosophical' },
-	{ text: 'All we have to decide is what to do with the time that is given to us.', author: 'J.R.R. Tolkien', category: 'philosophical' },
-	{ text: "The more you know, the more you realize you don't know.", author: 'Aristotle', category: 'philosophical' },
-	{ text: 'In the middle of difficulty lies opportunity.', author: 'Albert Einstein', category: 'philosophical' },
-	{ text: 'Be the change that you wish to see in the world.', author: 'Gandhi', category: 'philosophical' },
-	{ text: 'The only constant in life is change.', author: 'Heraclitus', category: 'philosophical' },
-	{ text: 'Life is either a daring adventure or nothing at all.', author: 'Helen Keller', category: 'philosophical' },
-	{ text: 'It is not the mountain we conquer, but ourselves.', author: 'Edmund Hillary', category: 'philosophical' },
-	{ text: 'The cave you fear to enter holds the treasure you seek.', author: 'Joseph Campbell', category: 'philosophical' },
-	{ text: 'Everything flows, nothing stands still.', author: 'Heraclitus', category: 'philosophical' },
-	{ text: 'A person is never too old to learn.', category: 'philosophical' },
-	{ text: 'The truth will set you free.', author: 'Bible', category: 'philosophical' },
-	{ text: "Your time is limited, don't waste it living someone else's life.", author: 'Steve Jobs', category: 'philosophical' },
-	{ text: 'The beauty of a living thing is not the atoms that go into it, but the way those atoms are put together.', author: 'Carl Sagan', category: 'philosophical' },
-	{ text: 'We are not makers of history. We are made by history.', author: 'Martin Luther King Jr.', category: 'philosophical' },
-	{ text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs', category: 'philosophical' },
-	{ text: 'There is nothing permanent except change.', author: 'Buddha', category: 'philosophical' },
-	{ text: 'Your suffering is your chance to pay for a better existence.', author: 'Dostoevsky', category: 'philosophical' },
-	{ text: 'To err is human, to forgive is divine.', author: 'Alexander Pope', category: 'philosophical' },
-	{ text: 'The greatest pleasure of life is love.', author: 'Euripides', category: 'philosophical' },
-	{ text: "Man's search for meaning is the primary human motivation.", author: 'Viktor Frankl', category: 'philosophical' },
-	{ text: "Every day, in every way, I'm getting better and better.", author: 'Emile Coué', category: 'philosophical' },
-	{ text: 'The number one reason people fail in life is because they listen to their friends, family, and neighbors.', author: 'Napoleon Hill', category: 'philosophical' },
-	{ text: 'The secret of getting ahead is getting started.', author: 'Mark Twain', category: 'philosophical' },
-	{ text: 'I learned that courage was not the absence of fear, but the triumph over it.', author: 'Nelson Mandela', category: 'philosophical' },
 	{ text: 'The only true wisdom is in knowing you know nothing.', author: 'Socrates', category: 'philosophical' },
-	{ text: 'There are two ways to live: as if nothing is a miracle, or as if everything is.', author: 'Albert Einstein', category: 'philosophical' },
+	{ text: 'The present moment is the only place life actually happens.', category: 'philosophical' },
 ];
+
+export const QUOTES: Quote[] = uniqueByText([...CURATED_QUOTES, ...INSPIRATIONAL_QUOTES, ...WITTY_QUOTES, ...PHILOSOPHICAL_QUOTES]);
+
+export const ADVICE: string[] = QUOTES.filter(quote => quote.category === 'inspirational')
+	.slice(0, 12)
+	.map(quote => quote.text);
 
 export default QUOTES;

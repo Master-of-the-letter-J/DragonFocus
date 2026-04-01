@@ -253,26 +253,27 @@ export default function SurveyNightPage() {
 		survey.clearProgress?.('night');
 		survey.clearEveningPrompts?.(today);
 
-		if (journalEntry.section.isEnabled) {
-			const promptText = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses })
-				.map(text => text.trim())
-				.filter(Boolean)
-				.join('\n\n');
+		const promptText = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses })
+			.map(text => text.trim())
+			.filter(Boolean)
+			.join('\n\n');
 
-			journal.addEntry?.({
-				id: `entry_${today}_night_${Date.now()}`,
-				date: today,
-				surveyType: 'night',
-				goalsCompleted: totalGoalsCompleted,
-				schedulePercent: 0,
-				text: journalEntry.state.text,
-				promptText: promptText || undefined,
-				moodEvening: moodLabel,
-				rewards: { coins: totalCoins, xp: xpEarned, fury: effectiveFury },
-				triviaResult: trivia.section.isEnabled ? `${trivia.correctCount()}/${trivia.state.items.length}` : undefined,
-				triviaCorrect: trivia.section.isEnabled ? trivia.correctCount() > 0 : undefined,
-			});
-		}
+		journal.addEntry?.({
+			id: `entry_${today}_night_${Date.now()}`,
+			date: today,
+			surveyType: 'night',
+			goalsCompleted: totalGoalsCompleted,
+			goalsIncomplete: Math.max(0, goals.habits.length - habitSnapshot.completedHabitIds.length),
+			text: journalEntry.section.isEnabled ? journalEntry.state.text : undefined,
+			promptText: promptText || undefined,
+			moodEvening: moodLabel,
+			rewards: { coins: totalCoins, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: alreadyDoneToday ? 0 : 1 },
+			triviaResult: trivia.section.isEnabled ? `${trivia.correctCount()}/${trivia.state.items.length}` : undefined,
+			triviaCorrect: trivia.section.isEnabled ? trivia.correctCount() > 0 : undefined,
+			todoCount: goals.todos.length,
+			todoCompleted: todoSnapshot.completedTodoIds.length,
+			todoFailed: goals.todos.filter(todo => !!todo.failed).length,
+		});
 
 		setResults({
 			coinsEarned: totalCoins,

@@ -1,5 +1,6 @@
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
+import { useDragonSouls } from '@/context/DragonSoulsProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { usePopulation } from '@/context/PopulationProvider';
@@ -9,7 +10,7 @@ import { useStreak } from '@/context/StreakProvider';
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
-export type ItemType = 'snack' | 'cosmetic' | 'generator' | 'clicker' | 'theme';
+export type ItemType = 'snack' | 'cosmetic' | 'generator' | 'clicker' | 'theme' | 'soulMultiplier';
 
 export interface ShopItem {
 	id: string;
@@ -20,6 +21,7 @@ export interface ShopItem {
 	description?: string;
 	scarLevelRequired?: number;
 	requiresShards?: number;
+	requiresSouls?: number;
 }
 
 type QueueGroup = 'survey' | 'generator' | 'clicker' | 'jeopardy';
@@ -37,6 +39,8 @@ export interface ActiveEffect {
 	jeopardyMultiplier?: number;
 	furyPerDay?: number;
 	healthPerDay?: number;
+	effectTag?: string;
+	protectedEffect?: boolean;
 }
 
 export interface IdleSummary {
@@ -95,6 +99,7 @@ interface ItemsContextType {
 	getClickReward: () => number;
 	getItemCoinCost: (id: string) => number;
 	getItemShardCost: (id: string) => number;
+	getItemSoulCost: (id: string) => number;
 	getGeneratorProductionPerDay: (id: string) => number;
 	getTotalGeneratorProductionPerDay: () => number;
 	activeEffects: ActiveEffect[];
@@ -108,6 +113,11 @@ interface ItemsContextType {
 	consumeIdleSummary: () => void;
 	snackToast: SnackUseToast | null;
 	consumeSnackToast: () => void;
+	clearEffects: (includeProtected?: boolean) => void;
+	addCustomEffect: (effect: Omit<ActiveEffect, 'id' | 'startsAtMs' | 'endsAtMs'> & { days: number }) => void;
+	resetSnackPrices: () => void;
+	resetAfterAscension: () => void;
+	getOwnedTotalByType: (type: ItemType) => number;
 	resetInventory: () => void;
 }
 
@@ -189,44 +199,53 @@ const SHOP_ITEMS: ShopItem[] = [
 	{ id: 'click_demonic_clicks', name: 'Demonic Dragon Clicks', type: 'clicker', price: 100, priceGrowth: 1.2, scarLevelRequired: 7, requiresShards: 1, description: 'Each gives +0.001% of generation/day per click' },
 	{ id: 'click_mega_clicks', name: 'Mega-Dragon Clicks', type: 'clicker', price: 1000, priceGrowth: 1.1, scarLevelRequired: 9, requiresShards: 1, description: 'Each gives +0.1 Coins per click' },
 
-	{ id: 'snack_survey_double_1d', name: 'Double Survey Booster', type: 'snack', price: 40, scarLevelRequired: 1, description: 'x2 Survey rewards for 1 day' },
-	{ id: 'snack_survey_triple_3d', name: 'Triple Survey Booster', type: 'snack', price: 120, scarLevelRequired: 1, description: 'x3 Survey rewards for 3 days' },
-	{ id: 'snack_survey_quad_7d', name: 'Quad Survey Booster', type: 'snack', price: 300, scarLevelRequired: 1, description: 'x4 Survey rewards for 7 days' },
-	{ id: 'snack_mood_space', name: 'Space Nuggets', type: 'snack', price: 25, scarLevelRequired: 2, description: 'Random Fury -25 to +25' },
-	{ id: 'snack_mood_chill', name: 'Chill Nuggets', type: 'snack', price: 20, scarLevelRequired: 2, description: 'Random Fury -15 to -10' },
-	{ id: 'snack_mood_explosive', name: 'Explosive Nuggets', type: 'snack', price: 15, scarLevelRequired: 2, description: 'Random Fury +10 to +15' },
-	{ id: 'snack_therapy_10d', name: 'Therapy Nuggets', type: 'snack', price: 80, scarLevelRequired: 2, description: '-10 Fury/day for 10 days' },
-	{ id: 'snack_health_chocolate', name: 'Health Chocolate', type: 'snack', price: 30, scarLevelRequired: 3, description: '+10 Health' },
-	{ id: 'snack_super_health_chocolate', name: 'Super Health Chocolate', type: 'snack', price: 80, scarLevelRequired: 3, description: '+15 to +25 Health' },
-	{ id: 'snack_dark_chocolate', name: 'Dark Chocolate', type: 'snack', price: 50, scarLevelRequired: 3, description: '-10 or +20 Health' },
-	{ id: 'snack_white_chocolate', name: 'White Chocolate', type: 'snack', price: 55, scarLevelRequired: 3, description: '-10 to +20 Health' },
-	{ id: 'snack_regen_10hp_10d', name: 'Regen Snack +10', type: 'snack', price: 90, scarLevelRequired: 3, description: '+10 Health/day for 10 days' },
-	{ id: 'snack_regen_20hp_10d', name: 'Regen Snack +20', type: 'snack', price: 170, scarLevelRequired: 3, description: '+20 Health/day for 10 days' },
-	{ id: 'snack_regen_50hp_10d', name: 'Regen Snack +50', type: 'snack', price: 400, scarLevelRequired: 3, description: '+50 Health/day for 10 days' },
-	{ id: 'snack_regen_100hp_10d', name: 'Regen Snack +100', type: 'snack', price: 900, scarLevelRequired: 3, description: '+100 Health/day for 10 days' },
-	{ id: 'snack_bipolar_10d', name: 'Bipolar Mood Nuggets', type: 'snack', price: 70, scarLevelRequired: 4, description: 'Random Fury/day (-20 to +10) for 10 days' },
-	{ id: 'snack_jeopardy_double_1d', name: 'Double Jeopardy Snack', type: 'snack', price: 60, scarLevelRequired: 4, description: 'x2 question gains/losses for 1 day' },
-	{ id: 'snack_jeopardy_triple_3d', name: 'Triple Jeopardy Snack', type: 'snack', price: 180, scarLevelRequired: 4, description: 'x3 question gains/losses for 3 days' },
-	{ id: 'snack_jeopardy_quad_7d', name: 'Quad Jeopardy Snack', type: 'snack', price: 360, scarLevelRequired: 4, description: 'x4 question gains/losses for 7 days' },
-	{ id: 'snack_anti_coin_1d', name: 'Anti-Coin Booster', type: 'snack', price: 120, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 1 day' },
-	{ id: 'snack_anti_coin_3d', name: 'Anti-Coin Booster+', type: 'snack', price: 310, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 3 days' },
-	{ id: 'snack_anti_coin_7d', name: 'Anti-Coin Booster++', type: 'snack', price: 700, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 7 days' },
-	{ id: 'snack_gen_double_1d', name: 'Double Generator Booster', type: 'snack', price: 180, scarLevelRequired: 6, requiresShards: 1, description: 'Generator x2 for 1 day' },
-	{ id: 'snack_gen_triple_3d', name: 'Triple Generator Booster', type: 'snack', price: 540, scarLevelRequired: 6, requiresShards: 3, description: 'Generator x3 for 3 days' },
-	{ id: 'snack_gen_quad_7d', name: 'Quad Generator Booster', type: 'snack', price: 1300, scarLevelRequired: 6, requiresShards: 7, description: 'Generator x4 for 7 days' },
-	{ id: 'snack_click_double_1d', name: 'Double Clicker Booster', type: 'snack', price: 180, scarLevelRequired: 6, requiresShards: 1, description: 'Clicker x2 for 1 day' },
-	{ id: 'snack_click_triple_3d', name: 'Triple Clicker Booster', type: 'snack', price: 540, scarLevelRequired: 6, requiresShards: 3, description: 'Clicker x3 for 3 days' },
-	{ id: 'snack_click_quad_7d', name: 'Quad Clicker Booster', type: 'snack', price: 1300, scarLevelRequired: 6, requiresShards: 7, description: 'Clicker x4 for 7 days' },
-	{ id: 'snack_ice', name: 'Ice Snack', type: 'snack', price: 90, scarLevelRequired: 8, description: '-20 Fury, -10 Health' },
-	{ id: 'snack_fire', name: 'Fire Snack', type: 'snack', price: 40, scarLevelRequired: 8, description: '+10 Fury, +5 Health' },
-	{ id: 'snack_ice_injection', name: 'Ice Injection', type: 'snack', price: 280, scarLevelRequired: 8, description: '-100 Fury, then -5 Health/day for 5 days' },
-	{ id: 'snack_fire_injection', name: 'Fire Injection', type: 'snack', price: 280, scarLevelRequired: 8, description: '+100 Health, then +20 Fury/day for 5 days' },
-	{ id: 'snack_super', name: 'Super Snack', type: 'snack', price: 2400, scarLevelRequired: 10, requiresShards: 10, description: '-10 Fury, +10 Health, and x2 Survey/Generator/Clicker for 10 days' },
-	{ id: 'snack_age', name: 'Age Snack', type: 'snack', price: 3000, scarLevelRequired: 10, requiresShards: 10, description: '+1 Dragon Age' },
+	{ id: 'snack_survey_double_1d', name: 'Double Survey Booster', type: 'snack', price: 40, priceGrowth: 1.08, scarLevelRequired: 1, description: 'x2 Survey rewards for 1 day' },
+	{ id: 'snack_survey_triple_3d', name: 'Triple Survey Booster', type: 'snack', price: 120, priceGrowth: 1.08, scarLevelRequired: 1, description: 'x3 Survey rewards for 3 days' },
+	{ id: 'snack_survey_quad_7d', name: 'Quad Survey Booster', type: 'snack', price: 300, priceGrowth: 1.08, scarLevelRequired: 1, description: 'x4 Survey rewards for 7 days' },
+	{ id: 'snack_mood_space', name: 'Space Nuggets', type: 'snack', price: 25, priceGrowth: 1.05, scarLevelRequired: 2, description: 'Random Fury -25 to +25' },
+	{ id: 'snack_mood_chill', name: 'Chill Nuggets', type: 'snack', price: 20, priceGrowth: 1.05, scarLevelRequired: 2, description: 'Random Fury -15 to -10' },
+	{ id: 'snack_mood_explosive', name: 'Explosive Nuggets', type: 'snack', price: 15, priceGrowth: 1.05, scarLevelRequired: 2, description: 'Random Fury +10 to +15' },
+	{ id: 'snack_therapy_10d', name: 'Therapy Nuggets', type: 'snack', price: 80, priceGrowth: 1.06, scarLevelRequired: 2, description: '-10 Fury/day for 10 days' },
+	{ id: 'snack_health_chocolate', name: 'Health Chocolate', type: 'snack', price: 30, priceGrowth: 1.05, scarLevelRequired: 3, description: '+10 Health' },
+	{ id: 'snack_super_health_chocolate', name: 'Super Health Chocolate', type: 'snack', price: 80, priceGrowth: 1.05, scarLevelRequired: 3, description: '+15 to +25 Health' },
+	{ id: 'snack_dark_chocolate', name: 'Dark Chocolate', type: 'snack', price: 50, priceGrowth: 1.05, scarLevelRequired: 3, description: '-10 or +20 Health' },
+	{ id: 'snack_white_chocolate', name: 'White Chocolate', type: 'snack', price: 55, priceGrowth: 1.05, scarLevelRequired: 3, description: '-10 to +20 Health' },
+	{ id: 'snack_regen_10hp_10d', name: 'Regen Snack +10', type: 'snack', price: 90, priceGrowth: 1.06, scarLevelRequired: 3, description: '+10 Health/day for 10 days' },
+	{ id: 'snack_regen_20hp_10d', name: 'Regen Snack +20', type: 'snack', price: 170, priceGrowth: 1.06, scarLevelRequired: 3, description: '+20 Health/day for 10 days' },
+	{ id: 'snack_regen_50hp_10d', name: 'Regen Snack +50', type: 'snack', price: 400, priceGrowth: 1.06, scarLevelRequired: 3, description: '+50 Health/day for 10 days' },
+	{ id: 'snack_regen_100hp_10d', name: 'Regen Snack +100', type: 'snack', price: 900, priceGrowth: 1.06, scarLevelRequired: 3, description: '+100 Health/day for 10 days' },
+	{ id: 'snack_bipolar_10d', name: 'Bipolar Mood Nuggets', type: 'snack', price: 70, priceGrowth: 1.06, scarLevelRequired: 4, description: 'Random Fury/day (-20 to +10) for 10 days' },
+	{ id: 'snack_jeopardy_double_1d', name: 'Double Jeopardy Snack', type: 'snack', price: 60, priceGrowth: 1.08, scarLevelRequired: 4, description: 'x2 question gains/losses for 1 day' },
+	{ id: 'snack_jeopardy_triple_3d', name: 'Triple Jeopardy Snack', type: 'snack', price: 180, priceGrowth: 1.08, scarLevelRequired: 4, description: 'x3 question gains/losses for 3 days' },
+	{ id: 'snack_jeopardy_quad_7d', name: 'Quad Jeopardy Snack', type: 'snack', price: 360, priceGrowth: 1.08, scarLevelRequired: 4, description: 'x4 question gains/losses for 7 days' },
+	{ id: 'snack_anti_coin_1d', name: 'Anti-Coin Booster', type: 'snack', price: 120, priceGrowth: 1.08, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 1 day' },
+	{ id: 'snack_anti_coin_3d', name: 'Anti-Coin Booster+', type: 'snack', price: 310, priceGrowth: 1.08, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 3 days' },
+	{ id: 'snack_anti_coin_7d', name: 'Anti-Coin Booster++', type: 'snack', price: 700, priceGrowth: 1.08, scarLevelRequired: 6, description: 'Generator x0.5 and Survey x2 for 7 days' },
+	{ id: 'snack_gen_double_1d', name: 'Double Generator Booster', type: 'snack', price: 180, priceGrowth: 1.1, scarLevelRequired: 6, requiresShards: 1, description: 'Generator x2 for 1 day' },
+	{ id: 'snack_gen_triple_3d', name: 'Triple Generator Booster', type: 'snack', price: 540, priceGrowth: 1.1, scarLevelRequired: 6, requiresShards: 3, description: 'Generator x3 for 3 days' },
+	{ id: 'snack_gen_quad_7d', name: 'Quad Generator Booster', type: 'snack', price: 1300, priceGrowth: 1.1, scarLevelRequired: 6, requiresShards: 7, description: 'Generator x4 for 7 days' },
+	{ id: 'snack_click_double_1d', name: 'Double Clicker Booster', type: 'snack', price: 180, priceGrowth: 1.1, scarLevelRequired: 6, requiresShards: 1, description: 'Clicker x2 for 1 day' },
+	{ id: 'snack_click_triple_3d', name: 'Triple Clicker Booster', type: 'snack', price: 540, priceGrowth: 1.1, scarLevelRequired: 6, requiresShards: 3, description: 'Clicker x3 for 3 days' },
+	{ id: 'snack_click_quad_7d', name: 'Quad Clicker Booster', type: 'snack', price: 1300, priceGrowth: 1.1, scarLevelRequired: 6, requiresShards: 7, description: 'Clicker x4 for 7 days' },
+	{ id: 'snack_milk', name: 'Milk', type: 'snack', price: 150, priceGrowth: 1.08, scarLevelRequired: 6, description: 'Remove all normal status effects' },
+	{ id: 'snack_super_milk', name: 'Super Milk', type: 'snack', price: 750, priceGrowth: 1.1, scarLevelRequired: 8, requiresShards: 5, description: 'Remove all status effects, including Ascension Sickness' },
+	{ id: 'snack_ice', name: 'Ice Snack', type: 'snack', price: 90, priceGrowth: 1.08, scarLevelRequired: 8, description: '-20 Fury, -10 Health' },
+	{ id: 'snack_fire', name: 'Fire Snack', type: 'snack', price: 40, priceGrowth: 1.08, scarLevelRequired: 8, description: '+10 Fury, +5 Health' },
+	{ id: 'snack_ice_injection', name: 'Ice Injection', type: 'snack', price: 280, priceGrowth: 1.1, scarLevelRequired: 8, description: '-100 Fury, then -5 Health/day for 5 days' },
+	{ id: 'snack_fire_injection', name: 'Fire Injection', type: 'snack', price: 280, priceGrowth: 1.1, scarLevelRequired: 8, description: '+100 Health, then +20 Fury/day for 5 days' },
+	{ id: 'snack_super', name: 'Super Snack', type: 'snack', price: 2400, priceGrowth: 1.12, scarLevelRequired: 10, requiresShards: 10, description: '-10 Fury, +10 Health, and x2 Survey/Generator/Clicker for 10 days' },
+	{ id: 'snack_age', name: 'Age Snack', type: 'snack', price: 3000, priceGrowth: 1.12, scarLevelRequired: 10, requiresShards: 10, description: '+1 Dragon Age' },
 
 	{ id: 'cosmetic_shades', name: 'Sunglasses', type: 'cosmetic', price: 90, description: 'Cool sunglasses for your dragon.' },
-	{ id: 'cosmetic_crown', name: 'Royal Crown', type: 'cosmetic', price: 1000, description: 'A crown to rule the skies.' },
+	{ id: 'cosmetic_crown', name: 'Royal Crown', type: 'cosmetic', price: 1000, requiresShards: 3, description: 'A crown to rule the skies.' },
 	{ id: 'theme_dungeon', name: 'Dungeon Theme', type: 'theme', price: 500, description: 'Dark stone walls and torch-lit dungeon atmosphere' },
+	{ id: 'theme_castle_plains', name: 'Castle & Plains Theme', type: 'theme', price: 1400, description: 'A bright castle skyline with rolling fields.' },
+	{ id: 'theme_space', name: 'Space Theme', type: 'theme', price: 2200, requiresShards: 5, description: 'Stars, deep space, and drifting nebula light.' },
+	{ id: 'theme_volcano', name: 'Volcano Theme', type: 'theme', price: 2800, requiresShards: 8, description: 'Molten skies and an infernal dragon lair.' },
+	{ id: 'soul_survey_duplication', name: 'Survey Duplication I', type: 'soulMultiplier', price: 0, requiresSouls: 25, priceGrowth: 1.2, scarLevelRequired: 4, description: 'Passive survey rewards x1.15' },
+	{ id: 'soul_generator_crucible', name: 'Infernal Crucible', type: 'soulMultiplier', price: 0, requiresSouls: 40, priceGrowth: 1.22, scarLevelRequired: 5, description: 'Passive generator rewards x1.15' },
+	{ id: 'soul_click_ritual', name: 'Infernal Click Ritual', type: 'soulMultiplier', price: 0, requiresSouls: 40, priceGrowth: 1.22, scarLevelRequired: 5, description: 'Passive click rewards x1.15' },
+	{ id: 'soul_universal_ember', name: 'Universal Soul Ember', type: 'soulMultiplier', price: 0, requiresSouls: 100, priceGrowth: 1.3, scarLevelRequired: 8, description: 'Survey, generator, and click rewards each gain an extra x1.1 passive boost' },
 ];
 
 /** @requires DragonCoinsProvider @requires DragonShardsProvider */
@@ -235,6 +254,7 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 	const fury = useFury();
 	const coins = useDragonCoins();
 	const shards = useShards();
+	const souls = useDragonSouls();
 	const scarLevel = useScarLevel();
 	const premium = usePremium();
 	const streak = useStreak();
@@ -242,11 +262,13 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 
 	const shopItems = useMemo(() => SHOP_ITEMS, []);
 	const [ownedItems, setOwnedItems] = useState<Record<string, number>>({});
+	const [purchaseCounts, setPurchaseCounts] = useState<Record<string, number>>({});
 	const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
 	const [pendingIdleSummary, setPendingIdleSummary] = useState<IdleSummary | null>(null);
 	const [snackToast, setSnackToast] = useState<SnackUseToast | null>(null);
 
 	const ownedItemsRef = useRef(ownedItems);
+	const purchaseCountsRef = useRef(purchaseCounts);
 	const activeEffectsRef = useRef(activeEffects);
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 	const lastProcessedMsRef = useRef(Date.now());
@@ -255,6 +277,10 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		ownedItemsRef.current = ownedItems;
 	}, [ownedItems]);
+
+	useEffect(() => {
+		purchaseCountsRef.current = purchaseCounts;
+	}, [purchaseCounts]);
 
 	useEffect(() => {
 		activeEffectsRef.current = activeEffects;
@@ -268,6 +294,22 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 	);
 
 	const getOwnedCount = useCallback((id: string) => ownedItemsRef.current[id] ?? 0, []);
+	const getPurchaseCount = useCallback((id: string) => purchaseCountsRef.current[id] ?? 0, []);
+
+	const getPassiveSoulMultiplier = useCallback(
+		(kind: 'survey' | 'generator' | 'clicker') => {
+			const surveyOwned = getOwnedCount('soul_survey_duplication');
+			const generatorOwned = getOwnedCount('soul_generator_crucible');
+			const clickOwned = getOwnedCount('soul_click_ritual');
+			const universalOwned = getOwnedCount('soul_universal_ember');
+
+			const universal = Math.pow(1.1, universalOwned);
+			if (kind === 'survey') return Math.pow(1.15, surveyOwned) * universal;
+			if (kind === 'generator') return Math.pow(1.15, generatorOwned) * universal;
+			return Math.pow(1.15, clickOwned) * universal;
+		},
+		[getOwnedCount],
+	);
 
 	const getRuntimeStats = useCallback((): RuntimeStats => {
 		const yang = clamp(fury.furyMeter ?? 0, 0, 100);
@@ -398,6 +440,8 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 						generatorMultiplier: payload.queueGroup === 'generator' ? segment.multiplier : undefined,
 						clickerMultiplier: payload.queueGroup === 'clicker' ? segment.multiplier : undefined,
 						jeopardyMultiplier: payload.queueGroup === 'jeopardy' ? segment.multiplier : undefined,
+						effectTag: payload.effectTag,
+						protectedEffect: payload.protectedEffect,
 					};
 				});
 
@@ -419,8 +463,9 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		const item = getItemById(id);
 		if (!item) return 0;
 		const growth = item.priceGrowth ?? 1;
-		return round2(item.price * Math.pow(growth, getOwnedCount(id)));
-	}, [getItemById, getOwnedCount]);
+		const growthCount = item.type === 'snack' || item.type === 'soulMultiplier' ? getPurchaseCount(id) : getOwnedCount(id);
+		return round2(item.price * Math.pow(growth, growthCount));
+	}, [getItemById, getOwnedCount, getPurchaseCount]);
 
 	const getItemShardCost = useCallback((id: string) => {
 		const item = getItemById(id);
@@ -429,10 +474,20 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		return item.requiresShards ?? 0;
 	}, [getItemById]);
 
+	const getItemSoulCost = useCallback((id: string) => {
+		const item = getItemById(id);
+		if (!item) return 0;
+		const baseSoulCost = item.requiresSouls ?? 0;
+		const growth = item.priceGrowth ?? 1;
+		const growthCount = item.type === 'soulMultiplier' ? getPurchaseCount(id) : 0;
+		return round2(baseSoulCost * Math.pow(growth, growthCount));
+	}, [getItemById, getPurchaseCount]);
+
 	const getGeneratorProductionPerDayAt = useCallback((atMs: number, sourceEffects: ActiveEffect[] = activeEffectsRef.current) => {
 		const stats = getRuntimeStats();
 		const effects = getEffectSnapshotAt(atMs, sourceEffects);
-		const multiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.generatorMultiplier, stats.premium);
+		const generatorMultiplier = effects.generatorMultiplier * getPassiveSoulMultiplier('generator');
+		const multiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, generatorMultiplier, stats.premium);
 
 		let other = 0;
 		let antiTreasury = 0;
@@ -450,25 +505,25 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		}
 
 		return Math.max(0, other - stats.antiTreasuryCount) + antiTreasury + bigStick;
-	}, [baseGeneratorPerUnit, coins, getEffectSnapshotAt, getOwnedCount, getRuntimeStats]);
+	}, [baseGeneratorPerUnit, coins, getEffectSnapshotAt, getOwnedCount, getPassiveSoulMultiplier, getRuntimeStats]);
 
 	const getGeneratorProductionPerDay = useCallback((id: string) => {
 		if (!GENERATOR_IDS.includes(id as GeneratorId)) return 0;
 		const stats = getRuntimeStats();
 		const effects = getEffectSnapshotAt(Date.now());
-		const multiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.generatorMultiplier, stats.premium);
+		const multiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.generatorMultiplier * getPassiveSoulMultiplier('generator'), stats.premium);
 		const base = baseGeneratorPerUnit(id as GeneratorId, stats);
 		const boosted = id === 'gen_big_stick' ? base * multiplier * multiplier : base * multiplier;
 		return round2(Math.max(0, boosted));
-	}, [baseGeneratorPerUnit, coins, getEffectSnapshotAt, getRuntimeStats]);
+	}, [baseGeneratorPerUnit, coins, getEffectSnapshotAt, getPassiveSoulMultiplier, getRuntimeStats]);
 
 	const getTotalGeneratorProductionPerDay = useCallback(() => {
 		return round2(getGeneratorProductionPerDayAt(Date.now()));
 	}, [getGeneratorProductionPerDayAt]);
 
-	const getSurveyMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).surveyMultiplier, [getEffectSnapshotAt]);
-	const getGeneratorMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).generatorMultiplier, [getEffectSnapshotAt]);
-	const getClickerMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).clickerMultiplier, [getEffectSnapshotAt]);
+	const getSurveyMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).surveyMultiplier * getPassiveSoulMultiplier('survey'), [getEffectSnapshotAt, getPassiveSoulMultiplier]);
+	const getGeneratorMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).generatorMultiplier * getPassiveSoulMultiplier('generator'), [getEffectSnapshotAt, getPassiveSoulMultiplier]);
+	const getClickerMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).clickerMultiplier * getPassiveSoulMultiplier('clicker'), [getEffectSnapshotAt, getPassiveSoulMultiplier]);
 	const getActiveJeopardyMultiplier = useCallback(() => getEffectSnapshotAt(Date.now()).jeopardyMultiplier, [getEffectSnapshotAt]);
 	const getActiveCoinMultiplier = useCallback(() => getSurveyMultiplier(), [getSurveyMultiplier]);
 
@@ -488,9 +543,9 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		const raw = baseClickCoins * ageMultiplier + demonicBonus;
 		if (raw <= 0) return 0;
 
-		const clickMultiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.clickerMultiplier, stats.premium);
+		const clickMultiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.clickerMultiplier * getPassiveSoulMultiplier('clicker'), stats.premium);
 		return round2(raw * clickMultiplier);
-	}, [coins, getEffectSnapshotAt, getGeneratorProductionPerDayAt, getOwnedCount, getRuntimeStats]);
+	}, [coins, getEffectSnapshotAt, getGeneratorProductionPerDayAt, getOwnedCount, getPassiveSoulMultiplier, getRuntimeStats]);
 
 	const processDragonClick = useCallback(() => {
 		const reward = getClickReward();
@@ -512,23 +567,39 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 
 		const coinCost = getItemCoinCost(id);
 		const shardCost = getItemShardCost(id);
+		const soulCost = getItemSoulCost(id);
 
 		if (!coins.spendCoins(coinCost)) return false;
 		if (shardCost > 0 && !shards.spendShards(shardCost)) {
 			coins.addCoins(coinCost);
 			return false;
 		}
+		if (soulCost > 0 && !souls.spendSouls(soulCost)) {
+			if (shardCost > 0) shards.addShards(shardCost);
+			coins.addCoins(coinCost);
+			return false;
+		}
 
 		addItemToInventory(id, 1);
+		if (item.type === 'snack' || item.type === 'soulMultiplier') {
+			setPurchaseCounts(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+		}
 		return true;
-	}, [addItemToInventory, coins, getItemById, getItemCoinCost, getItemShardCost, scarLevel.currentScarLevel, shards]);
+	}, [addItemToInventory, coins, getItemById, getItemCoinCost, getItemShardCost, getItemSoulCost, scarLevel.currentScarLevel, shards, souls]);
 
 	const sellItem = useCallback((id: string) => {
 		const item = getItemById(id);
 		if (!item) return false;
-		if (item.type !== 'generator' && item.type !== 'clicker') return false;
+		if (item.type !== 'generator' && item.type !== 'clicker' && item.type !== 'soulMultiplier') return false;
 		const owned = ownedItems[id] ?? 0;
 		if (owned <= 0) return false;
+
+		if (item.type === 'soulMultiplier') {
+			const soulRefund = Math.max(1, Math.floor(getItemSoulCost(id) * 0.5));
+			setOwnedItems(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
+			souls.addSouls(soulRefund);
+			return true;
+		}
 
 		const growth = item.priceGrowth ?? 1;
 		const tierCost = item.price * Math.pow(growth, owned - 1);
@@ -538,7 +609,7 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		shards.addShards(1);
 		coins.addCoins(refund);
 		return true;
-	}, [coins, getItemById, ownedItems, shards]);
+	}, [coins, getItemById, getItemSoulCost, ownedItems, shards, souls]);
 
 	const simulateElapsedSeconds = useCallback((elapsedSeconds: number): SimResult => {
 		if (elapsedSeconds <= 0) return { coins: 0, fireXp: 0, shards: 0, furyDelta: 0, healthDelta: 0 };
@@ -598,6 +669,10 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		lastProcessedMsRef.current = anchor;
 		return result.coins;
 	}, [simulateElapsedSeconds]);
+
+	const clearEffects = useCallback((includeProtected = false) => {
+		setActiveEffects(prev => prev.filter(effect => !includeProtected && effect.protectedEffect));
+	}, []);
 
 	const useItem = useCallback((id: string) => {
 		const item = getItemById(id);
@@ -743,6 +818,14 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 				addTimedEffect({ sourceItemId: id, name: `${item.name}, 7d`, queueGroup: 'clicker', clickerMultiplier: 4, days: 7 });
 				topEffect = 'Clicker x4 for 7 days';
 				break;
+			case 'snack_milk':
+				clearEffects(false);
+				topEffect = 'Cleared all removable effects';
+				break;
+			case 'snack_super_milk':
+				clearEffects(true);
+				topEffect = 'Cleared every effect, including Ascension Sickness';
+				break;
 
 			case 'snack_ice':
 				applyFury(-20);
@@ -781,10 +864,36 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 		setOwnedItems(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
 		setSnackToast({ name: item.name, topEffect });
 		return true;
-	}, [addTimedEffect, dragon, fury, getItemById, ownedItems]);
+	}, [addTimedEffect, clearEffects, dragon, fury, getItemById, ownedItems]);
 
 	const consumeIdleSummary = useCallback(() => setPendingIdleSummary(null), []);
 	const consumeSnackToast = useCallback(() => setSnackToast(null), []);
+	const resetSnackPrices = useCallback(() => {
+		const snackIds = shopItems.filter(item => item.type === 'snack').map(item => item.id);
+		setPurchaseCounts(prev => {
+			const next = { ...prev };
+			snackIds.forEach(id => {
+				delete next[id];
+			});
+			return next;
+		});
+	}, [shopItems]);
+
+	const resetAfterAscension = useCallback(() => {
+		const generatorAndClickerIds = shopItems.filter(item => item.type === 'generator' || item.type === 'clicker').map(item => item.id);
+		setOwnedItems(prev => {
+			const next = { ...prev };
+			generatorAndClickerIds.forEach(id => {
+				next[id] = 0;
+			});
+			return next;
+		});
+	}, [shopItems]);
+
+	const getOwnedTotalByType = useCallback(
+		(type: ItemType) => shopItems.filter(item => item.type === type).reduce((sum, item) => sum + (ownedItems[item.id] || 0), 0),
+		[ownedItems, shopItems],
+	);
 
 	const getEffectDisplayList = useCallback((): EffectDisplayEntry[] => {
 		const now = Date.now();
@@ -861,6 +970,7 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 
 	const resetInventory = useCallback(() => {
 		setOwnedItems({});
+		setPurchaseCounts({});
 		setActiveEffects([]);
 		setPendingIdleSummary(null);
 		setSnackToast(null);
@@ -882,6 +992,7 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 				getClickReward,
 				getItemCoinCost,
 				getItemShardCost,
+				getItemSoulCost,
 				getGeneratorProductionPerDay,
 				getTotalGeneratorProductionPerDay,
 				activeEffects,
@@ -895,6 +1006,11 @@ export default function ItemsProvider({ children }: { children: ReactNode }) {
 				consumeIdleSummary,
 				snackToast,
 				consumeSnackToast,
+				clearEffects,
+				addCustomEffect: addTimedEffect,
+				resetSnackPrices,
+				resetAfterAscension,
+				getOwnedTotalByType,
 				resetInventory,
 			}}>
 			{children}

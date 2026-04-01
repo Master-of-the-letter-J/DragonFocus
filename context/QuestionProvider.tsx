@@ -351,8 +351,6 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			switch (c) {
 				case 'Self-Discovery':
 					return 'SelfDiscovery';
-				case 'Fun & Creative':
-					return 'FunCreative';
 				case 'Mindfulness':
 					return 'Mindfulness';
 				case 'Productivity':
@@ -363,6 +361,9 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 					return 'Reflection';
 				case 'Gratitude':
 					return 'Gratitude';
+				case 'Fun & Creative':
+				case 'Creative':
+					return 'Creative';
 				default:
 					return c;
 			}

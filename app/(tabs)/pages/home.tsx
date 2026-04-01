@@ -35,6 +35,7 @@ export default function HomePage() {
 
 	const [snackModalOpen, setSnackModalOpen] = useState(false);
 	const [idleModalOpen, setIdleModalOpen] = useState(false);
+	const [eventModal, setEventModal] = useState<{ title: string; message: string } | null>(null);
 
 	const today = new Date().toISOString().split('T')[0];
 	const savedMorning = survey.loadProgress('morning');
@@ -43,10 +44,8 @@ export default function HomePage() {
 	const morningPercent = survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today ? 100 : (savedMorning?.progressPercent ?? 0);
 	const nightPercent = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today ? 100 : (savedNight?.progressPercent ?? 0);
 
-	const ownedSnacks = useMemo(() => {
-		return items.shopItems.filter(item => item.type === 'snack' && (items.ownedItems[item.id] || 0) > 0);
-	}, [items.ownedItems, items.shopItems]);
-
+	const ownedSnacks = useMemo(() => items.shopItems.filter(item => item.type === 'snack' && (items.ownedItems[item.id] || 0) > 0), [items.ownedItems, items.shopItems]);
+	const totalSnackCount = ownedSnacks.reduce((sum, snack) => sum + (items.ownedItems[snack.id] || 0), 0);
 	const effectList = items.getEffectDisplayList();
 
 	useEffect(() => {
@@ -60,14 +59,49 @@ export default function HomePage() {
 				shadowAmount: 16,
 				backgroundColor: '#F0F9FF',
 			},
-			{ durationMs: 1600 }
+			{ durationMs: 1600 },
 		);
 		items.consumeSnackToast();
-	}, [items.consumeSnackToast, items.snackToast, showToast]);
+	}, [items, showToast]);
 
 	useEffect(() => {
 		if (items.pendingIdleSummary) setIdleModalOpen(true);
 	}, [items.pendingIdleSummary]);
+
+	useEffect(() => {
+		if (!dragon.lastLifecycleEvent) return;
+
+		if (dragon.lastLifecycleEvent.type === 'spawned') {
+			setEventModal({
+				title: 'Dragon Spawned',
+				message: 'A new dragon has entered the lair. The full spawn video is still a placeholder, so enjoy this temporary hype popup.',
+			});
+		}
+
+		if (dragon.lastLifecycleEvent.type === 'died') {
+			items.addCustomEffect?.({
+				sourceItemId: 'status_mourning_1',
+				name: 'Mourning I',
+				furyPerDay: 20,
+				generatorMultiplier: 0.5,
+				days: 3,
+				effectTag: 'mourning',
+			});
+			setEventModal({
+				title: 'Dragon Death',
+				message: 'Your dragon has fallen. The death video is still a placeholder, and Mourning I has been applied for 3 days.',
+			});
+		}
+
+		if (dragon.lastLifecycleEvent.type === 'revived') {
+			setEventModal({
+				title: 'Dragon Revived',
+				message: 'A new generation rises from the grave. The revive art is still placeholder for now, but the graveyard log is ready.',
+			});
+		}
+
+		dragon.clearLifecycleEvent();
+	}, [dragon, items]);
 
 	const getSurveyButtonState = (type: 'morning' | 'night') => {
 		const isCompleted = type === 'morning' ? survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today : survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
@@ -79,9 +113,8 @@ export default function HomePage() {
 
 	const morningStatus = getSurveyButtonState('morning');
 	const nightStatus = getSurveyButtonState('night');
-
-	const isMorningClickable = (survey.canTakeMorningSurvey() || morningStatus === 'Retake' || !!savedMorning) && dragon.dragonState === 'alive';
-	const isNightClickable = (survey.canTakeNightSurvey() || nightStatus === 'Retake' || !!savedNight) && dragon.dragonState === 'alive';
+	const canUseSurveys = dragon.dragonState === 'alive';
+	const stageImage = dragon.dragonState === 'dead' ? images.grave : images.stages[dragon.currentStage.name];
 
 	return (
 		<View style={styles.container}>
@@ -108,42 +141,59 @@ export default function HomePage() {
 								<Text style={styles.effectTime}>{effect.startsInSeconds > 0 ? `Starts in ${formatDuration(effect.startsInSeconds)}` : `Ends in ${formatDuration(effect.remainingSeconds)}`}</Text>
 							</View>
 						))}
+						{effectList.length === 0 && (
+							<View style={styles.effectCardMuted}>
+								<Text style={styles.effectTitleMuted}>No active effects</Text>
+								<Text style={styles.effectTextMuted}>Snacks, mourning, and ascension sickness will show up here.</Text>
+							</View>
+						)}
 					</View>
 					<Pressable style={styles.snackButton} onPress={() => setSnackModalOpen(true)}>
-						<Text style={styles.snackButtonText}>Snacks ({ownedSnacks.length})</Text>
+						<Text style={styles.snackButtonText}>Backpack ({totalSnackCount})</Text>
 					</Pressable>
 				</View>
 
 				<View style={styles.dragonArea}>
 					<Text style={styles.dragonName}>{dragon.dragonName}</Text>
+					<Text style={styles.dragonStats}>
+						Stage: {dragon.currentStage.name} • Age: {dragon.age} days • HP {dragon.hp}/{dragon.maxHP}
+					</Text>
+
+					<View style={styles.dragonArtShell}>
+						<Image source={stageImage} style={[styles.dragonImage, dragon.dragonState === 'dead' && styles.deadDragonImage, dragon.dragonState === 'unspawned' && styles.eggImage]} />
+					</View>
 
 					{dragon.dragonState === 'alive' && (
-						<>
-							<Text style={styles.dragonStats}>
-								HP: {dragon.hp}/{dragon.maxHP} | Age: {dragon.age} | {dragon.currentStage.name}
-							</Text>
-							<Pressable
-								hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-								onPress={() => {
-									dragonClicking.addClick();
-									items.processDragonClick();
-								}}>
-								<Image source={images.dragon} style={styles.dragonImage} />
-							</Pressable>
-						</>
+						<Pressable
+							style={styles.tapDragonButton}
+							hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+							onPress={() => {
+								dragonClicking.addClick();
+								const reward = items.processDragonClick();
+								if (reward > 0) {
+									showToast({ title: 'Dragon Click', message: `+${reward.toFixed(2)} coins`, shadowColor: '#F59E0B', backgroundColor: '#FFFBEB' }, { durationMs: 900 });
+								}
+							}}>
+							<Text style={styles.tapDragonText}>Tap Dragon</Text>
+						</Pressable>
+					)}
+
+					{dragon.dragonState === 'unspawned' && (
+						<Pressable style={styles.lifecycleButton} onPress={() => dragon.spawnDragon()}>
+							<Text style={styles.lifecycleButtonText}>Spawn Dragon</Text>
+						</Pressable>
 					)}
 
 					{dragon.dragonState === 'dead' && (
-						<Pressable onPress={() => dragon.revive()}>
-							<Image source={images.dragon} style={[styles.dragonImage, { opacity: 0.5 }]} />
-							<Text style={styles.deadText}>Tap to revive</Text>
+						<Pressable style={[styles.lifecycleButton, styles.reviveButton]} onPress={() => dragon.revive()}>
+							<Text style={styles.lifecycleButtonText}>Revive Dragon</Text>
 						</Pressable>
 					)}
 
 					<View style={styles.surveySection}>
 						<Text style={styles.surveyLabel}>Daily Surveys</Text>
 						<View style={styles.surveysContainer}>
-							<Pressable style={[styles.largeButton, styles.surveyButton, isMorningClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyMorning')} disabled={!isMorningClickable}>
+							<Pressable style={[styles.largeButton, canUseSurveys ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyMorning')} disabled={!canUseSurveys}>
 								<View style={styles.buttonTop}>
 									<Text style={styles.largeButtonTitle}>Morning Survey</Text>
 									<Text style={styles.statusBadge}>{morningStatus}</Text>
@@ -151,7 +201,7 @@ export default function HomePage() {
 								<ProgressBar progress={morningPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
 							</Pressable>
 
-							<Pressable style={[styles.largeButton, styles.surveyButton, isNightClickable ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyNight')} disabled={!isNightClickable}>
+							<Pressable style={[styles.largeButton, canUseSurveys ? styles.buttonActive : styles.buttonDisabled]} onPress={() => router.push('/surveyNight')} disabled={!canUseSurveys}>
 								<View style={styles.buttonTop}>
 									<Text style={styles.largeButtonTitle}>Night Survey</Text>
 									<Text style={styles.statusBadge}>{nightStatus}</Text>
@@ -159,16 +209,16 @@ export default function HomePage() {
 								<ProgressBar progress={nightPercent} outerStyle={styles.progressBarSmall} innerStyle={styles.progressFillSmall} />
 							</Pressable>
 						</View>
+						{!canUseSurveys && <Text style={styles.surveyHint}>Spawn or revive your dragon to continue surveys.</Text>}
 					</View>
 				</View>
 			</ScrollView>
 
-
 			<Modal visible={snackModalOpen} transparent animationType="fade" onRequestClose={() => setSnackModalOpen(false)}>
 				<View style={styles.modalBackdrop}>
 					<View style={styles.modalCard}>
-						<Text style={styles.modalTitle}>Dragon Snacks</Text>
-						<ScrollView style={{ maxHeight: 320 }}>
+						<Text style={styles.modalTitle}>Dragon Backpack</Text>
+						<ScrollView style={{ maxHeight: 340 }}>
 							{ownedSnacks.length === 0 && <Text style={styles.modalText}>No snacks owned yet.</Text>}
 							{ownedSnacks.map(snack => (
 								<View key={snack.id} style={styles.snackRow}>
@@ -190,14 +240,10 @@ export default function HomePage() {
 				</View>
 			</Modal>
 
-			<Modal
-				visible={idleModalOpen && !!items.pendingIdleSummary}
-				transparent
-				animationType="fade"
-				onRequestClose={() => {
-					setIdleModalOpen(false);
-					items.consumeIdleSummary();
-				}}>
+			<Modal visible={idleModalOpen && !!items.pendingIdleSummary} transparent animationType="fade" onRequestClose={() => {
+				setIdleModalOpen(false);
+				items.consumeIdleSummary();
+			}}>
 				<View style={styles.modalBackdrop}>
 					<View style={styles.modalCard}>
 						<Text style={styles.modalTitle}>Idle Rewards</Text>
@@ -209,19 +255,27 @@ export default function HomePage() {
 								<Text style={styles.modalText}>Shards earned: +{items.pendingIdleSummary.shards}</Text>
 								<Text style={styles.modalText}>Fury earned: +{items.pendingIdleSummary.furyEarned.toFixed(2)}</Text>
 								<Text style={styles.modalText}>Fury lost: -{items.pendingIdleSummary.furyLost.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Fury total: {items.pendingIdleSummary.furyTotal.toFixed(2)}</Text>
 								<Text style={styles.modalText}>Health earned: +{items.pendingIdleSummary.healthEarned.toFixed(2)}</Text>
 								<Text style={styles.modalText}>Health lost: -{items.pendingIdleSummary.healthLost.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Health total: {items.pendingIdleSummary.healthTotal.toFixed(2)}</Text>
 							</View>
 						)}
-						<Pressable
-							style={styles.closeModalBtn}
-							onPress={() => {
-								setIdleModalOpen(false);
-								items.consumeIdleSummary();
-							}}>
+						<Pressable style={styles.closeModalBtn} onPress={() => {
+							setIdleModalOpen(false);
+							items.consumeIdleSummary();
+						}}>
 							<Text style={styles.closeModalBtnText}>Collect</Text>
+						</Pressable>
+					</View>
+				</View>
+			</Modal>
+
+			<Modal visible={!!eventModal} transparent animationType="fade" onRequestClose={() => setEventModal(null)}>
+				<View style={styles.modalBackdrop}>
+					<View style={styles.modalCard}>
+						<Text style={styles.modalTitle}>{eventModal?.title}</Text>
+						<Text style={styles.modalText}>{eventModal?.message}</Text>
+						<Pressable style={styles.closeModalBtn} onPress={() => setEventModal(null)}>
+							<Text style={styles.closeModalBtnText}>Continue</Text>
 						</Pressable>
 					</View>
 				</View>
@@ -235,26 +289,35 @@ const styles = StyleSheet.create({
 	scrollContent: { paddingBottom: 40, paddingHorizontal: 16 },
 	utilityRow: { marginBottom: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
 	effectsWrap: { flex: 1, gap: 6 },
-	snackButton: { backgroundColor: '#0F766E', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: 'flex-start' },
+	snackButton: { backgroundColor: '#0F766E', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignSelf: 'flex-start' },
 	snackButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 	effectCard: { backgroundColor: '#111827', borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
+	effectCardMuted: { backgroundColor: '#F3F4F6', borderRadius: 8, padding: 10 },
 	effectTitle: { color: '#fff', fontSize: 11, fontWeight: '700' },
+	effectTitleMuted: { color: '#111827', fontSize: 11, fontWeight: '700' },
 	effectText: { color: '#E5E7EB', fontSize: 10, marginTop: 2 },
+	effectTextMuted: { color: '#6B7280', fontSize: 10, marginTop: 2 },
 	effectTime: { color: '#93C5FD', fontSize: 10, marginTop: 2 },
 	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 12, marginBottom: 12 },
 	statBox: { flex: 1, alignItems: 'center', padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0' },
 	statLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 4 },
 	statValue: { fontSize: 20, fontWeight: '800', color: '#333' },
-	dragonArea: { alignItems: 'center', marginTop: 20 },
-	dragonName: { fontSize: 24, fontWeight: '800' },
-	dragonStats: { fontSize: 14, color: '#666', marginTop: 4 },
-	dragonImage: { width: 220, height: 220, resizeMode: 'contain', marginVertical: 20 },
-	deadText: { color: '#999', fontSize: 14, fontStyle: 'italic' },
-	surveySection: { width: '100%', marginTop: 20 },
+	dragonArea: { alignItems: 'center', marginTop: 8 },
+	dragonName: { fontSize: 24, fontWeight: '800', textAlign: 'center' },
+	dragonStats: { fontSize: 14, color: '#666', marginTop: 4, textAlign: 'center' },
+	dragonArtShell: { width: '100%', alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
+	dragonImage: { width: 220, height: 220, resizeMode: 'contain' },
+	deadDragonImage: { opacity: 0.7 },
+	eggImage: { opacity: 0.95 },
+	tapDragonButton: { backgroundColor: '#F59E0B', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, marginBottom: 10 },
+	tapDragonText: { color: '#fff', fontWeight: '800' },
+	lifecycleButton: { backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginBottom: 12 },
+	reviveButton: { backgroundColor: '#16A34A' },
+	lifecycleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+	surveySection: { width: '100%', marginTop: 12 },
 	surveyLabel: { fontSize: 18, fontWeight: '700', marginBottom: 12, color: '#333' },
 	surveysContainer: { flexDirection: 'row', gap: 12 },
-	surveyButton: { flex: 1, marginBottom: 0 },
-	largeButton: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1.5 },
+	largeButton: { flex: 1, borderRadius: 16, padding: 16, borderWidth: 1.5 },
 	buttonActive: { borderColor: '#4CAF50', backgroundColor: '#F0F9F1' },
 	buttonDisabled: { borderColor: '#E0E0E0', backgroundColor: '#FAFAFA', opacity: 0.6 },
 	buttonTop: { backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
@@ -262,10 +325,11 @@ const styles = StyleSheet.create({
 	statusBadge: { fontSize: 12, fontWeight: '600', color: '#4CAF50', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
 	progressBarSmall: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' },
 	progressFillSmall: { height: '100%', backgroundColor: '#4CAF50' },
+	surveyHint: { fontSize: 12, color: '#6B7280', marginTop: 8, textAlign: 'center' },
 	modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
 	modalCard: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 12, padding: 16 },
 	modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
-	modalText: { fontSize: 14, color: '#333', marginBottom: 6 },
+	modalText: { fontSize: 14, color: '#333', marginBottom: 6, lineHeight: 20 },
 	snackRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 10 },
 	snackName: { fontSize: 15, fontWeight: '700', color: '#111' },
 	useSnackBtn: { backgroundColor: '#2563EB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },

@@ -56,7 +56,6 @@ const pickRandom = <T,>(items: T[], count: number) => {
 const promptCategoryEnabled = (settings: QuestionSettings['prompts']['types'], category: WrittenPrompt['category']) => {
 	const key = category as keyof typeof settings;
 	if (key in settings) return !!settings[key];
-	if (category === 'Creative') return !!(settings as any).FunCreative || !!settings.Creative;
 	return false;
 };
 

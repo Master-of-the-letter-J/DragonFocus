@@ -184,24 +184,25 @@ export default function SurveyMorningPage() {
 
 		survey.completeMorningSurvey?.();
 
-		if (journalEntry.section.isEnabled) {
-			const promptText = Object.values(shortAnswers.state.responses)
-				.map(text => text.trim())
-				.filter(Boolean)
-				.join('\n\n');
+		const promptText = Object.values(shortAnswers.state.responses)
+			.map(text => text.trim())
+			.filter(Boolean)
+			.join('\n\n');
 
-			journal.addEntry?.({
-				id: `morning-${today}-${Date.now()}`,
-				date: today,
-				surveyType: 'morning',
-				goalsCompleted: habitEdit.state.localHabits.length,
-				schedulePercent: 100,
-				rewards: { coins: totalCoinsEarned, xp: xpEarned, fury: effectiveFury },
-				text: journalEntry.state.text,
-				promptText: promptText || undefined,
-				moodMorning: moodLabel,
-			});
-		}
+		journal.addEntry?.({
+			id: `morning-${today}-${Date.now()}`,
+			date: today,
+			surveyType: 'morning',
+			goalsCompleted: habitEdit.state.localHabits.length,
+			goalsIncomplete: 0,
+			rewards: { coins: totalCoinsEarned, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: alreadyDoneToday ? 0 : 1 },
+			text: journalEntry.section.isEnabled ? journalEntry.state.text : undefined,
+			promptText: promptText || undefined,
+			moodMorning: moodLabel,
+			todoCount: todoEdit.state.localTodos.length,
+			todoCompleted: 0,
+			todoFailed: 0,
+		});
 
 		setResults({
 			coinsEarned: totalCoinsEarned,

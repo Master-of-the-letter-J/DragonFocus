@@ -23,6 +23,8 @@ interface SurveyContextType {
 	completeMorningSurvey: () => void;
 	completeNightSurvey: () => void;
 	resetDailySurveys: () => void;
+	setLastMorningSurveyDate: (date: string | null) => void;
+	setLastNightSurveyDate: (date: string | null) => void;
 	canTakeMorningSurvey: () => boolean;
 	canTakeNightSurvey: () => boolean;
 	getMorningProgress: () => number; // 0-100
@@ -173,6 +175,8 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 				completeMorningSurvey,
 				completeNightSurvey,
 				resetDailySurveys,
+				setLastMorningSurveyDate,
+				setLastNightSurveyDate,
 				canTakeMorningSurvey,
 				canTakeNightSurvey,
 				getMorningProgress,

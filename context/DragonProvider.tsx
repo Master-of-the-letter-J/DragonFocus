@@ -30,7 +30,10 @@ interface DragonContextType {
 	dragonJrCount: number;
 	deathDebuffDays: number;
 	invincible?: boolean;
-	dragonState: 'alive' | 'dead' | 'awaiting revival';
+	dragonState: 'unspawned' | 'alive' | 'dead' | 'awaiting revival';
+	lastLifecycleEvent: { id: number; type: 'spawned' | 'died' | 'revived' } | null;
+	spawnDragon: () => void;
+	clearLifecycleEvent: () => void;
 	incrementAge: () => void;
 	damageHp: (amount: number) => void;
 	healHp: (amount: number) => void;
@@ -66,12 +69,14 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 	const [dragonJrCount, setDragonJrCount] = useState(0);
 	const [deathDebuffDays, setDeathDebuffDays] = useState(0);
 	const [invincible, setInvincible] = useState(false);
-	const [dragonState, setDragonState] = useState<'alive' | 'dead' | 'awaiting revival'>('alive');
+	const [dragonState, setDragonState] = useState<'unspawned' | 'alive' | 'dead' | 'awaiting revival'>('unspawned');
+	const [lastLifecycleEvent, setLastLifecycleEvent] = useState<{ id: number; type: 'spawned' | 'died' | 'revived' } | null>(null);
 
 	const currentStage = getStageForAge(age);
 	const maxHP = currentStage.maxHP;
 
 	const incrementAge = () => {
+		if (dragonState !== 'alive') return;
 		setAge(prev => prev + 1);
 		const newStage = getStageForAge(age + 1);
 		if (newStage.maxHP > maxHP) {
@@ -83,8 +88,28 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 		setAge(Math.max(0, Math.floor(v)));
 	};
 
+	const spawnDragon = () => {
+		setDragonState('alive');
+		setLastLifecycleEvent({ id: Date.now(), type: 'spawned' });
+	};
+
+	const markDead = () => {
+		setDragonState(prev => {
+			if (prev === 'dead') return prev;
+			return 'dead';
+		});
+		setLastLifecycleEvent({ id: Date.now(), type: 'died' });
+		setDeathDebuffDays(3);
+	};
+
 	const damageHp = (amount: number) => {
-		setHp(prev => Math.max(0, prev - amount));
+		setHp(prev => {
+			const nextHp = Math.max(0, prev - amount);
+			if (nextHp <= 0 && dragonState === 'alive' && !invincible) {
+				markDead();
+			}
+			return nextHp;
+		});
 	};
 
 	const healHp = (amount: number) => {
@@ -92,7 +117,11 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 	};
 
 	const setHpValue = (amount: number) => {
-		setHp(Math.max(0, Math.min(maxHP, amount)));
+		const nextHp = Math.max(0, Math.min(maxHP, amount));
+		setHp(nextHp);
+		if (nextHp <= 0 && dragonState === 'alive' && !invincible) {
+			markDead();
+		}
 	};
 
 	const regenerateHP = (yinValue: number) => {
@@ -126,7 +155,7 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 	// -------------------------------------------------------
 	const die = () => {
 		if (invincible) return;
-		setDragonState('dead');
+		markDead();
 	};
 
 	// -------------------------------------------------------
@@ -153,8 +182,9 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 		setDragonName(`Dragon Jr. ${dragonJrCount + 1}`);
 		const newStage = getStageForAge(0);
 		setHp(newStage.maxHP);
-		setDeathDebuffDays(2);
+		setDeathDebuffDays(3);
 		setDragonState('alive');
+		setLastLifecycleEvent({ id: Date.now(), type: 'revived' });
 	};
 
 	const resetDragon = () => {
@@ -164,6 +194,8 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 		setDragonJrCount(0);
 		setDeathDebuffDays(0);
 		setInvincible(false);
+		setDragonState('unspawned');
+		setLastLifecycleEvent(null);
 	};
 
 	return (
@@ -178,6 +210,9 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 				deathDebuffDays,
 				invincible,
 				dragonState,
+				lastLifecycleEvent,
+				spawnDragon,
+				clearLifecycleEvent: () => setLastLifecycleEvent(null),
 				setInvincible,
 				incrementAge,
 				damageHp,

@@ -1,9 +1,10 @@
 import { AchievementsProvider } from './AchievementsProvider';
-import { DragonAlarmProvider } from './DragonAlarmProvider';
+import { AscensionProvider } from './AscensionProvider';
 import { DragonClickingProvider } from './DragonClickingProvider';
 import { DragonCoinsProvider } from './DragonCoinsProvider';
 import { DragonProvider } from './DragonProvider';
 import { DragonShardsProvider } from './DragonShardsProvider';
+import { DragonSoulsProvider } from './DragonSoulsProvider';
 import { FuryProvider } from './FuryProvider';
 import { GeneratorsProvider } from './GeneratorsProvider';
 import { GoalsProvider } from './GoalsProvider';
@@ -29,33 +30,35 @@ export default function ParentProvider({ children }: { children: React.ReactNode
 						<PremiumProvider>
 							<FuryProvider>
 								<StreakProvider>
-									<DragonCoinsProvider>
-										<DragonShardsProvider>
+								<DragonCoinsProvider>
+									<DragonShardsProvider>
+										<DragonSoulsProvider>
 											<PopulationProvider>
 												<WeatherProvider>
 													<ScarLevelProvider>
 														<DragonClickingProvider>
 															<GeneratorsProvider>
 																<ItemsProvider>
-																	<QuestionProvider>
-																		<SurveyProvider>
-																			<GoalsProvider>
-																				<JournalProvider>
-																					<AchievementsProvider>
-																						<DragonAlarmProvider>{children}</DragonAlarmProvider>
-																					</AchievementsProvider>
-																				</JournalProvider>
-																			</GoalsProvider>
-																		</SurveyProvider>
-																	</QuestionProvider>
+																	<AscensionProvider>
+																		<QuestionProvider>
+																			<SurveyProvider>
+																				<GoalsProvider>
+																					<JournalProvider>
+																						<AchievementsProvider>{children}</AchievementsProvider>
+																					</JournalProvider>
+																				</GoalsProvider>
+																			</SurveyProvider>
+																		</QuestionProvider>
+																	</AscensionProvider>
 																</ItemsProvider>
 															</GeneratorsProvider>
 														</DragonClickingProvider>
 													</ScarLevelProvider>
 												</WeatherProvider>
 											</PopulationProvider>
-										</DragonShardsProvider>
-									</DragonCoinsProvider>
+										</DragonSoulsProvider>
+									</DragonShardsProvider>
+								</DragonCoinsProvider>
 								</StreakProvider>
 							</FuryProvider>
 						</PremiumProvider>

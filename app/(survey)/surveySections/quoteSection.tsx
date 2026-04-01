@@ -50,7 +50,7 @@ export function useQuoteSection({ surveyType, questionSettings, enableQuote, sho
 
 	useEffect(() => {
 		if (!isEnabled) return;
-		if (state.quoteIndex === null && pool.length > 0) {
+		if ((state.quoteIndex === null || state.quoteIndex >= pool.length) && pool.length > 0) {
 			setState(prev => ({ ...prev, quoteIndex: pickRandomIndex(pool.length) }));
 		}
 	}, [isEnabled, pool.length, state.quoteIndex]);

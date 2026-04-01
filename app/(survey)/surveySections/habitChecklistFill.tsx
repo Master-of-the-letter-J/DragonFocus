@@ -1,7 +1,8 @@
-﻿import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/components/Themed';
 import { useGoals, type HabitGoal } from '@/context/GoalsProvider';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, TextInput } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
@@ -24,7 +25,10 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 	getCompletionSnapshot: () => { updatedHabits: HabitGoal[]; completedHabitIds: string[] };
 } {
 	const goals = useGoals();
+	const survey = useSurvey();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+	const isRefill = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
+	const rewardedHabitIds = survey.getNightSnapshot?.()?.habitIds ?? [];
 
 	const [state, setState] = useState<HabitChecklistFillState>({
 		checked: {},
@@ -33,8 +37,8 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 
 	useEffect(() => {
 		const seed: Record<string, boolean> = {};
-		(goals.habits ?? []).forEach(h => {
-			seed[h.id] = h.lastCompletedDate === today;
+		(goals.habits ?? []).forEach(habit => {
+			seed[habit.id] = habit.lastCompletedDate === today;
 		});
 		setState(prev => ({
 			...prev,
@@ -43,64 +47,70 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 	}, [goals.habits, today]);
 
 	const getCompletionSnapshot = useCallback(() => {
-		const updatedHabits = (goals.habits ?? []).map(h => {
-			if (!state.checked[h.id]) return h;
-			if (h.lastCompletedDate === today) return h;
-			const newStreak = h.lastCompletedDate && isYesterday(h.lastCompletedDate) ? (h.streak ?? 0) + 1 : 1;
-			return { ...h, lastCompletedDate: today, streak: newStreak };
+		const updatedHabits = (goals.habits ?? []).map(habit => {
+			if (!state.checked[habit.id]) return habit;
+			if (habit.lastCompletedDate === today) return habit;
+			const newStreak = habit.lastCompletedDate && isYesterday(habit.lastCompletedDate) ? (habit.streak ?? 0) + 1 : 1;
+			return { ...habit, lastCompletedDate: today, streak: newStreak };
 		});
-		const completedHabitIds = (goals.habits ?? []).filter(h => state.checked[h.id]).map(h => h.id);
+		const completedHabitIds = (goals.habits ?? []).filter(habit => state.checked[habit.id] && !(isRefill && rewardedHabitIds.includes(habit.id))).map(habit => habit.id);
 		return { updatedHabits, completedHabitIds };
-	}, [goals.habits, state.checked, today]);
+	}, [goals.habits, isRefill, rewardedHabitIds, state.checked, today]);
 
 	const render = useCallback(() => {
 		return (
 			<View>
 				<Text style={sectionStyles.question}>Day / Habit Goals</Text>
-				<Text style={{ marginBottom: 8 }}>Check off completed goals today. You can uncheck until you submit.</Text>
+				<Text style={{ marginBottom: 8 }}>Check off completed goals today. Refill mode only allows new progress to count.</Text>
 
 				<ScrollView style={sectionStyles.goalsScrollView} nestedScrollEnabled>
 					{(goals.habits ?? [])
-						.filter(h => h.title && h.title.trim())
-						.map(h => {
-							const isCompleted = !!state.checked[h.id];
-							const missedStreak = h.streak > 0 && h.lastCompletedDate && h.lastCompletedDate !== today && !isYesterday(h.lastCompletedDate);
+						.filter(habit => habit.title && habit.title.trim())
+						.map(habit => {
+							const isCompleted = !!state.checked[habit.id];
+							const isLockedByRefill = isRefill && rewardedHabitIds.includes(habit.id);
+							const missedStreak = habit.streak > 0 && habit.lastCompletedDate && habit.lastCompletedDate !== today && !isYesterday(habit.lastCompletedDate);
 
 							return (
-								<View key={h.id}>
-									<View style={[sectionStyles.habitRow, h.isChallenge ? sectionStyles.challengeRow : null, isCompleted ? sectionStyles.habitCompleted : null, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+								<View key={habit.id}>
+									<View
+										style={[
+											sectionStyles.habitRow,
+											habit.isChallenge ? sectionStyles.challengeRow : null,
+											isCompleted ? sectionStyles.habitCompleted : null,
+											isLockedByRefill ? { opacity: 0.55 } : null,
+											{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+										]}>
 										<View style={{ flex: 1 }}>
-											<Text
-												selectable={false}
-												style={[
-													sectionStyles.habitTitle,
-													h.importance === 'Important+' ? sectionStyles.habitImportantPlus : h.importance === 'Important' ? sectionStyles.habitImportant : null,
-												]}>
-												{h.title}
+											<Text selectable={false} style={[sectionStyles.habitTitle, habit.importance === 'Important+' ? sectionStyles.habitImportantPlus : habit.importance === 'Important' ? sectionStyles.habitImportant : null]}>
+												{habit.title}
 											</Text>
 											<Text selectable={false} style={sectionStyles.habitMeta}>
-												{h.category ? `${h.category}` : ''} • Streak: {h.streak ?? 0}
+												{[habit.category, habit.importance].filter(Boolean).join(' • ')} • Goal Streak {habit.streak ?? 0}
 											</Text>
-
-											{h.isChallenge && h.challengeLength && (
+											{habit.isChallenge && habit.challengeLength && (
 												<Text selectable={false} style={{ fontSize: 12, color: '#1565C0', marginTop: 6 }}>
-													Challenge: {h.streak ?? 0}/{h.challengeLength} days • Reward:{' '}
-													{h.challengeLength === 7 ? '100 coins • 10 shards' : h.challengeLength === 14 ? '250 coins • 25 shards' : '750 coins • 60 shards'}
+													Challenge Streak {habit.streak ?? 0}/{habit.challengeLength} • Reward {habit.challengeLength === 7 ? '100 coins • 10 shards' : habit.challengeLength === 14 ? '250 coins • 25 shards' : '750 coins • 60 shards'}
+												</Text>
+											)}
+											{isLockedByRefill && (
+												<Text selectable={false} style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>
+													Already rewarded earlier today. Refill mode keeps this goal locked.
 												</Text>
 											)}
 										</View>
 
-										<Checkbox value={isCompleted} onValueChange={v => setState(prev => ({ ...prev, checked: { ...prev.checked, [h.id]: v } }))} />
+										<Checkbox disabled={isLockedByRefill} value={isCompleted} onValueChange={value => setState(prev => ({ ...prev, checked: { ...prev.checked, [habit.id]: value } }))} />
 									</View>
 
-									{missedStreak && !isCompleted && (
+									{missedStreak && !isCompleted && !isLockedByRefill && (
 										<View style={{ marginTop: 6 }}>
 											<Text selectable={false} style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
-												Why didn't you complete this goal?
+												Why did this streak break?
 											</Text>
 											<TextInput
-												value={state.missedReasons[h.id] || ''}
-												onChangeText={t => setState(prev => ({ ...prev, missedReasons: { ...prev.missedReasons, [h.id]: t } }))}
+												value={state.missedReasons[habit.id] || ''}
+												onChangeText={text => setState(prev => ({ ...prev, missedReasons: { ...prev.missedReasons, [habit.id]: text } }))}
 												placeholder="Brief note..."
 												style={[sectionStyles.textInputArea, { minHeight: 60 }]}
 												multiline
@@ -113,7 +123,7 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 				</ScrollView>
 			</View>
 		);
-	}, [goals.habits, state.checked, state.missedReasons, today]);
+	}, [goals.habits, isRefill, rewardedHabitIds, state.checked, state.missedReasons, today]);
 
 	return {
 		section: {
@@ -138,5 +148,3 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 		},
 	};
 }
-
-

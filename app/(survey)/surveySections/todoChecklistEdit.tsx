@@ -1,7 +1,9 @@
-﻿import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/components/Themed';
+import { GOAL_TODO_ADVICE } from '@/constants/advice';
 import { TodoEditor } from '@/components/goalEditor';
 import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
 import { usePremium } from '@/context/PremiumProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, TouchableOpacity } from 'react-native';
@@ -19,6 +21,7 @@ export type TodoChecklistEditSetState = React.Dispatch<React.SetStateAction<Todo
 export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEditState> {
 	const goals = useGoals();
 	const premium = usePremium();
+	const questions = useQuestions();
 	const scarLevel = useScarLevel();
 
 	const [state, setState] = useState<TodoChecklistEditState>({
@@ -32,10 +35,33 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 
 	const todoLimit = useMemo(() => goals.getMaxTodos?.(scarLevel.currentScarLevel ?? 0, premium.isPremium ?? false) ?? Infinity, [goals, premium.isPremium, scarLevel.currentScarLevel]);
 	const canAddMoreTodos = state.localTodos.length < todoLimit;
+	const remainingRerolls = goals.getRemainingTodoRerolls?.(premium.isPremium ?? false) ?? 0;
+	const canReroll = premium.isPremium || remainingRerolls > 0;
+
+	const enabledTodoCategories = useMemo(
+		() => new Set([...questions.questionSettings.todoGoals.suggestedCategories, ...questions.questionSettings.todoGoals.customCategories]),
+		[questions.questionSettings.todoGoals.customCategories, questions.questionSettings.todoGoals.suggestedCategories],
+	);
+
+	const allowedAdviceTypes = useMemo(
+		() =>
+			Object.entries(questions.questionSettings.advice.types)
+				.filter(([, enabled]) => enabled)
+				.map(([key]) => key),
+		[questions.questionSettings.advice.types],
+	);
+
+	const visibleSuggestedTodos = useMemo(() => goals.suggestedTodoGoals.filter(goal => enabledTodoCategories.size === 0 || enabledTodoCategories.has(goal.category)), [enabledTodoCategories, goals.suggestedTodoGoals]);
+
+	const todoGoalTip = useMemo(() => {
+		const pool = GOAL_TODO_ADVICE.filter(item => allowedAdviceTypes.includes(item.category));
+		if (pool.length === 0) return null;
+		return pool[(state.localTodos.length + new Date().getDate()) % pool.length].text;
+	}, [allowedAdviceTypes, state.localTodos.length]);
 
 	const cancelTodo = useCallback(
 		(todoId: string) => {
-			Alert.alert('Delete To-Do', 'Are you sure you want to delete this to-do?', [
+			Alert.alert('Delete To-Do Goal', 'Warning: deleting this to-do removes its sub-goals, due date, and any pending challenge reward tied to it. Continue?', [
 				{ text: 'Cancel', style: 'cancel' },
 				{ text: 'Delete', style: 'destructive', onPress: () => goals.deleteTodo?.(todoId) },
 			]);
@@ -45,52 +71,50 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 
 	const renderTodoItem = useCallback(
 		({ item, drag, isActive }: RenderItemParams<TodoGoal>) => {
-			const t = item;
-			const isChallengeTodo = !!t.isChallenge;
+			const todo = item;
+			const isChallengeTodo = !!todo.isChallenge;
 
 			return (
 				<ScaleDecorator>
-					<TouchableOpacity
-						activeOpacity={0.95}
-						disabled={isActive}
-						style={[sectionStyles.todoItem, isChallengeTodo ? { backgroundColor: '#e8f4ff' } : null, isActive && { transform: [{ scale: 1.02 }], elevation: 4 }]}>
+					<TouchableOpacity activeOpacity={0.95} disabled={isActive} style={[sectionStyles.todoItem, isChallengeTodo ? { backgroundColor: '#E8F4FF' } : null, isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null]}>
 						<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
 							<View style={{ flex: 1 }}>
 								<Text selectable={false} style={sectionStyles.habitTitle}>
-									{t.title}
+									{todo.title}
 								</Text>
 								<Text selectable={false} style={sectionStyles.habitMeta}>
-									{t.importance} {t.category && `• ${t.category}`}
-									{t.dueDate ? ` • due ${t.dueDate}` : ''}
+									{[todo.category, todo.importance].filter(Boolean).join(' - ')}
+									{todo.dueDate ? ` - due ${todo.dueDate}` : ''}
 								</Text>
 							</View>
 							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-								<Pressable style={{ marginRight: 8 }} onPress={() => cancelTodo(t.id)}>
-									<Text style={{ fontSize: 18, color: '#e53935' }}>X</Text>
+								<Pressable style={{ marginRight: 8 }} onPress={() => cancelTodo(todo.id)}>
+									<Text style={{ fontSize: 12, fontWeight: '700', color: '#E53935' }}>Delete</Text>
 								</Pressable>
-								{!isChallengeTodo && (
-									<Pressable style={[sectionStyles.miniButton, sectionStyles.miniEditButton]} onPress={() => setState(prev => ({ ...prev, editingTodo: t }))}>
+								{!isChallengeTodo ? (
+									<Pressable style={[sectionStyles.miniButton, sectionStyles.miniEditButton]} onPress={() => setState(prev => ({ ...prev, editingTodo: todo }))}>
 										<Text selectable={false} style={sectionStyles.miniButtonText}>
-											E
+											Edit
 										</Text>
 									</Pressable>
-								)}
+								) : null}
 								<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 6, marginLeft: 8 }}>
-									<Text style={{ fontSize: 20, color: '#ccc' }}>=</Text>
+									<Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280' }}>Move</Text>
 								</Pressable>
 							</View>
 						</View>
-						{t.subGoals && t.subGoals.length > 0 && (
+
+						{todo.subGoals.length > 0 ? (
 							<View style={{ marginTop: 8 }}>
-								{t.subGoals.map(sg => (
-									<View key={sg.id} style={sectionStyles.subGoalRow}>
-										<Text selectable={false} style={{ textDecorationLine: sg.completed ? 'line-through' : 'none' }}>
-											• {sg.title}
+								{todo.subGoals.map(subGoal => (
+									<View key={subGoal.id} style={sectionStyles.subGoalRow}>
+										<Text selectable={false} style={{ textDecorationLine: subGoal.completed ? 'line-through' : 'none' }}>
+											- {subGoal.title}
 										</Text>
 									</View>
 								))}
 							</View>
-						)}
+						) : null}
 					</TouchableOpacity>
 				</ScaleDecorator>
 			);
@@ -101,13 +125,13 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 	const render = useCallback(() => {
 		return (
 			<View>
-				{state.editingTodo && (
+				{state.editingTodo ? (
 					<Modal visible={!!state.editingTodo} transparent={true} animationType="slide">
 						<View style={sectionStyles.modalOverlay}>
 							<TodoEditor todo={state.editingTodo} onClose={() => setState(prev => ({ ...prev, editingTodo: null }))} />
 						</View>
 					</Modal>
-				)}
+				) : null}
 
 				<DraggableFlatList
 					data={state.localTodos}
@@ -124,6 +148,7 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 						<View>
 							<Text style={sectionStyles.question}>To-Do Goals</Text>
 							<Text style={{ marginBottom: 8 }}>Hold to drag and reorder your to-dos.</Text>
+							{todoGoalTip ? <Text style={{ marginBottom: 10, color: '#4B5563' }}>Goal tip: {todoGoalTip}</Text> : null}
 						</View>
 					}
 					ListFooterComponent={
@@ -133,41 +158,48 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 								onPress={() => (canAddMoreTodos ? goals.addTodo?.({ title: 'New To-Do' }) : null)}
 								disabled={!canAddMoreTodos}>
 								<Text selectable={false} style={sectionStyles.smallButtonText}>
-									{canAddMoreTodos ? '+ Add To-Do' : 'Max To-Do Quota Reached — Unlock more with higher Scar Level or Premium'}
+									{canAddMoreTodos ? '+ Add To-Do' : 'Max To-Do Quota Reached - Unlock more with higher Scar Level or Premium'}
 								</Text>
 							</Pressable>
-							{goals.suggestedTodoGoals && goals.suggestedTodoGoals.length > 0 && (
+
+							{visibleSuggestedTodos.length > 0 ? (
 								<>
 									<Text style={[sectionStyles.label, { marginTop: 12, marginBottom: 8 }]}>Suggested To-Dos</Text>
 									<ScrollView style={sectionStyles.suggestedScrollView} nestedScrollEnabled={true}>
-										{goals.suggestedTodoGoals.map(s => (
+										{visibleSuggestedTodos.map(suggestion => (
 											<Pressable
-												key={s.title}
+												key={suggestion.title}
 												style={sectionStyles.suggestedItem}
 												onPress={() => {
-													goals.addTodo?.({ title: s.title, category: s.category, dueDate: s.dueDate ? new Date(Date.now() + s.dueDate * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null });
-													goals.rerollSuggestedTodos?.();
+													goals.addTodo?.({
+														title: suggestion.title,
+														category: suggestion.category,
+														dueDate: suggestion.dueDate ? new Date(Date.now() + suggestion.dueDate * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
+													});
+													goals.rerollSuggestedTodos?.(premium.isPremium);
 												}}>
 												<Text selectable={false}>
-													+ {s.title} — Coins {s.coins}
-													{s.shards ? ` • Shards ${s.shards}` : ''} • {s.category}
+													+ {suggestion.title} - {suggestion.category}
 												</Text>
 											</Pressable>
 										))}
 									</ScrollView>
-									<Pressable style={sectionStyles.rerollButton} onPress={() => goals.rerollSuggestedTodos?.()}>
+									<Text style={{ marginTop: 10, fontSize: 12, color: '#6B7280' }}>To-Do rerolls: {premium.isPremium ? 'Unlimited (Premium)' : `${remainingRerolls} / 3 remaining today`}</Text>
+									<Pressable style={[sectionStyles.rerollButton, !canReroll && sectionStyles.buttonDisabled]} disabled={!canReroll} onPress={() => goals.rerollSuggestedTodos?.(premium.isPremium)}>
 										<Text selectable={false} style={sectionStyles.rerollButtonText}>
 											Re-Roll To-Do Suggestions
 										</Text>
 									</Pressable>
 								</>
+							) : (
+								<Text style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>No built-in to-do templates match your current category settings.</Text>
 							)}
 						</View>
 					}
 				/>
 			</View>
 		);
-	}, [canAddMoreTodos, goals, renderTodoItem, state.editingTodo, state.localTodos]);
+	}, [canAddMoreTodos, canReroll, goals, premium.isPremium, remainingRerolls, renderTodoItem, state.editingTodo, state.localTodos, todoGoalTip, visibleSuggestedTodos]);
 
 	return {
 		section: {
@@ -190,5 +222,3 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 		},
 	};
 }
-
-

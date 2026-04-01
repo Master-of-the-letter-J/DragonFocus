@@ -1,6 +1,5 @@
 ﻿import { Text, View } from '@/components/Themed';
-import SURVEY_ADVICE from '@/constants/advice';
-import { ADVICE as LEGACY_ADVICE } from '@/constants/quotes';
+import { SURVEY_ADVICE, type AdviceItem } from '@/constants/advice';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';
@@ -33,10 +32,16 @@ export function useSurveyAdviceSection({ questionSettings, enableAdvice, minScar
 	const resolvedMinScar = minScarLevel ?? survey.options.adviceScarLevel ?? 0;
 	const resolvedScar = currentScarLevel ?? scarLevel.currentScarLevel ?? 0;
 
+	const allowedTypes = useMemo(() => {
+		return Object.entries(resolvedSettings.advice.types)
+			.filter(([, enabled]) => enabled)
+			.map(([key]) => key as AdviceItem['category']);
+	}, [resolvedSettings.advice.types]);
+
 	const pool = useMemo(() => {
-		const list = SURVEY_ADVICE.length > 0 ? SURVEY_ADVICE : LEGACY_ADVICE;
-		return Array.isArray(list) ? list : [];
-	}, []);
+		if (!resolvedSettings.advice.enabled || allowedTypes.length === 0) return [] as string[];
+		return SURVEY_ADVICE.filter(item => allowedTypes.includes(item.category)).map(item => item.text);
+	}, [allowedTypes, resolvedSettings.advice.enabled]);
 
 	const hasEnabledTypes = !!(resolvedSettings.advice.types.inspirational || resolvedSettings.advice.types.witty || resolvedSettings.advice.types.philosophical);
 	const isEnabled = resolvedEnable && resolvedSettings.advice.enabled && hasEnabledTypes && pool.length > 0 && resolvedScar >= resolvedMinScar;
@@ -45,7 +50,7 @@ export function useSurveyAdviceSection({ questionSettings, enableAdvice, minScar
 
 	useEffect(() => {
 		if (!isEnabled) return;
-		if (state.adviceIndex === null && pool.length > 0) {
+		if ((state.adviceIndex === null || state.adviceIndex >= pool.length) && pool.length > 0) {
 			setState(prev => ({ ...prev, adviceIndex: pickRandomIndex(pool.length) }));
 		}
 	}, [isEnabled, pool.length, state.adviceIndex]);

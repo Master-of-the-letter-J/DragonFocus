@@ -16,7 +16,6 @@ export interface JournalEntry {
 	surveyType: SurveyType;
 	goalsCompleted: number;
 	goalsIncomplete?: number;
-	schedulePercent: number; // 0-100
 	rewards: JournalRewards;
 	text?: string;
 	promptText?: string;

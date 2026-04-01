@@ -1,7 +1,8 @@
-﻿import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/components/Themed';
 import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
@@ -16,14 +17,17 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 	getCompletionSnapshot: () => { updatedTodos: TodoGoal[]; completedTodoIds: string[] };
 } {
 	const goals = useGoals();
+	const survey = useSurvey();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+	const isRefill = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
+	const rewardedTodoIds = survey.getNightSnapshot?.()?.todoIds ?? [];
 
 	const [state, setState] = useState<TodoChecklistFillState>({ checked: {} });
 
 	useEffect(() => {
 		const seed: Record<string, boolean> = {};
-		(goals.todos ?? []).forEach(t => {
-			seed[t.id] = t.completedDate === today;
+		(goals.todos ?? []).forEach(todo => {
+			seed[todo.id] = todo.completedDate === today;
 		});
 		setState(prev => ({
 			...prev,
@@ -32,74 +36,61 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 	}, [goals.todos, today]);
 
 	const getCompletionSnapshot = useCallback(() => {
-		const updatedTodos = (goals.todos ?? []).map(t => {
-			if (!state.checked[t.id]) return t;
-			if (t.completedDate === today) return t;
-			return { ...t, completedDate: today, failed: false, failedDate: null, challengeStatus: t.isChallenge ? 'completed' : t.challengeStatus };
+		const updatedTodos = (goals.todos ?? []).map(todo => {
+			if (!state.checked[todo.id]) return todo;
+			if (todo.completedDate === today) return todo;
+			return { ...todo, completedDate: today, failed: false, failedDate: null, challengeStatus: todo.isChallenge ? 'completed' : todo.challengeStatus };
 		});
-		const completedTodoIds = (goals.todos ?? []).filter(t => state.checked[t.id]).map(t => t.id);
+		const completedTodoIds = (goals.todos ?? []).filter(todo => state.checked[todo.id] && !(isRefill && rewardedTodoIds.includes(todo.id))).map(todo => todo.id);
 		return { updatedTodos, completedTodoIds };
-	}, [goals.todos, state.checked, today]);
+	}, [goals.todos, isRefill, rewardedTodoIds, state.checked, today]);
 
 	const render = useCallback(() => {
+		const visibleTodos = (goals.todos ?? []).filter(todo => todo.title && todo.title.trim()).filter(todo => !(isRefill && rewardedTodoIds.includes(todo.id)));
+
 		return (
 			<View>
 				<Text style={sectionStyles.question}>To-Do Goals</Text>
-				<Text style={{ marginBottom: 8 }}>Check off completed to-dos and their sub-goals. You can uncheck until you submit.</Text>
+				<Text style={{ marginBottom: 8 }}>Check off completed to-dos and sub-goals. Refill mode only shows to-dos that were not already rewarded.</Text>
 
 				<ScrollView style={sectionStyles.goalsScrollView} nestedScrollEnabled>
-					{(goals.todos ?? [])
-						.filter(t => t.title && t.title.trim())
-						.map(t => {
-							const isCompleted = !!state.checked[t.id];
-							const created = new Date(t.createdAt);
-							const now = new Date();
-							const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-							const canComplete = diffDays >= 1;
+					{visibleTodos.map(todo => {
+						const isCompleted = !!state.checked[todo.id];
 
-							return (
-								<View key={t.id} style={[sectionStyles.todoItem, isCompleted ? sectionStyles.todoCompleted : null]}>
-									<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-										<Text selectable={false} style={[sectionStyles.habitTitle, { textDecorationLine: isCompleted ? 'line-through' : 'none', opacity: canComplete ? 1 : 0.6 }]}>
-											{t.title}
-										</Text>
-										<Checkbox disabled={!canComplete} value={isCompleted} onValueChange={v => setState(prev => ({ ...prev, checked: { ...prev.checked, [t.id]: v } }))} />
-									</View>
-
-									{(t.category || t.dueDate || t.importance) && (
-										<Text style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-											{t.category ? `${t.category}` : ''}
-											{t.category && t.dueDate ? ' • ' : ''}
-											{t.dueDate ? `Due: ${t.dueDate}` : ''}
-											{(t.category || t.dueDate) && t.importance ? ' • ' : ''}
-											{t.importance ? `${t.importance}` : ''}
-										</Text>
-									)}
-
-									{!canComplete && (
-										<Text selectable={false} style={{ fontSize: 11, color: '#999', fontStyle: 'italic', marginTop: 4 }}>
-											(Can complete after 1 day)
-										</Text>
-									)}
-
-									{t.subGoals && t.subGoals.length > 0 && (
-										<View style={{ marginTop: 8 }}>
-											{t.subGoals.map(sg => (
-												<Pressable key={sg.id} style={sectionStyles.subGoalRow} onPress={() => goals.toggleSubGoal?.(t.id, sg.id)}>
-													<Text selectable={false} style={{ textDecorationLine: sg.completed ? 'line-through' : 'none' }}>
-														{sg.completed ? '[x]' : '[ ]'} {sg.title}
-													</Text>
-												</Pressable>
-											))}
-										</View>
-									)}
+						return (
+							<View key={todo.id} style={[sectionStyles.todoItem, isCompleted ? sectionStyles.todoCompleted : null]}>
+								<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+									<Text selectable={false} style={[sectionStyles.habitTitle, { textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>
+										{todo.title}
+									</Text>
+									<Checkbox value={isCompleted} onValueChange={value => setState(prev => ({ ...prev, checked: { ...prev.checked, [todo.id]: value } }))} />
 								</View>
-							);
-						})}
+
+								<Text style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+									{[todo.category, todo.importance].filter(Boolean).join(' - ')}
+									{todo.dueDate ? `${todo.category || todo.importance ? ' - ' : ''}Due ${todo.dueDate}` : ''}
+								</Text>
+
+								{todo.subGoals.length > 0 ? (
+									<View style={{ marginTop: 8 }}>
+										{todo.subGoals.map(subGoal => (
+											<Pressable key={subGoal.id} style={sectionStyles.subGoalRow} onPress={() => goals.toggleSubGoal?.(todo.id, subGoal.id)}>
+												<Text selectable={false} style={{ textDecorationLine: subGoal.completed ? 'line-through' : 'none' }}>
+													{subGoal.completed ? '[x]' : '[ ]'} {subGoal.title}
+												</Text>
+											</Pressable>
+										))}
+									</View>
+								) : null}
+							</View>
+						);
+					})}
+
+					{visibleTodos.length === 0 ? <Text style={{ color: '#6B7280' }}>No unrewarded to-dos remain for this refill.</Text> : null}
 				</ScrollView>
 			</View>
 		);
-	}, [goals, state.checked]);
+	}, [goals, isRefill, rewardedTodoIds, state.checked]);
 
 	return {
 		section: {
@@ -123,4 +114,3 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 		},
 	};
 }
-

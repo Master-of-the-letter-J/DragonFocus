@@ -80,8 +80,10 @@ interface GoalsContextType {
 	failTodo: (id: string, fail: boolean) => void;
 	suggestedHabitGoals: SuggestedHabitGoal[];
 	suggestedTodoGoals: SuggestedTodoGoal[];
-	rerollSuggestedHabits: () => void;
-	rerollSuggestedTodos: () => void;
+	rerollSuggestedHabits: (isPremium?: boolean) => void;
+	rerollSuggestedTodos: (isPremium?: boolean) => void;
+	getRemainingHabitRerolls: (isPremium: boolean) => number;
+	getRemainingTodoRerolls: (isPremium: boolean) => number;
 	goalTemplates: string[];
 	createGoalFromTemplate: (template: string, type: 'habit' | 'todo') => void;
 	resetGoals?: () => void;
@@ -119,15 +121,40 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
 		return shuffled.slice(0, 6);
 	});
+	const [rerollTracker, setRerollTracker] = useState({ date: new Date().toISOString().split('T')[0], habit: 0, todo: 0 });
 
-	const rerollSuggestedHabits = () => {
-		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-		setSuggestedHabitGoals(shuffled.slice(0, 6));
+	const getToday = () => new Date().toISOString().split('T')[0];
+	const getFreshRerollTracker = () => {
+		const today = getToday();
+		return rerollTracker.date === today ? rerollTracker : { date: today, habit: 0, todo: 0 };
 	};
 
-	const rerollSuggestedTodos = () => {
+	const rerollSuggestedHabits = (isPremium = false) => {
+		const fresh = getFreshRerollTracker();
+		if (!isPremium && fresh.habit >= 3) return;
+		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
+		setSuggestedHabitGoals(shuffled.slice(0, 6));
+		setRerollTracker({ ...fresh, habit: isPremium ? fresh.habit : fresh.habit + 1 });
+	};
+
+	const rerollSuggestedTodos = (isPremium = false) => {
+		const fresh = getFreshRerollTracker();
+		if (!isPremium && fresh.todo >= 3) return;
 		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
 		setSuggestedTodoGoals(shuffled.slice(0, 6));
+		setRerollTracker({ ...fresh, todo: isPremium ? fresh.todo : fresh.todo + 1 });
+	};
+
+	const getRemainingHabitRerolls = (isPremium: boolean) => {
+		if (isPremium) return Infinity;
+		const fresh = getFreshRerollTracker();
+		return Math.max(0, 3 - fresh.habit);
+	};
+
+	const getRemainingTodoRerolls = (isPremium: boolean) => {
+		if (isPremium) return Infinity;
+		const fresh = getFreshRerollTracker();
+		return Math.max(0, 3 - fresh.todo);
 	};
 
 	// access coins/shards providers for challenge payments
@@ -313,11 +340,6 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 	const completeTodo = (id: string) => {
 		const todo = todos.find(t => t.id === id);
 		if (!todo) return false;
-		// Must wait 1 day after creation
-		const created = new Date(todo.createdAt);
-		const now = new Date();
-		const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-		if (diffDays < 1) return false;
 		setTodos(prev =>
 			prev.map(t =>
 				t.id === id
@@ -371,7 +393,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 
 	const getMaxTodos = (scarLevel: number, isPremium: boolean): number => {
 		if (isPremium) return Infinity; // Unlimited for premium
-		let max = 5; // Base = 5
+		let max = 10; // Base = 10
 		if (scarLevel >= 4) max += 5; // +5 at level 4
 		if (scarLevel >= 8) max += 5; // +5 at level 8
 		if (scarLevel >= 10) max += 5; // +5 at level 10
@@ -408,11 +430,14 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 				suggestedTodoGoals,
 				rerollSuggestedHabits,
 				rerollSuggestedTodos,
+				getRemainingHabitRerolls,
+				getRemainingTodoRerolls,
 				goalTemplates: GOAL_TEMPLATES,
 				createGoalFromTemplate,
 				resetGoals: () => {
 					setHabits(PRESET_HABITS);
 					setTodos([]);
+					setRerollTracker({ date: getToday(), habit: 0, todo: 0 });
 					const shuffled1 = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
 					setSuggestedHabitGoals(shuffled1.slice(0, 6));
 					const shuffled2 = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);

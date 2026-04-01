@@ -20,17 +20,17 @@ export interface ScarLevelInfo {
 // -----------------------------------------------------
 
 const SCAR_LEVELS: ScarLevelInfo[] = [
-	{ level: 0, name: 'Beginner', levelUpRequiredXP: 0, multiplier: 1.0, features: ['Morning/Night Surveys', 'Day Goals', 'Mood', 'Streaks', 'Stats Table'] },
-	{ level: 1, name: 'Apprentice', levelUpRequiredXP: 250, multiplier: 1.1, features: ['Schedules', 'Custom Checklists', 'Goal Categories', 'Goal Importance', 'Shop (Multiplier Snacks)'] },
-	{ level: 2, name: 'Rider', levelUpRequiredXP: 500, multiplier: 1.2, features: ['Journal', 'Quotes', 'Short Answer Goals', 'Prompts', 'Cosmetics', 'Mood Snacks', 'Dragon Graveyard'] },
-	{ level: 3, name: 'Whisperer', levelUpRequiredXP: 1000, multiplier: 1.3, features: ['Custom Dropdowns', 'More Cosmetics', 'Special Snacks'] },
-	{ level: 4, name: 'Journeyman', levelUpRequiredXP: 2000, multiplier: 1.4, features: ['Clicking Dragon', 'Achievements', 'New Theme', 'More Cosmetics', 'Ascension', 'Background Customization', 'Weather System'] },
-	{ level: 5, name: 'Trainer', levelUpRequiredXP: 3000, multiplier: 1.5, features: ['Clicking Dragon Upgrades', 'Coin Generators', 'New Theme', 'More Cosmetics', 'Glowing Icon'] },
-	{ level: 6, name: 'Warden', levelUpRequiredXP: 5000, multiplier: 1.6, features: ['Coin Snacks', 'Cosmetics'] },
-	{ level: 7, name: 'Dragon Warrior', levelUpRequiredXP: 10_000, multiplier: 1.7, features: ['Health Snacks', 'Rename Dragon (Wyrm)', 'Cosmetics'] },
-	{ level: 8, name: 'Dragon Master', levelUpRequiredXP: 25_000, multiplier: 1.8, features: ['Cosmetics'] },
-	{ level: 9, name: 'Dragon Grandmaster', levelUpRequiredXP: 50_000, multiplier: 1.9, features: ['Cosmetics'] },
-	{ level: 10, name: 'Ultimate Dragon Warrior', levelUpRequiredXP: 200_000, multiplier: 2.0, features: ['Cosmetics', 'New Background', 'Best Icon'], premiumFeatures: ['Dragon Pact Premium Features'] },
+	{ level: 0, name: 'Beginner', levelUpRequiredXP: 250, multiplier: 1.0, features: ['Morning/Night Surveys', 'Day Goals', 'Mood', 'Streaks', 'Stats Table'] },
+	{ level: 1, name: 'Apprentice', levelUpRequiredXP: 500, multiplier: 1.1, features: ['Custom Checklists', 'Goal Categories', 'Goal Importance', 'Shop (Multiplier Snacks)'] },
+	{ level: 2, name: 'Rider', levelUpRequiredXP: 1000, multiplier: 1.2, features: ['Journal', 'Quotes', 'Short Answer Goals', 'Prompts', 'Cosmetics', 'Mood Snacks', 'Dragon Graveyard'] },
+	{ level: 3, name: 'Whisperer', levelUpRequiredXP: 2000, multiplier: 1.3, features: ['More Goal Slots', 'More Cosmetics', 'Special Snacks'] },
+	{ level: 4, name: 'Journeyman', levelUpRequiredXP: 3000, multiplier: 1.4, features: ['Clicking Dragon', 'Achievements', 'Ascension', 'Background Customization', 'Weather System'] },
+	{ level: 5, name: 'Trainer', levelUpRequiredXP: 5000, multiplier: 1.5, features: ['Clicking Dragon Upgrades', 'Coin Generators', 'More Cosmetics', 'Glowing Icon'] },
+	{ level: 6, name: 'Warden', levelUpRequiredXP: 10_000, multiplier: 1.6, features: ['Coin Snacks', 'Milk', 'Super Milk'] },
+	{ level: 7, name: 'Dragon Warrior', levelUpRequiredXP: 25_000, multiplier: 1.7, features: ['Health Snacks', 'Rename Dragon (Wyrm)', 'Soul Converter'] },
+	{ level: 8, name: 'Dragon Master', levelUpRequiredXP: 50_000, multiplier: 1.8, features: ['Advanced Soul Multipliers', 'Shop Resetor'] },
+	{ level: 9, name: 'Dragon Grandmaster', levelUpRequiredXP: 200_000, multiplier: 1.9, features: ['Late Game Multipliers', 'Dragon Souls Scaling'] },
+	{ level: 10, name: 'Ultimate Dragon Warrior', levelUpRequiredXP: 0, multiplier: 2.0, features: ['Maxed'], premiumFeatures: ['Dragon Pact Premium Features'] },
 ];
 
 // -----------------------------------------------------
@@ -62,18 +62,6 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const [currentScarLevel, setCurrentScarLevel] = useState(0);
 	const [currentXP, setCurrentXP] = useState(0);
 
-	const getLevelForXP = (xp: number) => {
-		let level = 0;
-		for (let i = 0; i < SCAR_LEVELS.length; i += 1) {
-			if (xp >= SCAR_LEVELS[i].levelUpRequiredXP) {
-				level = i;
-			} else {
-				break;
-			}
-		}
-		return level;
-	};
-
 	// -----------------------------
 	// LEVEL HELPERS
 	// -----------------------------
@@ -83,9 +71,8 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const getNextLevelInfo = () => (currentScarLevel < SCAR_LEVELS.length - 1 ? SCAR_LEVELS[currentScarLevel + 1] : null);
 
 	const getXPToNextLevel = () => {
-		const next = getNextLevelInfo();
-		if (!next) return 0;
-		return Math.max(0, next.levelUpRequiredXP - currentXP);
+		if (currentScarLevel >= SCAR_LEVELS.length - 1) return 0;
+		return Math.max(0, getCurrentLevelInfo().levelUpRequiredXP - currentXP);
 	};
 
 	// -----------------------------
@@ -93,17 +80,27 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	// -----------------------------
 
 	const addXP = (amount: number) => {
-		const xp = Math.max(0, currentXP + amount);
-		const level = getLevelForXP(xp);
-		setCurrentXP(xp);
-		setCurrentScarLevel(level);
+		if (amount <= 0 || currentScarLevel >= SCAR_LEVELS.length - 1) return;
+
+		let nextLevel = currentScarLevel;
+		let nextXP = currentXP + amount;
+
+		while (nextLevel < SCAR_LEVELS.length - 1) {
+			const xpNeeded = SCAR_LEVELS[nextLevel].levelUpRequiredXP;
+			if (nextXP < xpNeeded) break;
+			nextXP -= xpNeeded;
+			nextLevel += 1;
+		}
+
+		setCurrentScarLevel(nextLevel);
+		setCurrentXP(nextLevel >= SCAR_LEVELS.length - 1 ? 0 : nextXP);
 	};
 
 	const levelUp = () => {
 		if (currentScarLevel >= SCAR_LEVELS.length - 1) return;
 		const nextLevel = currentScarLevel + 1;
 		setCurrentScarLevel(nextLevel);
-		setCurrentXP(SCAR_LEVELS[nextLevel].levelUpRequiredXP);
+		setCurrentXP(0);
 	};
 
 	// -----------------------------
@@ -124,13 +121,17 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const setScarLevelValue = (level: number) => {
 		const clamped = Math.max(0, Math.min(level, SCAR_LEVELS.length - 1));
 		setCurrentScarLevel(clamped);
-		setCurrentXP(SCAR_LEVELS[clamped].levelUpRequiredXP);
+		setCurrentXP(0);
 	};
 
 	const setXPValue = (xp: number) => {
 		const safeXP = Math.max(0, xp);
-		setCurrentXP(safeXP);
-		setCurrentScarLevel(getLevelForXP(safeXP));
+		const currentLevelInfo = SCAR_LEVELS[currentScarLevel];
+		if (!currentLevelInfo || currentScarLevel >= SCAR_LEVELS.length - 1) {
+			setCurrentXP(0);
+			return;
+		}
+		setCurrentXP(Math.min(safeXP, currentLevelInfo.levelUpRequiredXP));
 	};
 
 	const resetScarLevel = () => {
