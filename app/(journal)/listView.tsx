@@ -30,9 +30,7 @@ function LogCard({ day }: { day: any }) {
 		<View style={styles.card}>
 			<Pressable onPress={() => setOpen(!open)}>
 				<Text style={styles.title}>{day.date}</Text>
-				<Text style={styles.meta}>
-					Morning: {morning?.moodMorning || '-'} • Evening: {evening?.moodEvening || '-'} • Rewards: {totalCoins}c / {totalShards}sh / {totalXp}xp
-				</Text>
+				<Text style={styles.meta}>Morning: {morning?.moodMorning || '-'} | Night: {evening?.moodEvening || '-'} | Rewards: {totalCoins}c / {totalShards}sh / {totalXp}xp</Text>
 			</Pressable>
 
 			{open && (
@@ -42,6 +40,13 @@ function LogCard({ day }: { day: any }) {
 					<Text>Goals completed: {evening?.goalsCompleted ?? 0}</Text>
 					<Text>To-Dos: {evening?.todoCount ?? morning?.todoCount ?? 0}</Text>
 					<Text>To-Dos failed: {evening?.todoFailed ?? 0}</Text>
+					<Text>Habit plan: {(morning?.plannedHabitTitles ?? []).join(', ') || '-'}</Text>
+					<Text>To-Do plan: {(morning?.plannedTodoTitles ?? []).join(', ') || '-'}</Text>
+					<Text>Completed habits: {(evening?.completedHabitTitles ?? []).join(', ') || '-'}</Text>
+					<Text>Remaining habits: {(evening?.remainingHabitTitles ?? []).join(', ') || '-'}</Text>
+					<Text>Completed to-dos: {(evening?.completedTodoTitles ?? []).join(', ') || '-'}</Text>
+					<Text>Pending to-dos: {(evening?.pendingTodoTitles ?? []).join(', ') || '-'}</Text>
+					<Text>Late/failed to-dos: {(evening?.failedTodoTitles ?? []).join(', ') || '-'}</Text>
 
 					<Text style={styles.sectionTitle}>Prompts & Trivia</Text>
 					<Text>{morning?.promptText || '-'}</Text>

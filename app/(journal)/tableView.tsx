@@ -34,7 +34,6 @@ export default function TableView() {
 						const plannedGoals = morning?.goalsCompleted ?? 0;
 						const completedGoals = evening?.goalsCompleted ?? 0;
 						const todoCount = evening?.todoCount ?? morning?.todoCount ?? 0;
-						const todoCompleted = evening?.todoCompleted ?? 0;
 						const todoFailed = evening?.todoFailed ?? 0;
 						const totalCoins = (morning?.rewards.coins ?? 0) + (evening?.rewards.coins ?? 0);
 						const totalXp = (morning?.rewards.fireXp ?? morning?.rewards.xp ?? 0) + (evening?.rewards.fireXp ?? evening?.rewards.xp ?? 0);
@@ -50,7 +49,7 @@ export default function TableView() {
 								<Text style={styles.cell}>{Math.max(0, plannedGoals - completedGoals)}</Text>
 								<Text style={styles.cell}>{todoCount}</Text>
 								<Text style={styles.cell}>{todoFailed}</Text>
-								<Text style={[styles.cell, { minWidth: 140 }]}>{`${totalCoins}c • ${totalShards}sh • ${totalXp}xp`}</Text>
+								<Text style={[styles.cell, { minWidth: 140 }]}>{`${totalCoins}c | ${totalShards}sh | ${totalXp}xp`}</Text>
 								<Pressable style={styles.viewButton} onPress={() => setOpenDate(day.date)}>
 									<Text style={styles.viewButtonText}>Open</Text>
 								</Pressable>
@@ -69,15 +68,23 @@ export default function TableView() {
 						{activeDay && (
 							<>
 								<Text style={styles.modalTitle}>{activeDay.date}</Text>
+								<Text style={styles.modalSection}>Goal Details</Text>
+								<Text style={styles.modalBody}>Habit plan: {(activeDay.morning?.plannedHabitTitles ?? []).join(', ') || '-'}</Text>
+								<Text style={styles.modalBody}>To-Do plan: {(activeDay.morning?.plannedTodoTitles ?? []).join(', ') || '-'}</Text>
+								<Text style={styles.modalBody}>Completed habits: {(activeDay.evening?.completedHabitTitles ?? []).join(', ') || '-'}</Text>
+								<Text style={styles.modalBody}>Remaining habits: {(activeDay.evening?.remainingHabitTitles ?? []).join(', ') || '-'}</Text>
+								<Text style={styles.modalBody}>Completed to-dos: {(activeDay.evening?.completedTodoTitles ?? []).join(', ') || '-'}</Text>
+								<Text style={styles.modalBody}>Pending to-dos: {(activeDay.evening?.pendingTodoTitles ?? []).join(', ') || '-'}</Text>
+								<Text style={styles.modalBody}>Late/failed to-dos: {(activeDay.evening?.failedTodoTitles ?? []).join(', ') || '-'}</Text>
 								<Text style={styles.modalSection}>Morning Prompt</Text>
 								<Text style={styles.modalBody}>{activeDay.morning?.promptText || '-'}</Text>
-								<Text style={styles.modalSection}>Evening Prompt</Text>
+								<Text style={styles.modalSection}>Night Prompt</Text>
 								<Text style={styles.modalBody}>{activeDay.evening?.promptText || '-'}</Text>
 								<Text style={styles.modalSection}>Trivia</Text>
 								<Text style={styles.modalBody}>{activeDay.evening?.triviaResult || activeDay.morning?.triviaResult || '-'}</Text>
 								<Text style={styles.modalSection}>Morning Journal</Text>
 								<Text style={styles.modalBody}>{activeDay.morning?.text || '-'}</Text>
-								<Text style={styles.modalSection}>Evening Journal</Text>
+								<Text style={styles.modalSection}>Night Journal</Text>
 								<Text style={styles.modalBody}>{activeDay.evening?.text || '-'}</Text>
 							</>
 						)}

@@ -80,8 +80,8 @@ export function useExtraPromptsSection({ mode, questionSettings, enablePrompts }
 		if (mode === 'create') {
 			return (
 				<View>
-					<Text style={sectionStyles.question}>Create Extra Prompts for Evening</Text>
-					<Text style={{ marginBottom: 12 }}>Add any custom prompts you want to answer tonight.</Text>
+					<Text style={sectionStyles.question}>Create Extra Prompts for Night</Text>
+					<Text style={{ marginBottom: 12 }}>Add any custom prompts you want to answer in tonight&apos;s survey.</Text>
 
 					{state.items.map(item => (
 						<View key={item.id} style={{ marginBottom: 12 }}>
@@ -93,7 +93,7 @@ export function useExtraPromptsSection({ mode, questionSettings, enablePrompts }
 										items: prev.items.map(p => (p.id === item.id ? { ...p, text } : p)),
 									}))
 								}
-								placeholder="Write a prompt for your evening self..."
+								placeholder="Write a prompt for your night survey..."
 								style={sectionStyles.textInputArea}
 							/>
 							<Pressable

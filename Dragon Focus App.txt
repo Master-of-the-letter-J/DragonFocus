@@ -5,9 +5,120 @@ The App is named Dragon Focus, and centers around 2 surveys - morning and night 
 
 
 ________________
+What to Add Pt. 3 - Look Through Dragon Focus App.txt
+Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it easily readable to a programmer. Make all the names consistent, keep everything consistent, not too complicated.
 
 
-What to Add Pt. 4 (Shorter+)
+1. Edit The Following
+   1. Add a 60 and 90 and 365 Day Challenge to To-Do and Habit Goals (Or Skip This)
+   2. Dragon Invincibility no longer has an additional cost after scar level 5
+   3. Ascension/Transcension: Ascending now requires 20 years, transcending requires 30 years. (details of transcension is below)
+   4. Morning Survey: Add a yes/no question before the habit edit question asking if you want to edit habits, it skips the habit question if you say no. Then, add a yes/no question before the to-do edit question asking if you want to edit to-do goals, it skips the to-do question if you say no. 
+   5. Goals: Modify The Default Habit and To-Do Goals
+   6. Goals: The Importance of a goal for habit and to-do goals no longer changes the border or background of the info box, and instead shows the importance level in different colored text, before the categories are listed.
+      1. Shown in Dragon Focus App.txt: Importance text In Varying Colors (Red for High Importance, Medium Importance, Yellow for Low Importance Grayish Black For Default/Not Important). 
+      2. Also ensure the rest of Dragon Focus App.txt for the section of habit and to-do goals are all fully implemented for both morning and evening surveys.
+2. Modify The Following For Goals:
+   1. To-Do Goals: Now only has the Limit of having to complete it within 7 days before the due date, no longer having the 1 day required
+   2. Added Anti-Cheats for no rewards for goals completed within 1 hour (shows a warning before checking): No Additional Reward | For Every Normal To‑Do Goal Completed Less Than 1 hour after Creation, No Additional Reward | For Every Normal Habit Goal Completed Less Than 1 hour after Creation
+3. Improve Survey Rewards Screen
+   1. Show all the to-do goals created/completed, habit goals created/completed, mood, (results for each question), etc, alongside all the rewards/xp.
+4. Add the Habit and To-Do Goal Completion and Editors to the Lair
+   1. These are Explained thoroughly in the lair section.
+   2. These are the same interfaces as in the survey, and you can submit the goals completions, similar to how you can submit them in the survey, and earn rewards automatically when submitted.
+   3. The survey will show them as completed as well
+5. New Fire XP Changes: (See Dragon Focus App.txt)
+   1. Fire XP - How You Earn (To Level Up Scar Level) 
+      1. +Base Earned Coins In Surveys * 10 * (Max(Age/5, 1))When Finished Survey
+      2. +Floor(Total Coins Earned In Surveys)/1000 When Finished Survey
+      3. +Sqrt(Coins Earned By Clicks/Idlers) Through Idling
+      4. Scar Level Upgrading Resets Fire XP Amount
+      5. Fire XP isn’t Reset in Any Other Way, Except When Resetting the Entire App.
+6. Add the Top Left Survey Button (Not Home): 
+   1. In Every Page Besides the home page, the backpack icon is replaced with a small hide-able top left menu button that shows up if you haven’t taken the morning or evening survey. These show up as a popup to take the surveys
+7. New Black Market and Premium Pricing. Update Pricing, Ensure Shop Consistency
+   1. Add the Black Market, as a Tab on the Very Top of the ‘Market’ Page (see: Bottom of the Market Section in dragon focus.txt for information)
+      1. Coins:
+         1. 150 Shards ⇒ 10,000 Coins
+         2. 1,250 Shards ⇒ 100,000 Coins (Recommended)
+         3. 10,000 Shards ⇒ 1,000,000 Coins (Best Value)
+      2. Shards:
+         1. $0.99 ⇒ 80 Shards
+         2. $4.99 ⇒ 500 Shards
+         3. $9.99 ⇒ 1200 Shards 
+         4. $19.99 ⇒ 2500 Shards (Recommended)
+         5. $49.99 ⇒ 6500 Shards (Great Value)
+         6. $99.99 ⇒ 14000 Shards (Best Value)
+   2. Premium Pricing - Choose Premium Pricing C for now:
+      1. Pricing B: $1.99 / Month, $4.99 / Year, $14.99 / Permanent (Normal Pricing)
+      2. Pricing C: $1.99 / Month, $4.99 / Year, $9.99 / Permanent (0-3 Months of Launch and Yearly Launch Special Might Keep This)
+   3. Update the Shop Layout (Buy/Sell) to Ensure Every Button is Consistent
+   4. Review the Shop Prices to Ensure Consistency.
+   5. Multipliers Of Each Soul are Seperate, And are either additive for that multiplier or are multiplicative of each other. Take Notes
+   6. See New Soul Prophets & New Soul Relics, and Update the List.
+   7. See New Draconian Multipliers (a new market page)
+8. Added Transcension, Modified Ascension and Soul Multipliers (Now Soul Prophets), Added Dragonian Multipliers
+   1. Transcending Ritual - Consider Adding a Transcend Feature, Available Scar Level 8+. You can only transcend if you earn at least 1 Dragon’s Ember earned in transcension, which is earned by log2(deaths) + Math.Max(0, ln(deaths/1 Billion)/ln(1.1)) + Math.Max(0, ln(deaths/1 Trillion)/ln(1.01)). Transcending gives the "Transcension Fury X” Effect, dramatically increasing the dragon’s fury by _ for _ amount of days, and a lesser “Transcension Fury I” Effect that lasts much longer (about a month), but increases fury to a lesser amount. Every Dragon Ember you Earn Permanently Increases Max Fury By (How Many You Earned) 
+   2. Ascending - Being Able to Ascend is now correlated to having the ascension sickness effect, instead of the 7 day delay. You’re not able to ascend if you have ascension sickness.
+   3. Add the Dragonian Multipliers (a new market page), Modify the Ascension object ones which are now ‘Prophets and Relics’
+   4. The Ascension/Transcension Buttons have been modified, some have an unlock cost
+9. Clean Up the Code
+   1. Ensure Providers all line up properly, and add comments of @requires
+   2. The Item Core Logic that can be in the specific other types should be split in the time economy, snacks, and style provider, and should be made to be below the other 3 item providers. Make it simple, skip this step if you think it wouldn’t really help.
+   3. Quotes, Suggested Goals, and Advice.tsx should all have data-, and be put in the data folder
+   4. Have the System Where large Numbers are displayed with a different sign (add a number-abbreviation.tsx in constants), this will apply for all coins, shards, souls, and fire XP numbers, Population will apply these if the number is above 99,999,999,999,999 (100 Trillion Will be 100 T):
+      1. 100,000 are displayed as 100K
+      2. 1,000,000 are displayed as 1,000K
+      3. 99,000,000 are displayed as 99,000K
+      4. 100,000,000 or 100,000 K are displayed as 100M
+      5. Then, B, T, q, Q, s, S, N, D,
+      6. After this, use scientific notation.
+10. Check All of Part 3 Again to Make Sure Everything Was Added
+11. Check The Rest of the Dragon Focus App.txt to Make Sure Everything is updated and inline.
+
+
+________________
+
+
+What to Add Pt. 2 - Look Through Dragon Focus App.txt
+Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it readable to a human. Make all the names consistent, keep everything consistent, not too complicated.
+
+
+1. Edit Scripts Related to Market and Items: Add data scripts into the Data Folder. Also, the Price Values, Growth and the Effects of most of the market items are incorrect - fix them and add them correctly to the app. Also not all shop items were added possible or properly - read through the market section and (re)add them thoroughly Update the name of ‘Shop’ to Market for all instances.
+   1. New Snacks Have Been Added. Add them. Update the Pricing Variables, maybe in another ‘snack-data’ script in the data folder. Update the values.
+   2. Put Coin generators in a ‘coin-generator-data’ script in data. Rename all instances of ‘idlers’ to ‘coinGenerators’ or just ‘generators’, update the costs and values
+   3. Put Clickers in a ‘coin-clicker-data’ script in data, update the costs
+   4. New Soul Multipliers Have Been Added, create a ‘soul-multiplier-data’ script in data with the values.
+   5. New Effects have been added, creating an ‘effect-data’ script in data with the values of effect, and how the levels change the calculations. Or an Effect Provider Instead.
+   6. Put quotes, prompts, suggested goals, goal advice, and survey advice from constants all in the data folder. (and create if not already). Rename challenges into suggested-to-do-goals-data, remove the coins gained, instead just add it as a normal to-do goal. Have a suggested-habit-goals-data in a similar manner.
+   7. The Items provider still provides all the items, though makes the logic much simpler to read and perhaps more concise. Maybe have Multiple Providers: A Item-Snack-Effects Provider, Item-Generator-Clicker-Soul-Multiplier (Item-Idlers) Provider, and Item-Cosmetic-Background, and Provider. Whether to have the data scripts or just the providers for these categories is up to you.
+   8. Make the Names For the Costs / Data More Consistent (So name, display_name, coin_cost, shard_cost, soul_cost, coin_growth, shard_growth, soul_growth, etc much simpler and easier to read)
+   9. Make the Display Names/Names/Descriptions of the Snack Effects Correlated with effect-data and the effect amount/oscillation (make an effect type). 
+   10. Make it so it’s generally easier to add these to the code: new Snacks , Effects, and New Items, Cosmetics, and Themes/Backgrounds, etc.
+   11. Note For Snacks, All Coin Amounts are multiplied by 1.02^Times Bought For Each Purchase For Each Individual Snack. These Reset Every Ascension. Shard Amounts Remain the Same. The Snacks Unlocked By Scar Level 10 are 1.1^Times Bought, Instead. The Prices are reset to defaults by the shop creator in the ascension page (already implemented hopefully)
+   12. Coin Multiplier Still Applies, This is Key
+   13. Infernal __ (generator) Multiplier and Infernal __ (generator) Crucible has a multiplier and crucible for every single last generator.
+   14. Ensure all status Effects are proper
+2. Update Landing Page Animation, and the Videos TBA.
+3. Update the Layout and Graphics and colors (gradients) to be neater, more refined, and more cool/epic looking. Backgrounds are TBA.
+4. Update the Lair: With a third button
+   1. Rename “Journal Page” or “Lair Page” if not already.
+   2. Add a Third Button in Ascension Page Lastly, the Bottom of the Ascension Page Has a “Respec Soul Multipliers”, Where you gain 100% your Dragon Souls Back, But Requires 50 Dragon Shards Everytime to Click the Button (Of course has warning)
+5. Ensure the Survey Has (Put Each Data Point in Separate Script, Make Sure it is All Implemented In the Survey Itself, and Add More If Needed):
+   1. 100+ Survey Advice
+   2. 100+ Habit/To-Do Goal Advice
+   3. 200+ Quotes For Each Topic
+   4. 100+ Short Answer Prompts For Each Topic
+   5. 100+ Suggested To-Do Goals For Each Category
+   6. 100+ Suggested Habit Goals For Each Category
+6. Fix Any Bugs, Ensure all buttons function how they look like
+   1. Ensure all the Unlock Buttons Function Properly, and show the bottom popup if not enough cost
+   2. Ensure all the Effects are Functioning Properly
+   3. Ensure the Challenge Mode Functions Properly.
+________________
+
+
+What to Add Pt. 1 (Mostly Finished, But Go Through It If Needed)
 Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it readable to a human.
 
 
@@ -73,7 +184,8 @@ To-Do:
    5. It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 7 days (each ascend, +1 days are added).
    6. The Ascension Page will contain the dragon-heart.png in images, and then a button to ascend (which will show the requirements below, in a checklist format). The button is grayed out if you can’t ascend.
    7. The Bottom of the Ascension Page Has a “Soul Convertor”, Where every time the button is clicked, Dragon Souls are converted to 1 Dragon Shard. It starts off with requiring 1 Dragon Souls, and multiplies by 1.02* For Every Click, Rounded Down (This Doesn’t Reset)
-   8. The Bottom of the Ascension Page Also Has a “Shop Resetor”, Where every time the button is clicked, The Snack Section of the Shop has the Costs Reset to Defaults. You Can Only Reset the Shop Once Per Ascension. It starts off with requiring 1000 Dragon Souls, and 100 Dragon Shards, Dragon Soul Costs multiplies by 1000* For Every Reset (Dragon Shards Cost Remains 100)
+   8. The Bottom of the Ascension Page Also Has a “Snack Price Resetor”, Where every time the button is clicked, The Snack Section of the Shop has the Costs Reset to Defaults. You Can Only Reset the Shop Once Per Ascension. It starts off with requiring 1000 Dragon Souls, and 100 Dragon Shards, Dragon Soul Costs multiplies by 1000* For Every Reset (Dragon Shards Cost Remains 100)
+   9. Lastly, the Bottom of the Ascension Page Has a “Respec Soul Multipliers”, Where you gain 100% your Dragon Souls Back, But Requires 50 Dragon Shards Everytime to Click the Button (Of course has warning)
 12. Update & Ensure The Logs Section of the Lair Work
 13. Ensure the Survey Has (Put Each Data Point in Separate Script, Make Sure it is All Implemented In the Survey Itself):
    1. 100+ Survey Advice
@@ -136,6 +248,7 @@ Finch (An AI Pet) and Habitica (Gamified Routine) Could Challenge this App.
 * Overall, this makes for a simple, and extremely engaging app that attempts to have longevity, similarly to the engagement/surveys of Duolingo, with idle aspects similar to cookie clicker, and the main point being to-do and habit checklists similar to Finch, Habitica, or the Reminders app
 
 
+________________
 App Layout
 App Layout
 The Layout of The Foolproof App
@@ -146,6 +259,7 @@ ________________
 
 
 
+* Landing Page: Shows a Graphic of a Dragon, and has a “Enter Dragon Focus” Button. When Clicked, will animate a 2-door slide into the home page.
 * Top Panel: Every Page Displays a Top Panel. From Left to Right, When a Stat is Clicked, a Bottom Popup will appear saying the name of the stat:
    * Profile/Premium Button
    * Settings Button
@@ -156,6 +270,7 @@ ________________
    * Dragon Coins # (Coin Emoji)
    * Dragon Shards # (Shards Emoji)
    * Dragon Souls # (Soul Emoji)
+* Top Left (Not Home): In Every Page Besides the home page, the backpack icon is replaced with a small hide-able top left menu button that shows up if you haven’t taken the morning or evening survey. These show up as a popup to take the surveys
 * Main/Home Page: Displays The Dragon, with a Central Object Sprite, and the Background, Alongside an Overlay (For Weather/Brightness).
    * Population Panel: Panel on Top (Below the Top Panel)  that has the: Population Count (Top Left), and Death Count (Top Right)
    * Top-Left: A Backpack Icon, which pops up a Menu all Snacks in columns, and a use button below each snack.
@@ -163,9 +278,10 @@ ________________
    * Center/Floor/Background: On the Center, is The Central Object (Default is the Earth). Above is Text With the Dragon’s Age. Below as animated flying around the central object, is the Dragon (When Resting, is on floor, when flying, flies around the central object. Note that the Central Object is in a layer above the dragon, and the text is above both.) The Spawn/Revive Button also is on top, if the dragon isn’t yet spawned, or if the dragon needs to be revived.
    * Bottom: Take / Retake The Day or Night Surveys. These are Stacked Left/Right
 * The Lair
-   * Contains Multiple Pages - Check the Lair Section for more Details (Logs (Chart), Logs (Detailed) Achievements, Dragon Graveyard, and Ascension)
+   * Contains Multiple Pages - Check the Lair Section for more Details (Habit Goals, To-Do Goals, Logs (Chart), Logs (Detailed) Achievements, Dragon Graveyard, and Ascension)
 * The Market
    * The Market: The Market contains Snacks, Cosmetics, Idlers, Among Other Items
+   * SECTIONS (Above): Market, Black Market. Black Market Has Purchases That Cost Dragon Shards, or To Buy Dragon Shards.
    * SECTIONS: Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Soul Multipliers, Background & Themes, All Items
    * COMPACT MODE: 2 Columns or 3-4 Columns (make the boxes smaller on compact mode)
    * SORTING: Scar Level Unlock (Default) | Cost (Expensive, Coins + Souls) | Cost (Least Expensive, Coins + Souls)
@@ -194,7 +310,7 @@ ________________
 The Survey
 Survey & User Experience
 Summarize the Survey, Including the Goals, and the User Experience Layout
-Trust me this App is Tuff:3
+Trust the Process
 Tips For Alphas: Knowledge, Empathy, and Confidence (Outgoingness)
 
 
@@ -210,13 +326,14 @@ Morning Survey
 
 1. Survey Advice: Gives Advice About Survey
 2. Question: How do you feel?
-3. Question: What Day Goals to Go Through?
-4. Question: What To-Do Goals to Go Through
-5. Write: Short Answers / Multiple Choice
+3. Question: Go Through Habit Goals / What Habit Goals to Go Through?
+4. Question: Go Through To-Do Goals /  What To-Do Goals to Go Through?
+5. Write: Fill In Short Answer Prompts 
 6. Write: Create Extra Prompts For Evening
-7. Write: Journal Entry
-8. Show a Quote
-9. Show the Results
+7. Questions: Fill In Trivia Questions
+8. Write: Journal Entry
+9. Show a Quote
+10. Show the Results
 
 
 Evening Survey
@@ -224,11 +341,11 @@ Evening Survey
 
 1. Survey Advice: Gives Advice About Survey
 2. Question: How do you feel?
-3. Question: What Day Goals to Go Through?
-4. Question: What To-Do Goals to Go Through
-5. Write: Short Answers / Multiple Choice
-6. Write: Journal Entry
-7. Write: Create Extra Prompts For Evening
+3. Question: What Habit Goals to Go Check?
+4. Question: What To-Do Goals to Go Check?
+5. Write: Fill In Short Answer Prompts, and Extra Prompts (If Any)
+6. Questions: Fill In Trivia Questions
+7. Write: Journal Entry
 8. Show a Quote
 9. Show the Results
 
@@ -242,8 +359,6 @@ The Process
 * You can retake any surveys anytime, though with no reward.
 * You can also view the journal in the ‘productivity’ tab
 * Lastly, you can set an alarm in the ‘productivity’ tab.
-
-
 
 
 ________________
@@ -273,10 +388,10 @@ Note: Some Features Are Not Unlocked Until they Are Unlocked in the “Productiv
 3. Question: Edit Habit Goals / Check off Habit Goals!
    1. Habit Goal Editor (Morning): Habit Goals that are checked daily.
       * Layout: First, A Quick Habit Goal Advice on Top. Then, a List of Goals, Then, a ‘+’ Button to add another goal to the bottom Besides the ‘+’ Button there will be no warnings of (Current/Max Goals If No Premium, if Current). Lastly, it’ll show Suggested Habit goals below, with a reroll button (Up to 6 Shown at Once. Unlimited Rerolls with Premium, Otherwise Only 3). You can move the goals to any position using a ‘move’  3 lines button on the right.
-      * Individual Goal Format: Each Goal Will Have the Text (with streak below in gray text), Any Flairs, and “Delete Button” (With Warning)and “Edit” Button, and “Move” Button. The Color of the goal will depend on Importance. The Evening Survey Allows for checking the goal, and does not have an edit or move icon.
+      * Individual Goal Format: Each Goal Will Have the Text (with streak below in gray text), The Importance In Varying Colors (Red for High Important, Medium Importance, Yellow for Low Importance Grayish Black For Default/Not Important), then flairs for Any Categories, and “Delete Button” (With Warning) and “Edit” Button, and “Move” Button. The Evening Survey Allows for checking the goal, and does not have an edit or move icon.
       * Editing a Goal: Clicking the “Edit” button will pull up a modal (overlay) to edit the goal. You Can Do the Following:
          1. You can edit the text of the goal
-         2. You Can edit the “Importance” of the Goal (Important+, Important, Default / Not Important)
+         2. You Can edit the “Importance” of the Goal (High, Medium, Low Importance, and Default / Not Important)
          3. You Can edit the Day of the Weeks the Goal is Required (Checkboxes: Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday). The Default is all 7 days Checked. They will only show those days in the evening survey, and you will not lose the streak on an unchecked day.
          4. You Can add multiple “Category” Flairs (Personal, Mental, Physical, Career, Relationships, Contribution, Financial, Other, Custom)
          5. You Can Enable a “Challenge” Mode for a Goal (7, 14, or 30 days) with the 3 buttons horizontal, and an “Enable Challenge for Cost __” Button (Costs are Below)
@@ -288,15 +403,16 @@ Note: Some Features Are Not Unlocked Until they Are Unlocked in the “Productiv
       * Note: When completed, the goals will show up in the journal, there will also be a section in the journal with the goals, and their completions and failures goals.
    2. Day Goal Completion (Evening): Complete Day Goals In the Evening Survey, Which Are Checkable
       * Sorting: You Can Sort The Goals by Categories, Importance, or Streak #. Challenge Goals Always Show Up On Top As Priority.
-      * The Importance (In Color), Categories (Beside the Goal), Streak (Shown with Number and Fire) and Challenge Streak (Shown Number/Required With Red Fire and Coins Potentially Earned) are all Shown.
+      * The Importance (In the Colored text beside the goal), Categories Flairs (Beside the Goal), Streak (Shown with Number and Fire) and Challenge Streak (Shown Number/Required With Red Fire and Coins Potentially Earned) are all Shown.
       * There will be a checkbox on the left to complete a day goal. Results Are Submitted when the Survey is Submitted, and it’ll appear grayed out if the completion date is the same as the current date
+      * Note: For a reward, you must wait at least 1 hour after its creation to check it off. (This prevents cheating. It’ll show a popup warning that no rewards will be earned)
 4. Question: Edit To-Do Goals / Check off To-Do Goals!
    1. To-Do Goal Editor: Goals that are checked once, earning rewards. They can be put in sub-goals
       * Layout: First, A Quick To-Do Goal Advice on Top. Then, a List of Goals, Then, a ‘+’ Button to add another goal to the bottom. Besides the ‘+’ Button there will be any warnings of (Current/Max Goals If No Premium, if Current). Lastly, it’ll show Suggested To-Do goals below, with a reroll button  (Up to 6 Shown at Once. Unlimited Rerolls with Premium, Otherwise Only 3). You can move the goals to any position of the Body using the ‘move’ 3 lines button on the right.
-      * Individual Goal Format: Each Goal Will Have the Text (with streak below in gray text), Any Flairs, And “Delete Button” (With Warning), And “Edit” Button, and “Move” Button From Left to Right. The Color of the goal will depend on Importance. Below the box, there will be a ‘+’ to add sub-goals, which have an “Edit” and “Move” Button as well. The Evening Survey Allows for checking the goal and sub-goals, and does not have an edit or move icon.
+      * Individual Goal Format: Each Goal Will Have the Text (with streak below in gray text), The Importance text In Varying Colors (Red for High Important, Medium Importance, Yellow for Low Importance Grayish Black For Default/Not Important), then the flairs for Any Categories, And “Delete Button” (With Warning), And “Edit” Button, and “Move” Button From Left to Right. Below the box, there will be a ‘+’ to add sub-goals, which have an “Edit” and “Move” Button as well. The Evening Survey Allows for checking the goal and sub-goals, and does not have an edit or move icon.
       * Editing a To-Do Goal: Clicking the “Edit” button will pull up a modal (overlay) to edit the goal. You Can Do the Following:
          1. You can edit the title of the goal
-         2. You Can edit the “Importance” of the Goal (Important+, Important, Default / Not Important)
+         2. You Can edit the “Importance” of the Goal (High, Medium, Low Importance, and Default / Not Important)
          3. You Can add multiple “Category” Flairs (Personal, Mental, Physical, Career, Relationships, Contribution, Financial, Other, Custom)
          4. You Can add/edit A Due Date (Default is None). With a To-Do Date, A ”Challenge Mode” Button will appear (Costs are Below, if Cannot Buy It’s Grayed Out) ) When You can Afford it, Click it, and a Popup will ask “Are you Sure? (and the cost) with a ‘yes’ and ‘no’, for which if you click ‘yes’. Challenge mode is activated. You can no longer edit the To-Do Goal’s Title Nor Due Date Once Clicked
          5. You Can Add/Edit/Delete Sub-Goals. When Editing a Sub-Goal, You Can edit the text of the sub-goal by clicking on it. You can not check them until the night survey, but you can remove/add them at any time. (Even with Challenge Mode Activated). Each sub goal panel has a delete trash button functionality (with warning), an edit text (which auto-puts the cursor on the text) and a move functionality (can move within the sub-goal body, which sorts and etc)
@@ -307,10 +423,10 @@ Note: Some Features Are Not Unlocked Until they Are Unlocked in the “Productiv
       * Note: To-Do’s Show up in the goals section of the journal, with the completed to-do’s and late to-do’s.
    2. To-Do Goal Completion
       * You Can Sort The Goals by Categories, Importance, or Due Date (Earliest On Top). Challenge Goals Always Show Up On Top As Priority.
-      * The Importance (In Color), Categories (Beside the Goal), Challenge Activated (Shown With Coins Potentially Earned) and Sub-Goals (Checklistable, Below the To-Do Goal, Indented, and in smaller text) are all Shown.
+      * The Importance (In the Colored text beside the goal), Categories Flairs (Beside the Goal), Challenge Activated (Shown With Coins Potentially Earned) and Sub-Goals (Checklistable, Below the To-Do Goal, Indented, and in smaller text) are all Shown.
       * There will be a checkbox on the left to complete a day goal. Results Are Submitted when the Survey is Submitted, and it’ll appear grayed out if the completion date is the same as the current date
       * Note: To-Do Goal Cannot be Checked until All Sub-Goals are Completed. (If Any, If Not It Can Be Checked Anyways) It’ll be Grayed Out if Otherwise. 
-      * Note: To-Do Goal Cannot be Checked Until there are only 3 days before The Due Date, or if that value is <1 Day, at Least 1 day Has Passed Since the Goal was Created (Whichever comes Later) to complete a to-do goal. (It’ll show a popup notifying this if clicked before, and grayed out). If there is no due date, you must wait at least 1 day to complete the due date (Again. Showing the popup, and being grayed out) . If the To-Do Goal is less than 1-Day long, however, and it is due the same day it was created, then it can be checked off.
+      * Note: To-Do Goal Cannot be Checked Until there are only 7 days before The Due Date.(It’ll show a popup notifying this if clicked before, and grayed out). If there is no due date, you must wait at least 1 day to complete the due date (Again. Showing the popup, and being grayed out). If the To-Do Goal is less than 1-Day long, or if it is due in less than seven days, you can automatically check it, but for a reward you must wait at least 1 hour after its creation. (This prevents cheating. It’ll show a popup warning that no rewards are earned)
       * Rewards are Shown in the Survey Rewards Section.
 5. Write: Short Answer Prompts 
    1. Description: Write a Short Answer Prompt that will be recorded on the table. Possibly Custom Made or Pre-Made prompts. 
@@ -361,6 +477,8 @@ Rewards
 * +(10 + Streak) Coins, +1 Shard, +1 Streak, -(1 * Streak) Fury | Completing Both Night/Morning (Shown After Completion)
 * -4, -2, 0, +1, +2 Fury Depending on a Positive / Negative Mood Question
 * +5 Coins + Goal Streak (Max +5), -2 Fury | For Each Habit Goal Completed.
+* No Additional Reward | For Every Normal To‑Do Goal Completed Less Than 1 hour after Creation
+* No Additional Reward | For Every Normal Habit Goal Completed Less Than 1 hour after Creation
 * + | Challenge Habit Goals Reward (Look Below)
 * + | Challenge To-Do Goals Reward (Look Below)
 * +5 Coins | For Each 25+ Words in A Short Prompt (For Each Short Prompt, Including Custom-Made Ones Filled In Evenings)
@@ -753,13 +871,13 @@ Habit AND To-Do Goals Unlocks (Applies for Both Morning/Evening Surveys)
 * Unlock Custom Categories (Unlock for 5 Coins) - You’ll be able to add Custom Categories
 * Unlock Challenges (Unlock for 20 Coins)
 Toggle: Enable Journal (Unlock for 30 Coins)
-* Unlock Journal, Where You Can Write Any Size Prompt
+* Unlock Journal, Where You Can Write Any Size Prompt. Choose Between Morning, Evening, Both, None.
 * Unlocking the Journal Allows For Unlocking Short Answers and Trivia
 Slider/Edit Categories/Add Custom Category Short Answer Prompts (Unlock for 10 Coins)
-* For this Section, you can have 0 to Up to 3 Short Answer Prompts. (Slider)
+* For this Section, you can have 0 to Up to 3 Short Answer Prompts. (Slider for Morning, Another for Evening)
 * For Each Short Answer Prompt, You Can:
    * Have a Random Short Answer Based on Category(s) (Default)
-   * Have a ‘Custom’ Category That Randomizes the Prompt Based on Those Typed Below (Unlock for 5 Coins)
+   * Have ‘Custom’ Categories That Randomizes the Prompt Based on Those Typed Below (Unlock for 5 Coins)
 Slider: Custom Short Answer Prompts For Evening Survey (Unlock for 10 Coins)
 * For this Section, you can have 0 to Up to 3 Custom-Made Short Answer Prompts. (Slider)
 * You fill in a Custom Prompt for the Morning Survey, and Answer them in the Evening Survey
@@ -770,7 +888,7 @@ Edit: Trivia Questions (Unlock for 10 Coins)
 Toggle: Show a Quote? (Unlock for 15 Coins)
 * In this Section, you can add Custom Quotes in a ‘Custom Category’, or Check the Categories.
 Misc Settings
-* Dragon Invincibility - Make Dragon Invincible (So to not have regret when not using app) (Requires Scar Level 5+, Unlock for 100 Coins and 5 Shards)
+* Dragon Invincibility - Make Dragon Invincible (So to not have regret when not using app) (Requires Scar Level 5+)
 * Reset All Data - Wipes All Stats, Progress, and Everything Else From the Account. Will have 4+ Warnings before you reset everything!
 
 
@@ -1005,7 +1123,7 @@ ________________
 
 
 
-The Stats & Market
+The Stats & Currencies
 Dragon Stats & The Market
 Spend Mysterious Green Paper, that is thick…where did his dollar bill go?
 
@@ -1022,15 +1140,13 @@ These Will Motivate to continue on the focus app
 Currencies
 * Dragon Coins (Or Gold)
    * Main Currency of the App, Used to Buy Dragon Snacks/Cosmetics. Each of these is multiplied by the Coin Multiplier.
-   * Multiplier = (1 - Yang * 0.005) * (Dragon Shards * 0.01 ) * (1 + 0.1 * Scar Level) * (Multipliers From Snacks) * (2 if Premium) * (Any Additional Multipliers).
+   * Multiplier (Applies to Generators and Clicks) = (1 * 0.5Yang/100) * Min(Dragon Shards * 0.01, 1) * (1 + 0.1 * Scar Level) * (Multipliers From Effect Buffs/Debuffs) * (Multiplier From Infernon, Or other Prophets or Ember Multipliers) * (2 if Premium) * (Universal Prophets * Universal Ember Multipliers If Any)
+      1. Multipliers - Snack Multipliers Allow For Temporary Boosts. Multipliers may also be bought in the shop
+      2. Yang Debuff - The Clicked Coins are Multiplied By (1 * 0.5Yang/100), meaning 100 yang reduces output by 0.5*, 200 by 0.75*, etc
    * View Survey Rewards For Challenge Goals and Other Goals Rewards, and Earning Coins in Survey
-   * From Shop:
+   * From Shop: (Affected By Coin Multiplier)
       1. Coin Generator - Coin Generators Can Be Unlocked in the Shop, Generating More Coins. 
-         * Multipliers - Snack Multipliers Allow For Temporary Boosts. Multipliers may also be bought in the shop
-         * Yang Debuff - The Generated Coins are Multiplied By (1 - Yang * 0.005), meaning 100 yang reduces output by 0.5*
-      1. Clicking Dragon - Earn Coins By Clicking the Dragon
-         * Multipliers - Snack Multipliers Allow For Temporary Boosts. Multipliers may also be bought in the shop
-         * Yang Debuff - The Clicked Coins are Multiplied By (1 - Yang * 0.005), meaning 100 yang reduces output by 0.5*
+      2. Clicking Dragon - Earn Coins By Clicking the Dragon
    * Achievements - There May Be Achievements (Planned)
    * Premium - Earn Double Coins with Premium
 * Dragon Shards
@@ -1089,9 +1205,12 @@ Dragon Stats / Other Stats
 
 
 Fire XP and Scar Level
-* Fire XP 
-   * EVERYTIME YOU EARN COINS, YOU EARN The Earned Coins * 10 (this includes generators, surveys, ALL METHODS)
-   * Daily - You earn an additional +(Age) * 10 XP a Day When The Streak is Added.
+* Fire XP - How You Earn (To Level Up Scar Level) 
+   * +Base Earned Coins In Surveys * 10 * (Max(Age/5, 1))When Finished Survey
+   * +Floor(Total Coins Earned In Surveys)/1000 When Finished Survey
+   * +Sqrt(Coins Earned By Clicks/Idlers) Through Idling
+   * Scar Level Upgrading Resets Fire XP Amount
+   * Fire XP isn’t Reset in Any Other Way, Except When Resetting the Entire App.
 * Scar Level: Your Scar Level Unlocks More Features in the App. There are 10 Scar Levels. Premium Will Unlock More Benefits (See below)
    * Scar Level Benefits: Scar Levels Will Also Unlock Cosmetics, Idlers, and Clicker Upgrades in the Shop. Each Scar Level Also Multiplies the Current Coin Multiplier by (1 + Scar Level * 0.1) (see coin section for more details) .
       1. Scar Level 0 - You Can Do All Surveys & Challenge Goals, And View the Journal (Logs, Ach. & Statistics) & Settings Page).
@@ -1102,7 +1221,7 @@ Fire XP and Scar Level
       6. Scar Level 5 - You Unlock Invincible Dragon Mode, and the Scar Icon Starts to Glow.
       7. Scar Level 6 - You Unlock (+ Coin Boosters)
       8. Scar Level 7 - You Unlock Rename the Dragon When Wyrm.
-      9. Scar Level 8 - You Unlock Even more Extra Goals, Cosmetics. (+ Ice / Fire Snacks)
+      9. Scar Level 8 - You Unlock The Dragon Transcension Page, Even more Extra Goals, Cosmetics. (+ Ice / Fire Snacks)
       10. Scar Level 9 - Cosmetics. 
       11. Scar Level 10 - You Unlock Max. Extra Goals, New Background, Best Icon. (+ Super & Age Snacks)
       12. Premium Benefits - 2x Multiplier (on top of the scar multiplier), Better Table, Premium Cosmetics & Background. 2x Fire XP Multiplier, Unlimited Re-Roll Challenge Goals, and all unlocks of scar level 10 (except cosmetics). Unlimited To-Do and Habit Goals!
@@ -1154,20 +1273,60 @@ Fire XP and Scar Level
 29. Dragon Master - 1  Decillion  XP
 30. Dragon Grandmaster - 1,000 Decillion XP
 31. Ultimate Dragon Warrior
-32. Premium - Premium Dragon Pact - 3 day free trail / $1.99 / month, $9.99 / year
+32. Premium - Premium Dragon Pact - 3 day free trail / $1.99 / month, $9.99 / year, $24.99 / permanent
 ________________
 
 
 
 
+Status Effects (From Snacks / Ascension / Events / Etc)
+A List of All Status Effects, Which are Listed on the Right of the Home Screen
+When An Effect of Higher Level is Applied, The Timer for All Levels Below are Paused and the one with higher level takes effect
+When An Effect of Same Level as an Active/Deactive Timer is Applied, that Timer has __ Added Time to the Effect
+Additionally, When An Effect of the Different Oscillation is applied but has the Same Level, the Higher Oscillation takes effect and the other timer is paused.
+Note: Milk Clears all Timers, Regardless of Active or Not,. Super Milk is Required for Ascension Sickness.
+
+
+Modifiers
+* Level Of Effect: The Level of the Effect
+* Oscillation Effect: Adds +x Level to -x Level Effect For Everytime the Modifier Is Applied (Hidden, Default is 0)
+Effects
+* Regeneration: +5 * Level Health/Day for | __ Time (Days)
+* Wither: -5 * Level Health/Day for | __ Time (Days)
+* Therapy: -5 * Level Fury/Day | __ Time (Days)
+* Rage: +5 * Level Fury/Day | __ Time (Days)
+* Bipolar: (+5 or -10) * Level Fury/Day | __ Time (Days)
+* Jeopardy: *4^(Level) Trivia Rewards or Loss /Day | __ Time (Days)
+* Coin Generator Boosters: 2^Level Coins/Day | __ Time (Days)
+* Coin Click Boosters: 2^Level Coins/Click | __ Time (Days)
+* Survey Duplication: 2^Level (Survey Coins, Shards, Snacks) | __ Time (Days)
+* Cursed Survey Duplication: 4^Level Coins/Survey and 0.5 / Level Coins/Day | __ Time (Days)
+* Ascension Sickness (Ascension): -5 * Level * Min(Age, 3) Health/Day for | __ Time (Days)
+* Trascension Fury (Trascending): +5 * Level Fury/Day, -0.5 * Level Health/Day for | __ Time (Days)
+* Mourning (After Dragon Dies): +20 * Level Fury/Day, 0.5 / Level^2 Coins/Day | __ Time (Days, Usually 3 Days)
+* Super Effect: 2^Level (Coins/Click, Coins/Day, and Coins/Survey) + 10 * Level Health/Day - 10 * Level Fury/ Day * Level | __Time (Days)
+
+
+________________
+
+
+
+
+The Market
 The Dragon Market
 Shopping, Not Gambling. There is no Gambling in Dragon Focus.
+
+
+________________
+
+
 
 
 Layout
 The Market: The Market contains Snacks, Cosmetics, Idlers, Among Other Items
 
 
+SECTIONS (Above): Market, Black Market. Black Market Has Purchases That Cost Dragon Shards, or To Buy Dragon Shards.
 SECTIONS: Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Soul Multipliers, Background & Themes, All Items
 COMPACT MODE: 2 Columns or 3-4 Columns (make the boxes smaller on compact mode)
 SORTING: Scar Level Unlock (Default) | Cost (Expensive, Coins + Souls) | Cost (Least Expensive, Coins + Souls)
@@ -1176,7 +1335,8 @@ BOXES: Each Section of the Dragon Market will have Boxes into Columns (2 or 3). 
 * Cosmetics: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive) Green Button.
 * Coin Generators: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
 * Dragon Clickers: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
-* Soul Multiplers: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+* Soul Prophets: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Sell (Grayed out if current amount is 0)
+* Ember Multiplers: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive), Respec (See Transcension Section in The Lair)
 * Background/Theme: Name, Icon (Emoji or Image TBA), Below is Buy For  __ (Cost, Grayed out if too expensive) Green Button.
 
 
@@ -1187,11 +1347,16 @@ OTHER COST MULTIPLIERS: Shown Below.
 
 
 
+________________
+
+
+
+
 Dragon Snacks
 Note: Each Snack with a Duration will have its own separate effect for each snack, added up (for instance, using 2 ice injections give those effects for 10 days. For __ boosters, using a double and triple coin booster will first have 1 day of triple coin generation, then 1 day of double coin generation. The Super Snack has a stackable Double Coin Booster as well. Using a super snack will add up with other super snacks, etc. The effect name will be Snack, Duration.)
 
 
-All Coin Amounts are multiplied by 1.02^Times Bought For Each Purchase For Each Individual Snack. These Reset Every Ascension. Shard Amounts Remain the Same.
+For Snacks, All Coin Amounts are multiplied by 1.02^Times Bought For Each Purchase For Each Individual Snack. These Reset Every Ascension. Shard Amounts Remain the Same.
 
 
 * Scar Level 1:
@@ -1207,7 +1372,7 @@ All Coin Amounts are multiplied by 1.02^Times Bought For Each Purchase For Each 
    * Super Health Chocolates | +15 to +25 Health | 40 Coins, 1 Shards
    * Dark Health Chocolates | -10 OR +20 Health | 20 Coins, 1 Shard
    * White Health Chocolate | -10 to +20 Health | 20 Coins, 1 Shard
-   * Regeneration Snacks | +10, 20, 50, 100 Health/Day | 10 Days Each | 40, 100, 250, 600 Coins, 2, 3, 4, 5 Shards
+   * Regeneration Snacks | II, IV, X, XX | +10, 20, 50, 100 Health/Day | 10 Days Each | 40, 100, 250, 600 Coins, 2, 3, 4, 5 Shards
 * Scar Level 4:
    * Bipolar Nuggets | -20 to +10 Fury/Day | 10 Days | 200 Coins, 2 Shards
    * Jeopardy I, II, III Smoothie | 7 Days, 3 Days, 1 Day | 50 Coins, 3 Shards
@@ -1235,67 +1400,153 @@ Cosmetics
 * Etc.
 
 
-Coin Generators
+________________
+
+
+
+
+Dragon Coin Generators
 Additional Costs: Each coin generator will cost 1 Dragon Shard, on top of the default cost. 
 Selling: You can also sell coin generators, only getting 1 dragon shard and 75% of coins. 
 Each Upgrade Adds the Effect.
-Although it says per day, coins are automatically added per second 1/86400 * Coins Per Day. This Then Adds Up Offline/
+After 200 are Bought, Every 25 increases the production of X generator by 4 Times.
+Every 1000 that are Bought, increases the production of X generator by 100 Times.
+The Multiplier of an Individual Generator is also (General Coin Multiplier * Max(Crucible Multiplier, 1))
+Although it says per day, coins are automatically added per second 1/86400 * Coins Per Day. This Then Adds Up Offline
 
 
 * Scar Level 3:
-   * Coin Treasury: +1 Coins / Day * Multiplier | Costs 5 coins * 1.08/Upgrade
+   * Coin Treasury: +1 Coins / Day * Multiplier | Costs 5 coins * 1.03/Upgrade
 * Scar Level 4:
-   * Forge: +(2 + Yang/50) Coins / Day * Multiplier | Costs 10 coins * 1.12/Upgrade
-   * Freezer: +(2 + Yin/50) Coins / Day * Multiplier | Costs 10 coins * 1.12/Upgrade
-   * Dragon NFT +(3 + Streak / 30) Coins / Day * Multiplier | Costs 15 coins * 1.16/Upgrade
-   * Coin Mountain: +3 Coins / Day * Multiplier | Costs 15 coins * 1.08 / Upgrade
+   * Forge: +(2 + Yang/50) Coins / Day * Multiplier | Costs 10 coins * 1.0325/Upgrade
+   * Freezer: +(2 + Yin/50) Coins / Day * Multiplier | Costs 10 coins * 1.0325/Upgrade
+   * Dragon NFT +(3 + Streak) Coins / Day * Multiplier | Costs 15 coins * 1.0325/Upgrade
+   * Coin Mountain: +3 Coins / Day * Multiplier | Costs 15 coins * 1.03 / Upgrade
 * Scar Level 5:
-   * Anti-Treasury: +(4 + Anti-Treasury #) Coins / Day * Multiplier. Anti-Treasury Reduces All Other Coin Production by 0.9^(Anti-Treasury #) | Costs 20 coins * 1.2/Upgrade
-   * Super Treasury: +4 Coins / Day * Multiplier | Costs 20 coins * 1.08/Upgrade
-   * Black Hole: +(5 + Scar Level) Coins / Day * Multiplier | Costs 25 coins * 1.14/Upgrade.
+   * Anti-Treasury: +(4 + Anti-Treasury #) Coins / Day * Multiplier. Anti-Treasury Reduces All Other Coin Production by 0.9^(Anti-Treasury #) | Costs 20 coins * 1.04/Upgrade
+   * Slightly Large Treasury: +4 Coins / Day * Multiplier | Costs 20 coins * 1.04/Upgrade
+   * Dragon Ritual: +(5 + Scar Level) Coins / Day * Multiplier | Costs 25 coins * 1.0325/Upgrade.
 * Scar Level 6:
-   * Golden Saddle: +(6 + Age/10) Coins / Day * Multiplier | Costs 30 coins * 1.3/Upgrade
-   * Coin Continent: +6 Coins / Day * Multiplier | Costs 30 coins * 1.08 / Upgrade
+   * Golden Saddle: +(6 + Age/10) Coins / Day * Multiplier | Costs 30 coins * 1.0325/Upgrade
+   * Coin Continent: +6 Coins / Day * Multiplier | Costs 30 coins * 1.03 / Upgrade
 * Scar Level 7:
-   * Dragon Anti-Charm: +(7+log10(Pop. Destroyed) Coins / Day * Multiplier | Costs 35 coins * 1.1 / Upgrade
-   * Dragon Charm: +(8+log10(Pop)) Coins / Day * Multiplier | Costs 40 coins * 1.1 / Upgrade
+   * Dragon Scales of Ruin: +(7+Square Root(Pop. Destroyed/1 Billion) Coins / Day * Multiplier | Costs 35 coins * 1.035 / Upgrade
+   * Dragon Scales of Growth: +(8+Square Root(Pop/1 Billion)) Coins / Day * Multiplier | Costs 40 coins * 1.035 / Upgrade
 * Scar Level 8:
-   * Coin Planet: +9 Coins / Day * Multiplier | Costs 45 coins * 1.07 / Upgrade
-   * Coin Galaxy: +90 Coins / Day * Multiplier | Costs 600 coins * 1.06 / Upgrade
-   * Coin Universe: +900 Coins / Day * Multiplier | Costs 9000 coins * 1.05 / Upgrade
+   * Large Treasury: +18 Coins / Day * Multiplier | Costs 45 coins * 1.07 / Upgrade
+   * Massive Treasury: +180 Coins / Day * Multiplier | Costs 600 coins * 1.07 / Upgrade
+   * Gigantic Treasury: +1800 Coins / Day * Multiplier | Costs 9000 coins * 1.07 / Upgrade
 * Scar Level 9:
-   * Ultimate Dragon Bracelet: +(10 + Building #) Coins / Day * Multiplier | Costs 50 coins * 1.18 / Upgrade
+   * Ultimate Dragon Drip: +(10 + All Building #) Coins / Day * Multiplier | Costs 50 coins * 1.0425 / Upgrade
 * Scar Level 10:
-   * Big Stick: +10 Coins / Day * Multiplier^2 | Costs 100 coins * 1.05 / Upgrade
+   * Big Stick: +10 Coins / Day * Multiplier^2 | Costs 100 coins * 1.035 / Upgrade
+* Scar Level 11:
+   * Enormous Treasury: +18,000 Coins / Day * Multiplier | Costs 120,000 coins * 1.07 / Upgrade
+   * Mammoth Treasury: +36,000 Coins / Day * Multiplier | Costs 360,000 coins * 1.07 / Upgrade
+   * Colossal Treasury: +54,000 Coins / Day * Multiplier | Costs 750,000 coins * 1.07 / Upgrade
+* Scar Level 12:
+   * Gargantuan Treasury: +50,000 Coins / Day * Multiplier | Costs 1,000,000 coins * 1.07 / Upgrade
+   * Titanic Treasury: +100,000 Coins / Day * Multiplier | Costs 2,500,000 coins * 1.07 / Upgrade
+   * Glitch I: +1,000,000 Coins/Day * Multiplier | Costs 500,000 coins * 1.15 / Upgrade
+* Scar Level 13:
+   * Coin Planet: +250,000 Coins / Day * Multiplier | Costs 10,000,000 coins * 1.05 / Upgrade
+   * Coin System: +1,000,000 Coins / Day * Multiplier | Costs 50,000,000 coins * 1.04 / Upgrade
+* Scar Level 14:
+   * Coin Galaxy: +10,000,000 Coins / Day * Multiplier | Costs 100 M coins * 1.03 / Upgrade
+   * Coin Super Cluster: +500 M Coins / Day * Multiplier | Costs 2,000 M coins * 1.02 / Upgrade
+   * Glitch II: +100 M Coins/Day * Multiplier | Costs 50 M coins * 1.2 / Upgrade
+* Scar Level 15:
+   * Coin Universe: +100 B Coins / Day * Multiplier | Costs 1,000 B coins * 1.01 / Upgrade
+* Scar Level 16:
+   * Coin Multi-Universe: +100 T Coins / Day * Multiplier | Costs 1,000 T coins * 1.01 / Upgrade
+
+
+________________
+
+
 
 
 Dragon Clickers
 * Scar Level 3: Dragon Clicks - Each Dragon Click Bought Gives +0.01 Coins | Costs 10 coins * 1.04/Upgrade
 * Scar Level 5: Dragon Age Multiplier - Each Age Multiplies Dragon Clicks By +0.01*Age | Costs 10 coins * 10/Upgrade
-* Scar Level 7: Demonic Dragon Clicks - Each of these Bought Gives +0.001% of Coin Generation / Day Clicks | Costs 100 coins * 1.2/Upgrade
-* Scar Level 9: Mega-Dragon Clicks - Each Dragon Click Bought Gives +0.1 Coins | Costs 1000 coins * 1.02/Upgrade
-* Scar Level 12: Impossible Dragon Clicks - Each Dragon Click Bought Gives +1 Coins | Costs 1,000,000 coins * 1.01/Upgrade
+* Scar Level 7: Demonic Dragon Clicks - Each of these Bought Gives +0.001% of Coin Generation / Day * Base Clicks | Costs 100 coins * 1.2/Upgrade
+* Scar Level 7: Mega-Dragon Clicks - Each Dragon Click Bought Gives +0.1 Coins | Costs 100 coins * 1.02/Upgrade
+* Scar Level 9: Giga-Dragon Clicks - Each Dragon Click Bought Gives +1 Coins | Costs 2500 coins * 1.01/Upgrade
+* Scar Level 12: Impossible Dragon Clicks - Each Dragon Click Bought Gives +10 Coins | Costs 50,000 coins * 1.005/Upgrade
+* Scar Level 15: Dragonic Dragon Clicks - Each Dragon Click Bought Gives +1000 Coins | Costs 10 M coins * 1.0025/Upgrade
 
 
-Dragon Soul Multipliers
-Each Upgrade Adds the Multiplier
-Ascension Unlocks At Scar Level 5
+________________
 
 
-* Infernal Universal Multiplier: Increases Effects all Multipliers By *1.5 | Costs 100 Dragon Souls * 1.3/Upgrade
-* Infernal Universal Crucible: Increases Effects a Specific Multipliers By *(1 + # Of A Multiplier / 100) | Costs 250 Dragon Souls * 1.45/Upgrade
-* Infernal Click Multiplier: Increases Effects all Clicks By *2 | Costs 100 Dragon Souls * 1.4/Upgrade
-* Infernal Ritual Multiplier: Increases Effects of Dragon Clicks and Mega Dragon and Impossible Dragon Clicks By *10 | Costs 100 Dragon Souls * 1.5/Upgrade
-* Impossible Effects: All Status Effect Effects *2 | Costs 500 Dragon Souls * 1.5/Upgrade
-* Eternal Shards: Shard Multiplier Effect *2 | Costs 1000 Dragon Souls * 1.5/Upgrade
+
+
+Dragon Soul Prophets & Soul Relics From Hades
+Each Upgrade Changes the Multiplier by Additive or Multiplying
+Summoning Prophets: Before you Upgrade a Prophet, you Must summon it (this does not give any effects). This costs 2^(Min(0.5*Number of Prophets Summoned, 30)) Dragon Souls. These are earnt back in Respec.
+Ascension Unlocks At Scar Level 4
+
+
+* Infernon: Increases Effects the General Coin Multiplier By *1.5^Level | Costs 100 Dragon Souls * 2/Upgrade
+* Mini-Infernon: Increases Effects the General Coin Multiplier By a +0.5 Multiplier | Costs 100 Dragon Souls * 1.25/Upgrade
+* Infernon’s Crucible of Treasure: Increases Effects of All Treasuries By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Steam: Increases Effects of Forge and Freezer By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Assets: Increases Effects of Dragon NFT By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Sacrifice: Increases Effects of Dragon Ritual By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Adventure: Increases Effects of Dragon Saddle By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Scales: Increases Effects of Dragon Scales and Anti-Scales By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Drip: Increases Effects of Dragon Drip By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of The Stick: Increases Effects of Big Stick By a +1 Multiplier | Costs 10 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Glitches: Increases Effects of Glitches By a +10 Multiplier | Costs 50 Dragon Souls * 1.15/Upgrade
+* Infernon’s Crucible of Universes: Increases Effects of Coin (Mountain-Multi-Universe) By a +1 Multiplier | Costs 50 Dragon Souls * 1.15/Upgrade
+* Midas: Increases Effects all ‘Treasury’ Multipliers By *2 | Costs 100 Dragon Souls * 2.5/Upgrade
+* Aurora: Increases Increases Multiplicative Effect of Extra Multipliers by 4*2^(Level) and 10*10^(Level) | Costs 1000 Dragon Souls * 5/Upgrade
+* Blaze: Increases Effects a Specific Idler By *(1 + # Of A Idler/ 100) | Costs 250 Dragon Souls * 1.45/Upgrade
+* Vulcan: Increases Effects all Clicks By *2 | Costs 100 Dragon Souls * 1.4/Upgrade
+* Cacus: Increases Effects of Dragon, Mega, Impossible, Dragonic Dragon Clicks By *10 | Costs 100 Dragon Souls * 1.5/Upgrade
+* Caeculus: Increases Effects of Dragonic Dragon Clicks By *100 | Costs 1000 Dragon Souls * 1.5/Upgrade
+* Infernal Artemis: Population Growth^(Level) | Costs 250 Dragon Souls * 1.5/Upgrade
+* Infernal Irene: Max Fury /2 | Costs 500 Dragon Souls * 1.5/Upgrade
+* Infernal Ares: Max Fury *2 | Costs 500 Dragon Souls * 1.5/Upgrade
+* Infernal Athena: All Fury Gained/Loss *2 | Costs 500 Dragon Souls * 1.5/Upgrade
+* Infernal Dionysus: All Status Effect Effects Multiplied *2^Level | Costs 750 Dragon Souls * 2.5/Upgrade
+* Infernal Zeus: Shard Multiplier Effect *2^Level | Costs 1000 Dragon Souls * 2.5/Upgrade
 * Survey Exploitation I: +(Coins/Day)*(Coins Earned By Survey)/100 | Costs 25 Dragon Souls * 1.2/Upgrade
 * Survey Exploitation II: Surveys Give +(Total Coins By Survey)^0.5 Shards | Costs 250 Dragon Souls * 1.5/Upgrade
 * Survey Exploitation III: Surveys Give +1 Additional Random Unlocked Snack | Costs 2500 Dragon Souls * 2/Upgrade
-* Survey Duplication Glitch: Surveys Give *2 Shards, *2 Coins, and *2 Snacks | Costs 25000 Dragon Souls * 2/Upgrade
+
+
+________________
+
+
+
+
+Ember Multipliers
+Each Upgrade Adds the Multiplier
+Transcension Unlocks At Scar Level 8
+
+
+* Draconian Infernon Multiplier: Increases Effects all Mini-Infernon Multipliers By *2 | Costs 10 Embers * 1.4/Upgrade
+* Draconian Universal Multiplier: Increases the Universal Coin Multiplier By *2 | Costs 15 Embers * 1.3/Upgrade
+* Draconian Universal Crucible: Increases Effects of All Infernon’s Crucibles By *2 | Costs 25 Embers * 1.45/Upgrade
+* Draconian Staff: Increases Effects of Vulcan Clicks By *2 | Costs 100 Ember * 1.4/Upgrade
+* Draconian Staff 2.0: Increases Effects of Dragon Clicks and Mega Dragon and Impossible Dragon Clicks By *10 | Costs 50 Dragon Souls * 1.5/Upgrade
+* Draconian Ascension Multiplier: Shards Earned an Ascension *2 | Costs 100 Embers * 1.5/Upgrade
+* Draconian Ascension Charm: Ascension Sickness Time /2 | Costs 1000 Embers * 1.5/Upgrade
+* Eternal Growth: Population Base Growth +1% | Costs 50 Embers * 1.5/Upgrade
+* Impossible Effects: All Status Effect Effects *2 | Costs 50 Embers * 1.5/Upgrade
+* Exponential Shards: Shard Multiplier Effect Another *2^Level | Costs 50 Embers * 1.5/Upgrade
+   * When At Least One is Bought, The Shard Multiplier No Longer Decreases When Spending Shards, and is Cumulative of All Shards Over Time
+* Survey Duplication Glitch: Surveys Give *2 Shards, *2 Coins, and *2 Snacks | Costs 100 Embers * 2/Upgrade
    * The Survey Duplication Glitch Multiplies this Effect, Instead of Adding Like the Other Multipliers
    * Notice How Fury Isn’t in the Calculation
-* Infernal __ Multiplier - Doubled Effects: Increases Effects of __ Multiplier By *2 | Costs 10 Dragon Souls * 1.15/Upgrade
-* Infernal __ Crucible: Generation of __  Universal Coin Multiplier (Infernal Multiplier) By (Coin Generation/Day)^0.1 | Costs 1000 Dragon Souls * 1.2/Upgrade
+* Draconian __ (Generator) Multiplier - Doubled Effects: Increases Effects of __ Generator By *(2^Level) | Costs 10 Embers * 1.15/Upgrade.
+   * Repeat this for all the Generators in the Game
+
+
+________________
+
+
 
 
 Background & Themes
@@ -1309,34 +1560,52 @@ Background & Themes
 ________________
 
 
-Status Effects
-A List of All Status Effects, Which are Listed on the Right of the Home Screen
-When An Effect of Higher Level is Applied, The Timer for All Levels Below are Paused and the one with higher level takes effect
-When An Effect of Same Level as an Active/Deactive Timer is Applied, that Timer has __ Added Time to the Effect
-Additionally, When An Effect of the Different Oscillation is applied but has the Same Level, the Higher Oscillation takes effect and the other timer is paused.
-Note: Milk Clears all Timers, Regardless of Active or Not,. Super Milk is Required for Ascension Sickness.
+The Black Market
+The Market has a “Black Market” Section, Allowing to Buy Shards & Coins for Money
 
 
-Modifiers
-* Level Of Effect: The Level of the Effect
-* Oscillation Effect: Adds +x Level to -x Level Effect For Everytime the Modifier Is Applied (Hidden, Default is 0)
-Effects
-* Regeneration: +5 * Level Health/Day for | __ Time (Days)
-* Wither: -5 * Level Health/Day for | __ Time (Days)
-* Ascension Sickness: -5 * Level * Min(Age, 3) Health/Day for | __ Time (Days)
-* Therapy: -5 * Level Fury/Day | __ Time (Days)
-* Rage: +5 * Level Fury/Day | __ Time (Days)
-* Bipolar: (+5 or -10) * Level Fury/Day | __ Time (Days)
-* Jeopardy: *4^(Level) Trivia Rewards or Loss /Day | __ Time (Days)
-* Coin Generator Boosters: 2^Level Coins/Day | __ Time (Days)
-* Coin Click Boosters: 2^Level Coins/Click | __ Time (Days)
-* Survey Duplication: 2^Level (Survey Coins, Shards, Snacks) | __ Time (Days)
-* Cursed Survey Duplication: 4^Level Coins/Survey and 0.5 / Level Coins/Day | __ Time (Days)
-* Mourning (After Dragon Dies): +20 * Level Fury/Day, 0.5 / Level^2 Coins/Day | __ Time (Days, Usually 3 Days)
-* Super Effect: 2^Level (Coins/Click, Coins/Day, and Coins/Survey) + 10 * Level Health/Day - 10 * Level Fury/ Day * Level | __Time (Days)
+* Coins:
+   * 150 Shards ⇒ 10,000 Coins
+   * 1,250 Shards ⇒ 100,000 Coins (Recommended)
+   * 10,000 Shards ⇒ 1,000,000 Coins (Best Value)
+* Shards:
+   * $0.99 ⇒ 80 Shards
+   * $4.99 ⇒ 500 Shards
+   * $9.99 ⇒ 1200 Shards 
+   * $19.99 ⇒ 2500 Shards (Recommended)
+   * $49.99 ⇒ 6500 Shards (Great Value)
+   * $99.99 ⇒ 14000 Shards (Best Value)
 
 
 ________________
+
+
+
+
+The Dragon Pact
+Premium Costs & Account
+
+
+________________
+
+
+Account
+* You Can Login With Google, or With Username/Password, In Profile/Dragon Pact Page
+* This allows you to transfer data to different devices highly recommended)
+* Signing Up Rewards you With 25 Dragon Shards
+Premium - The Dragon Pact
+* Scroll Below the Account to View Dragon Pact Pricing - Choose Pricing C
+   * Pricing A: $1.99 / Month, $7.99 / Year, $14.99 / Permanent (Not Planned)
+   * Pricing B: $1.99 / Month, $4.99 / Year, $14.99 / Permanent (Normal Pricing)
+   * Pricing C: $1.99 / Month, $4.99 / Year, $9.99 / Permanent (Normal Pricing)
+   * Pricing D: $1.49 / Month, $3.99 / Year, $7.99 / Permanent (0-3 Months of Launch and Yearly Launch Special)
+   * Pricing E: $0.99 / Month, $4.99 / Year, $9.99 / Permanent  (Not Planned)
+
+
+(View Black Market in ‘Stats & Market’ Section)
+________________
+
+
 
 
 
@@ -1344,37 +1613,63 @@ ________________
 The Lair
 Dragon Lair
 The Page for the Dragon’s Lair, which contains Journal Entries, Logs, Statistics, Achievements, and a Graveyard, and Ascension
-
-
+The Header Switches Through the Following Pages
 ________________
 
 
+Check/Edit Habit Goals (Already Unlocked)
+* View Habit Goals in Survey, Edit them with a top-right edit button leading the habit editor/adder. 
+* When habits are checked, you can press a submit button which pops up. When clicked, the habits are checked and submitted (like the survey) and the rewards are shown.
+Check/Edit To-Do Goals (Already Unlocked)
+* View Habit Goals in Survey, Edit them with a top-right edit button leading the to-do editor/adder. 
+* When to-do’s are checked, you can press a submit button which pops up. When clicked, the to-do’s are checked and submitted (like the survey) and the rewards are shown.
 Logs (Table View) (Unlock For 5 Coins)
 * The Table View of the Logs will have: A Header Row with a stat, and Each Row Would Have A day of statistics from the morning + evening surveys.
 * Columns (Don’t add {} to Row): Date, Mood (Morning), Mood (Evening), # {Day Goals} Comp., # {Day Goals} Incomp, % {Day Goals} Comp., # To-Do, # To-Do F. {Failed}. #To-Do Remain, Rewards {Coins, Shards, XP, Fury}, VIEW JOURNAL INFO {Button For Trivia, Prompt, and Journal Entry}
-* Note 1: Date is a Date, Mood is an Emoji, Everything else is numbers. Then the View Journal Button is a button Opening a modal
+* Note 1: Date is a Date, Mood is an Emoji, Everything else is numbers. Then the View Journal Button is a button Opening the Journal Modal
 * Note 2: Table Page Should be Scrollable Vertically and Horizontally
-* Note 3: The Modal is a Menu Showing: Prompt & Response, The Trivia Question & Results, and Then the Journal Entry, all Labeled.
+* Note 3: The Journal Modal is a Menu Showing: Prompt & Response, The Trivia Question & Results, and Then the Journal Entry, all Labeled.
 Logs (List View) (Unlock For 5 Coins)
 * The List View of the Logs will have: All the Info for Surveys are Listed out in boxes. The Header will be the Date, and at first it’ll show the info that is on the table (# goals & rewards, etc). There’ll then be a dropdown, showing the potential responses & your response of each question (Mood Morning, Mood Night Question, Which Goals Completed & Incompleted, Which To-Do Goals Completed & Failed & Still Needs Done, Prompt, Trivia, Journal Entry, etc) It should be neat, organized, concise, and have emojis.
 Achievements & Statistics (Unlock For 5 Coins)
 * The Top of the Page will Contain Varying Statistics Based on the Surveys Taken. These will be in an organized, decorated box on top of the achievements. (maybe have each of the stats in boxes as well, and decorated, some with emojis):
    * Surveys Header, Then: All-Time Habit Goals Incompleted, All-Time Day Goals Completed, All-Time Day Goals Incompleted, Average Morning Mood, Average Evening Mood, Best Day Goal Streak, Total Prompts Answered, Total Trivia Questions Answered, Trivia Accuracy Rate, Total Journal Entries Written
    * Rewards Header, Then: Total Coins Earned, Total Shards Earned, Total XP Earned, Total Fury Earned, Average Rewards Per Day, Highest Reward Day Ever
-* All the Achievements will Show below these, in 4 columns.
+* All the Achievements will Show below these, in 4 columns. Each Info Box Will Be:
+   * The title of the achievement
+   * An Image/Emoji of the Achievement
+   * Then lastly, the Completion % or Completion _ / _
+   * The Buttons are Clickable, For Which they Popup a Menu showing the expanded achievement
 Dragon Graveyard (Scar Level 2+, Unlock For 10 Coins)
 * The Dragon Graveyard contains info of all passed dragons.
 * Each Graveyard contains the Dragon Name, Age, and Stage, and Cause of Death (Randomized?)
 Ascension (Scar Level 4+, Unlock For 50 Coins)
-* To Ascend, your dragon must be at least a Juvenile (30 Days old), and you must be at least Scar Level 4. 
-* Once you ascend, you must wait at least 7 days to ascend again. 
-* This will sacrifice all your coins, coin generators (to 0), and dragon clickers (to 0), and convert them to dragon souls and dragon shards
+* To Ascend, your dragon must be at least a Dragonet (20 Days old), and you must be at least Scar Level 4. 
+* Also Once you ascend, you must wait until you no longer have the ‘Ascension Sickness’ Effect to ascend again.
+* This will reset all your coins, coin generators (to 0), and dragon clickers (to 0), and convert all coins earned to dragon souls.
    * +(All Coins Earned during Ascension^0.75) Dragon Souls.
-* Ascensions will add 1 million people to the population. 
-* It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 7 days (each ascend, +1 days are added).
+   * Each Ascension Resets the Coins Earned During Ascension.
+* Ascensions will add 1 million people to the population, and does not reset the current population counter
+* It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 7 days (each ascend, +1 days are added. So for the 8th ascension, this would be 14 days since there were 6 previous ascensions).
 * The Ascension Page will contain the dragon-heart.png in images, and then a button to ascend (which will show the requirements below, in a checklist format). The button is grayed out if you can’t ascend. Above the Ascension Button will the the # of Dragon Souls in text (Similar to the Age of dragon in the main page)
-* The Bottom of the Ascension Page Has a “Soul Convertor”, Where every time the button is clicked, Dragon Souls are converted to 1 Dragon Shard. It starts off with requiring 1 Dragon Souls, and multiplies by 1.02* For Every Click, Rounded Down (This Doesn’t Reset)
+* The Bottom of the Ascension Page Has a “Soul Convertor”, Where every time the button is clicked, Dragon Souls are converted to 1 Dragon Shard. It starts off with requiring 1 Dragon Souls, and this cost multiplies by 1.02* For Every Click, Rounded Down (This Never Resets, Unless all User Data is Cleared)
 * The Bottom of the Ascension Page Also Has a “Shop Resetor”, Where every time the button is clicked, The Snack Section of the Shop has the Costs Reset to Defaults. You Can Only Reset the Shop Once Per Ascension. It starts off with requiring 1000 Dragon Souls, and 100 Dragon Shards, Dragon Soul Costs multiplies by 1000* For Every Reset (Dragon Shards Cost Remains 100)
+* Lastly, the Bottom of the Ascension Page Has a “Respec Soul Multipliers”, Where you gain 100% your Dragon Souls Back, Unlocked Through a one-time 5 Soul Cost, But Requires 50 Dragon Shards Everytime to Click the Button (Of course has warning)
+Transcension (Scar Level 8+, Unlock for 100 Coins)
+* Transcending Ritual - your dragon must be at least a Juvenile (30 Days old), and you must be at least Scar Level 8. 
+* Transcending also Requires 1 Billion * 10^(Min(Transcension Count, 20)) People have been killed in that Transcension. Transcending itself has no costs, but has a warning that you are about to transcend.
+   * Dragon Ember is Earned by +(Dragon Souls Earned Total)^0.5, gained after transcending
+   * Each Transcensions do not reset the souls earned total, meaning
+   * Every Dragon Ember you Earn Permanently Increases Max Fury By (How Many You Earned) 
+* Transcending gives the "Transcension Fury X” Effect, dramatically increasing the dragon’s fury by 50 for 7 days 
+* Transcending also gives the lesser “Transcension Fury I” Effect, increasing the dragon’s fury by 5 for 30 additional days 
+* The Bottom of the Transcension Page Has a “Reset Ascension Sickness Time”, Where you Can reset the Ascension Sickness Time Back to 7. You can only do this once a transcension (and cannot be done before first transcension), and is Unlocked with a one-time 50 Ember Cost, and costs 500 Dragon Shards to Click the Button (Of course has warning)
+* The Bottom of the Transcension Page Has a “Respec Draconian Multipliers” Button, Where you gain 100% your Dragon Embers Back, Unlocked Through a one-time 5 Ember Cost, But Requires 50 Dragon Shards Everytime to Click the Button (Of course has warning)
+
+
+________________
+
+
 
 
 Marketing Posts
@@ -1544,7 +1839,7 @@ ________________
 
 Collaboration
 Collaboration
-Preciate it to all the brochachos :3
+Everyone gets a share of money…we do not yet know…
 
 
 ________________

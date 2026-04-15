@@ -66,6 +66,10 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 				<ScrollView style={sectionStyles.goalsScrollView} nestedScrollEnabled>
 					{(goals.habits ?? [])
 						.filter(habit => habit.title && habit.title.trim())
+						.sort((a, b) => {
+							if (!!a.isChallenge !== !!b.isChallenge) return a.isChallenge ? -1 : 1;
+							return (b.streak ?? 0) - (a.streak ?? 0);
+						})
 						.map(habit => {
 							const isCompleted = !!state.checked[habit.id];
 							const isLockedByRefill = isRefill && rewardedHabitIds.includes(habit.id);
@@ -85,12 +89,10 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 											<Text selectable={false} style={[sectionStyles.habitTitle, habit.importance === 'Important+' ? sectionStyles.habitImportantPlus : habit.importance === 'Important' ? sectionStyles.habitImportant : null]}>
 												{habit.title}
 											</Text>
-											<Text selectable={false} style={sectionStyles.habitMeta}>
-												{[habit.category, habit.importance].filter(Boolean).join(' • ')} • Goal Streak {habit.streak ?? 0}
-											</Text>
+											<Text selectable={false} style={sectionStyles.habitMeta}>{[habit.category, habit.importance].filter(Boolean).join(' | ')} | Goal Streak {habit.streak ?? 0}</Text>
 											{habit.isChallenge && habit.challengeLength && (
 												<Text selectable={false} style={{ fontSize: 12, color: '#1565C0', marginTop: 6 }}>
-													Challenge Streak {habit.streak ?? 0}/{habit.challengeLength} • Reward {habit.challengeLength === 7 ? '100 coins • 10 shards' : habit.challengeLength === 14 ? '250 coins • 25 shards' : '750 coins • 60 shards'}
+													Challenge Streak {habit.streak ?? 0}/{habit.challengeLength} | Reward {habit.challengeLength === 7 ? '100 coins | 10 shards' : habit.challengeLength === 14 ? '250 coins | 25 shards' : '750 coins | 75 shards'}
 												</Text>
 											)}
 											{isLockedByRefill && (

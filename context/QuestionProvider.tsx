@@ -1,11 +1,15 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 export type QuestionType = 'advice' | 'quotes' | 'mood' | 'habitGoals' | 'todoGoals' | 'prompts' | 'trivia' | 'journalEntry';
+export type PromptTarget = 'morning' | 'night' | 'both';
+export type JournalPlacement = 'morning' | 'night' | 'both' | 'none';
+export type PromptCategoryKey = 'SelfDiscovery' | 'Reflection' | 'Gratitude' | 'Creative' | 'Mindfulness' | 'Productivity' | 'Relationships';
+export type TriviaCategoryKey = 'General' | 'PopCulture' | 'History' | 'Science' | 'Geography' | 'Sports' | 'LiteratureArts' | 'Food';
 
 export interface CustomEmotion {
 	id: string;
 	emoji: string;
-	description: string; // max 50 chars
+	description: string;
 	furyChange: number;
 	custom: boolean;
 }
@@ -14,7 +18,7 @@ export interface CustomPrompt {
 	id: string;
 	text: string;
 	randomized: boolean;
-	appliesTo: 'morning' | 'evening' | 'both';
+	appliesTo: PromptTarget;
 	custom: boolean;
 }
 
@@ -40,44 +44,27 @@ export interface QuestionSettings {
 		customEmotions: CustomEmotion[];
 	};
 	habitGoals: {
-		enabled: boolean; // always true - required question
+		enabled: boolean;
 		suggestedCategories: string[];
 		customCategories: string[];
 	};
 	todoGoals: {
-		enabled: boolean; // always true - required question
+		enabled: boolean;
 		suggestedCategories: string[];
 		customCategories: string[];
 	};
 	prompts: {
 		enabled: boolean;
-		types: {
-			SelfDiscovery: boolean;
-			Reflection: boolean;
-			Gratitude: boolean;
-			Creative: boolean;
-			Mindfulness: boolean;
-			Productivity: boolean;
-			Relationships: boolean;
-		};
+		types: Record<PromptCategoryKey, boolean>;
 		customPrompts: CustomPrompt[];
 	};
 	trivia: {
-		morningCount: number; // 0-3, default 1
-		eveningCount: number; // 0-3, default 1
-		types: {
-			General: boolean;
-			PopCulture: boolean;
-			History: boolean;
-			Science: boolean;
-			Geography: boolean;
-			Sports: boolean;
-			LiteratureArts: boolean;
-			Food: boolean;
-		};
+		morningCount: number;
+		nightCount: number;
+		types: Record<TriviaCategoryKey, boolean>;
 	};
 	journalEntry: {
-		setting: 'morning' | 'evening' | 'both' | 'none';
+		setting: JournalPlacement;
 		template: string;
 	};
 }
@@ -100,32 +87,49 @@ interface QuestionContextType {
 	updatePromptsEnabled: (enabled: boolean) => void;
 	togglePromptCategory: (category: string) => void;
 	toggleTriviaCategory: (category: string) => void;
-	setTriviaCount: (morning: number, evening: number) => void;
-	setJournalEntry: (setting: 'morning' | 'evening' | 'both' | 'none', template: string) => void;
+	setTriviaCount: (morning: number, night: number) => void;
+	setJournalEntry: (setting: JournalPlacement, template: string) => void;
 }
 
 const QuestionContext = createContext<QuestionContextType | undefined>(undefined);
 
-// Default habit categories
-const DEFAULT_HABIT_CATEGORIES = ['Physical', 'Mental', 'Personal', 'Social', 'Creative', 'Wellness'];
+export const DEFAULT_HABIT_CATEGORIES = ['Physical', 'Mental', 'Personal', 'Social', 'Creative', 'Wellness'];
+export const DEFAULT_TODO_CATEGORIES = ['Physical', 'Mental', 'Personal', 'Social', 'Creative', 'Wellness', 'Learning'];
 
-// Default todo categories
-const DEFAULT_TODO_CATEGORIES = ['Physical', 'Mental', 'Personal', 'Social', 'Creative', 'Learning'];
+export const PROMPT_CATEGORY_OPTIONS: Array<{ key: PromptCategoryKey; label: string }> = [
+	{ key: 'SelfDiscovery', label: 'Self Discovery' },
+	{ key: 'Reflection', label: 'Reflection' },
+	{ key: 'Gratitude', label: 'Gratitude' },
+	{ key: 'Creative', label: 'Creative' },
+	{ key: 'Mindfulness', label: 'Mindfulness' },
+	{ key: 'Productivity', label: 'Productivity' },
+	{ key: 'Relationships', label: 'Relationships' },
+];
 
-// Default emotions
-const DEFAULT_EMOTIONS: CustomEmotion[] = [
-	{ id: '1', emoji: '😭', description: 'Devastated', furyChange: 10, custom: false },
-	{ id: '2', emoji: '😢', description: 'Sad', furyChange: 6, custom: false },
-	{ id: '3', emoji: '😟', description: 'Worried', furyChange: 3, custom: false },
-	{ id: '4', emoji: '😕', description: 'Confused', furyChange: 1, custom: false },
+export const TRIVIA_CATEGORY_OPTIONS: Array<{ key: TriviaCategoryKey; label: string }> = [
+	{ key: 'General', label: 'General' },
+	{ key: 'PopCulture', label: 'Pop Culture' },
+	{ key: 'History', label: 'History' },
+	{ key: 'Science', label: 'Science' },
+	{ key: 'Geography', label: 'Geography' },
+	{ key: 'Sports', label: 'Sports' },
+	{ key: 'LiteratureArts', label: 'Literature / Arts' },
+	{ key: 'Food', label: 'Food' },
+];
+
+export const DEFAULT_EMOTIONS: CustomEmotion[] = [
+	{ id: '1', emoji: '😭', description: 'Devastated', furyChange: 8, custom: false },
+	{ id: '2', emoji: '😢', description: 'Sad', furyChange: 5, custom: false },
+	{ id: '3', emoji: '😟', description: 'Worried', furyChange: 2, custom: false },
+	{ id: '4', emoji: '😕', description: 'Uneasy', furyChange: 1, custom: false },
 	{ id: '5', emoji: '😐', description: 'Neutral', furyChange: 0, custom: false },
 	{ id: '6', emoji: '🙂', description: 'Okay', furyChange: -1, custom: false },
-	{ id: '7', emoji: '😊', description: 'Content', furyChange: -3, custom: false },
-	{ id: '8', emoji: '😃', description: 'Happy', furyChange: -5, custom: false },
-	{ id: '9', emoji: '😁', description: 'Cheerful', furyChange: -7, custom: false },
+	{ id: '7', emoji: '😊', description: 'Content', furyChange: -2, custom: false },
+	{ id: '8', emoji: '😄', description: 'Happy', furyChange: -4, custom: false },
+	{ id: '9', emoji: '😁', description: 'Cheerful', furyChange: -6, custom: false },
 	{ id: '10', emoji: '🤩', description: 'Excited', furyChange: -8, custom: false },
-	{ id: '11', emoji: '😤', description: 'Frustrated', furyChange: 5, custom: false },
-	{ id: '12', emoji: '😡', description: 'Angry', furyChange: 9, custom: false },
+	{ id: '11', emoji: '😤', description: 'Frustrated', furyChange: 4, custom: false },
+	{ id: '12', emoji: '😡', description: 'Angry', furyChange: 7, custom: false },
 ];
 
 const DEFAULT_SETTINGS: QuestionSettings = {
@@ -175,14 +179,14 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 				id: '1',
 				text: 'What was your biggest accomplishment today?',
 				randomized: false,
-				appliesTo: 'evening',
+				appliesTo: 'night',
 				custom: false,
 			},
 		],
 	},
 	trivia: {
 		morningCount: 1,
-		eveningCount: 1,
+		nightCount: 1,
 		types: {
 			General: true,
 			PopCulture: true,
@@ -198,6 +202,33 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 		setting: 'both',
 		template: '',
 	},
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const mapPromptCategoryKey = (category: string): PromptCategoryKey => {
+	switch (category) {
+		case 'Self-Discovery':
+		case 'Self Discovery':
+			return 'SelfDiscovery';
+		case 'Fun & Creative':
+			return 'Creative';
+		default:
+			return (category in DEFAULT_SETTINGS.prompts.types ? category : 'Reflection') as PromptCategoryKey;
+	}
+};
+
+const mapTriviaCategoryKey = (category: string): TriviaCategoryKey => {
+	switch (category) {
+		case 'General Knowledge':
+			return 'General';
+		case 'Pop Culture':
+			return 'PopCulture';
+		case 'Literature / Arts':
+			return 'LiteratureArts';
+		default:
+			return (category in DEFAULT_SETTINGS.trivia.types ? category : 'General') as TriviaCategoryKey;
+	}
 };
 
 export function QuestionProvider({ children }: { children: ReactNode }) {
@@ -234,11 +265,24 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const addCustomEmotion = (emotion: CustomEmotion) => {
+		const emoji = emotion.emoji.trim();
+		const description = emotion.description.trim().slice(0, 50);
+		if (!emoji || !description) return;
+
 		setQuestionSettings(prev => ({
 			...prev,
 			mood: {
 				...prev.mood,
-				customEmotions: [...prev.mood.customEmotions, emotion],
+				customEmotions: [
+					...prev.mood.customEmotions,
+					{
+						...emotion,
+						emoji,
+						description,
+						furyChange: clamp(Math.round(emotion.furyChange), -8, 8),
+						custom: true,
+					},
+				],
 			},
 		}));
 	};
@@ -248,7 +292,7 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			...prev,
 			mood: {
 				...prev.mood,
-				customEmotions: prev.mood.customEmotions.filter(e => e.id !== id),
+				customEmotions: prev.mood.customEmotions.filter(emotion => emotion.id !== id),
 			},
 		}));
 	};
@@ -265,13 +309,20 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const addHabitCategory = (name: string) => {
-		setQuestionSettings(prev => ({
-			...prev,
-			habitGoals: {
-				...prev.habitGoals,
-				customCategories: [...prev.habitGoals.customCategories, name],
-			},
-		}));
+		const trimmed = name.trim();
+		if (!trimmed) return;
+
+		setQuestionSettings(prev => {
+			const existing = new Set([...prev.habitGoals.suggestedCategories, ...prev.habitGoals.customCategories].map(category => category.toLowerCase()));
+			if (existing.has(trimmed.toLowerCase())) return prev;
+			return {
+				...prev,
+				habitGoals: {
+					...prev.habitGoals,
+					customCategories: [...prev.habitGoals.customCategories, trimmed],
+				},
+			};
+		});
 	};
 
 	const removeHabitCategory = (name: string) => {
@@ -279,7 +330,7 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			...prev,
 			habitGoals: {
 				...prev.habitGoals,
-				customCategories: prev.habitGoals.customCategories.filter(c => c !== name),
+				customCategories: prev.habitGoals.customCategories.filter(category => category !== name),
 			},
 		}));
 	};
@@ -296,13 +347,20 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const addTodoCategory = (name: string) => {
-		setQuestionSettings(prev => ({
-			...prev,
-			todoGoals: {
-				...prev.todoGoals,
-				customCategories: [...prev.todoGoals.customCategories, name],
-			},
-		}));
+		const trimmed = name.trim();
+		if (!trimmed) return;
+
+		setQuestionSettings(prev => {
+			const existing = new Set([...prev.todoGoals.suggestedCategories, ...prev.todoGoals.customCategories].map(category => category.toLowerCase()));
+			if (existing.has(trimmed.toLowerCase())) return prev;
+			return {
+				...prev,
+				todoGoals: {
+					...prev.todoGoals,
+					customCategories: [...prev.todoGoals.customCategories, trimmed],
+				},
+			};
+		});
 	};
 
 	const removeTodoCategory = (name: string) => {
@@ -310,17 +368,27 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			...prev,
 			todoGoals: {
 				...prev.todoGoals,
-				customCategories: prev.todoGoals.customCategories.filter(c => c !== name),
+				customCategories: prev.todoGoals.customCategories.filter(category => category !== name),
 			},
 		}));
 	};
 
 	const addCustomPrompt = (prompt: CustomPrompt) => {
+		const text = prompt.text.trim();
+		if (!text) return;
+
 		setQuestionSettings(prev => ({
 			...prev,
 			prompts: {
 				...prev.prompts,
-				customPrompts: [...prev.prompts.customPrompts, prompt],
+				customPrompts: [
+					...prev.prompts.customPrompts,
+					{
+						...prompt,
+						text,
+						custom: true,
+					},
+				],
 			},
 		}));
 	};
@@ -330,7 +398,7 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			...prev,
 			prompts: {
 				...prev.prompts,
-				customPrompts: prev.prompts.customPrompts.filter(p => p.id !== id),
+				customPrompts: prev.prompts.customPrompts.filter(prompt => prompt.id !== id),
 			},
 		}));
 	};
@@ -346,30 +414,7 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const togglePromptCategory = (category: string) => {
-		// map external category names to keys
-		const mapKey = (c: string) => {
-			switch (c) {
-				case 'Self-Discovery':
-					return 'SelfDiscovery';
-				case 'Mindfulness':
-					return 'Mindfulness';
-				case 'Productivity':
-					return 'Productivity';
-				case 'Relationships':
-					return 'Relationships';
-				case 'Reflection':
-					return 'Reflection';
-				case 'Gratitude':
-					return 'Gratitude';
-				case 'Fun & Creative':
-				case 'Creative':
-					return 'Creative';
-				default:
-					return c;
-			}
-		};
-
-		const key = mapKey(category) as keyof typeof DEFAULT_SETTINGS.prompts.types;
+		const key = mapPromptCategoryKey(category);
 		setQuestionSettings(prev => ({
 			...prev,
 			prompts: {
@@ -383,30 +428,7 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const toggleTriviaCategory = (category: string) => {
-		const mapKey = (c: string) => {
-			switch (c) {
-				case 'General Knowledge':
-					return 'GeneralKnowledge';
-				case 'Pop Culture':
-					return 'PopCulture';
-				case 'History':
-					return 'History';
-				case 'Science':
-					return 'Science';
-				case 'Geography':
-					return 'Geography';
-				case 'Sports':
-					return 'Sports';
-				case 'Literature / Arts':
-					return 'LiteratureArts';
-				case 'Food':
-					return 'Food';
-				default:
-					return c;
-			}
-		};
-
-		const key = mapKey(category) as keyof typeof DEFAULT_SETTINGS.trivia.types;
+		const key = mapTriviaCategoryKey(category);
 		setQuestionSettings(prev => ({
 			...prev,
 			trivia: {
@@ -419,18 +441,18 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 		}));
 	};
 
-	const setTriviaCount = (morning: number, evening: number) => {
+	const setTriviaCount = (morning: number, night: number) => {
 		setQuestionSettings(prev => ({
 			...prev,
 			trivia: {
 				...prev.trivia,
-				morningCount: Math.max(0, Math.min(3, morning)),
-				eveningCount: Math.max(0, Math.min(3, evening)),
+				morningCount: clamp(morning, 0, 3),
+				nightCount: clamp(night, 0, 3),
 			},
 		}));
 	};
 
-	const setJournalEntry = (setting: 'morning' | 'evening' | 'both' | 'none', template: string) => {
+	const setJournalEntry = (setting: JournalPlacement, template: string) => {
 		setQuestionSettings(prev => ({
 			...prev,
 			journalEntry: {

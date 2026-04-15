@@ -1,5 +1,5 @@
 import { Text, View } from '@/components/Themed';
-import { PROMPTS, type WrittenPrompt } from '@/constants/prompts';
+import { PROMPTS, type WrittenPrompt } from '@/data/prompts-data';
 import { useQuestions, type QuestionSettings, type CustomPrompt } from '@/context/QuestionProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -64,7 +64,11 @@ export function useShortAnswersSection({ surveyType, questionSettings, randomPro
 	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enablePrompts ?? survey.options.enableProjectQuestion ?? true;
-	const resolvedRandomCount = randomPromptCount ?? survey.options.randomPromptCount ?? 0;
+	const resolvedRandomCount =
+		randomPromptCount ??
+		(surveyType === 'morning'
+			? survey.options.randomPromptMorningCount ?? survey.options.randomPromptCount ?? 0
+			: survey.options.randomPromptNightCount ?? survey.options.randomPromptCount ?? 0);
 	const isEnabled = resolvedEnable && resolvedSettings.prompts.enabled;
 
 	const enabledPromptPool = useMemo(() => {
@@ -74,7 +78,7 @@ export function useShortAnswersSection({ surveyType, questionSettings, randomPro
 
 	const customPromptsForSurvey = useMemo(() => {
 		if (!isEnabled) return [] as CustomPrompt[];
-		return (resolvedSettings.prompts.customPrompts ?? []).filter(p => p.appliesTo === 'both' || (surveyType === 'morning' ? p.appliesTo === 'morning' : p.appliesTo === 'evening'));
+		return (resolvedSettings.prompts.customPrompts ?? []).filter(p => p.appliesTo === 'both' || (surveyType === 'morning' ? p.appliesTo === 'morning' : p.appliesTo === 'night'));
 	}, [isEnabled, resolvedSettings.prompts.customPrompts, surveyType]);
 
 	const fixedCustom = useMemo(() => customPromptsForSurvey.filter(p => !p.randomized), [customPromptsForSurvey]);

@@ -5,6 +5,8 @@ interface StreakContextType {
   lastSurveyDate: string | null; // ISO date string
   incrementStreak: () => void;
   resetStreak: () => void;
+  setStreak: (value: number) => void;
+  adjustStreak: (delta: number) => void;
   getStreak: () => number;
   setLastSurveyDate: (date: string) => void;
 }
@@ -50,6 +52,14 @@ export function StreakProvider({ children }: { children: ReactNode }) {
     setLastSurveyDate(null);
   };
 
+  const setStreakValue = (value: number) => {
+    setStreak(Math.max(0, Math.floor(value)));
+  };
+
+  const adjustStreak = (delta: number) => {
+    setStreak(prev => Math.max(0, Math.floor(prev + delta)));
+  };
+
   const getStreak = () => streak;
 
   return (
@@ -59,6 +69,8 @@ export function StreakProvider({ children }: { children: ReactNode }) {
         lastSurveyDate,
         incrementStreak,
         resetStreak,
+        setStreak: setStreakValue,
+        adjustStreak,
         getStreak,
         setLastSurveyDate,
       }}

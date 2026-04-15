@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface SurveyOptions {
 	showQuote: boolean;
@@ -10,6 +10,8 @@ interface SurveyOptions {
 	enableAdvice?: boolean;
 	adviceScarLevel?: number;
 	randomPromptCount?: number;
+	randomPromptMorningCount?: number;
+	randomPromptNightCount?: number;
 	enableRandomMC?: boolean;
 	quoteMorning?: boolean;
 }
@@ -23,6 +25,7 @@ interface SurveyContextType {
 	completeMorningSurvey: () => void;
 	completeNightSurvey: () => void;
 	resetDailySurveys: () => void;
+	forceNewDay: () => void;
 	setLastMorningSurveyDate: (date: string | null) => void;
 	setLastNightSurveyDate: (date: string | null) => void;
 	canTakeMorningSurvey: () => boolean;
@@ -51,7 +54,6 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	const [lastMorningSurveyDate, setLastMorningSurveyDate] = useState<string | null>(null);
 	const [lastNightSurveyDate, setLastNightSurveyDate] = useState<string | null>(null);
 	const [currentSurveyType, setCurrentSurveyType] = useState<'morning' | 'night' | null>(null);
-	const [surveyProgress, setSurveyProgress] = useState(0); // 0-100
 	const [savedMorning, setSavedMorning] = useState<any | null>(null);
 	const [savedNight, setSavedNight] = useState<any | null>(null);
 	const [eveningPromptsByDate, setEveningPromptsByDate] = useState<Record<string, string[]>>({});
@@ -65,13 +67,16 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 		enableAdvice: true,
 		adviceScarLevel: 2,
 		randomPromptCount: 1,
+		randomPromptMorningCount: 1,
+		randomPromptNightCount: 1,
 		enableRandomMC: true,
 		quoteMorning: true,
 	});
 
-	const today = new Date().toISOString().split('T')[0];
+	const getTodayKey = () => new Date().toISOString().split('T')[0];
 
 	const resetDailySurveys = () => {
+		const today = getTodayKey();
 		// This logic handles resetting the "Complete" status when a new day starts
 		if (lastMorningSurveyDate !== today) {
 			setMorningSurveyCompleted(false);
@@ -84,7 +89,22 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 		}
 	};
 
+	const forceNewDay = () => {
+		const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+		setLastMorningSurveyDate(yesterday);
+		setLastNightSurveyDate(yesterday);
+		setMorningSurveyCompleted(false);
+		setNightSurveyCompleted(false);
+		setSavedMorning(null);
+		setSavedNight(null);
+	};
+
+	useEffect(() => {
+		resetDailySurveys();
+	}, [lastMorningSurveyDate, lastNightSurveyDate]);
+
 	const completeMorningSurvey = () => {
+		const today = getTodayKey();
 		setMorningSurveyCompleted(true);
 		setLastMorningSurveyDate(today);
 		// Note: We DO NOT clear savedMorning here.
@@ -92,6 +112,7 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	};
 
 	const completeNightSurvey = () => {
+		const today = getTodayKey();
 		setNightSurveyCompleted(true);
 		setLastNightSurveyDate(today);
 		// Note: We DO NOT clear savedNight here.
@@ -153,10 +174,12 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 	};
 
 	const getMorningProgress = (): number => {
+		const today = getTodayKey();
 		return morningSurveyCompleted && lastMorningSurveyDate === today ? 100 : 0;
 	};
 
 	const getNightProgress = (): number => {
+		const today = getTodayKey();
 		return nightSurveyCompleted && lastNightSurveyDate === today ? 100 : 0;
 	};
 
@@ -175,6 +198,7 @@ export function SurveyProvider({ children }: { children: ReactNode }) {
 				completeMorningSurvey,
 				completeNightSurvey,
 				resetDailySurveys,
+				forceNewDay,
 				setLastMorningSurveyDate,
 				setLastNightSurveyDate,
 				canTakeMorningSurvey,

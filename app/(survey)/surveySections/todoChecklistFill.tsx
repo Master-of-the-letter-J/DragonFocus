@@ -3,7 +3,7 @@ import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import { Alert, Pressable, ScrollView } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
 
@@ -12,6 +12,42 @@ export interface TodoChecklistFillState {
 }
 
 export type TodoChecklistFillSetState = React.Dispatch<React.SetStateAction<TodoChecklistFillState>>;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const toDateKey = (value: number | string | Date) => {
+	const date = value instanceof Date ? value : new Date(value);
+	return date.toISOString().split('T')[0];
+};
+
+const toStartOfDayMs = (dateKey: string) => new Date(`${dateKey}T00:00:00`).getTime();
+
+const getTodoLockReason = (todo: TodoGoal, today: string) => {
+	if ((todo.subGoals ?? []).some(subGoal => !subGoal.completed)) {
+		return 'Complete all sub-goals before finishing this to-do.';
+	}
+
+	const todayMs = toStartOfDayMs(today);
+	const createdKey = toDateKey(todo.createdAt);
+	const createdMs = toStartOfDayMs(createdKey);
+
+	if (todo.dueDate) {
+		const dueMs = toStartOfDayMs(todo.dueDate);
+		if (Number.isNaN(dueMs)) return 'This to-do needs a valid due date before it can be completed.';
+		const isSameDayGoal = todo.dueDate === createdKey;
+		const eligibleAtMs = isSameDayGoal ? createdMs : Math.max(createdMs + DAY_MS, dueMs - DAY_MS * 3);
+		if (todayMs < eligibleAtMs) {
+			return `This to-do unlocks for completion on ${new Date(eligibleAtMs).toISOString().split('T')[0]}.`;
+		}
+		return null;
+	}
+
+	if (todayMs < createdMs + DAY_MS) {
+		return `This to-do unlocks for completion on ${new Date(createdMs + DAY_MS).toISOString().split('T')[0]}.`;
+	}
+
+	return null;
+};
 
 export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFillState> & {
 	getCompletionSnapshot: () => { updatedTodos: TodoGoal[]; completedTodoIds: string[] };
@@ -38,15 +74,27 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 	const getCompletionSnapshot = useCallback(() => {
 		const updatedTodos = (goals.todos ?? []).map(todo => {
 			if (!state.checked[todo.id]) return todo;
+			if (getTodoLockReason(todo, today)) return todo;
 			if (todo.completedDate === today) return todo;
 			return { ...todo, completedDate: today, failed: false, failedDate: null, challengeStatus: todo.isChallenge ? 'completed' : todo.challengeStatus };
 		});
-		const completedTodoIds = (goals.todos ?? []).filter(todo => state.checked[todo.id] && !(isRefill && rewardedTodoIds.includes(todo.id))).map(todo => todo.id);
+		const completedTodoIds = (goals.todos ?? [])
+			.filter(todo => state.checked[todo.id] && !getTodoLockReason(todo, today) && !(isRefill && rewardedTodoIds.includes(todo.id)))
+			.map(todo => todo.id);
 		return { updatedTodos, completedTodoIds };
 	}, [goals.todos, isRefill, rewardedTodoIds, state.checked, today]);
 
 	const render = useCallback(() => {
-		const visibleTodos = (goals.todos ?? []).filter(todo => todo.title && todo.title.trim()).filter(todo => !(isRefill && rewardedTodoIds.includes(todo.id)));
+		const visibleTodos = (goals.todos ?? [])
+			.filter(todo => todo.title && todo.title.trim())
+			.filter(todo => !(isRefill && rewardedTodoIds.includes(todo.id)))
+			.sort((a, b) => {
+				if (!!a.isChallenge !== !!b.isChallenge) return a.isChallenge ? -1 : 1;
+				if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+				if (a.dueDate && !b.dueDate) return -1;
+				if (!a.dueDate && b.dueDate) return 1;
+				return a.createdAt - b.createdAt;
+			});
 
 		return (
 			<View>
@@ -56,20 +104,47 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 				<ScrollView style={sectionStyles.goalsScrollView} nestedScrollEnabled>
 					{visibleTodos.map(todo => {
 						const isCompleted = !!state.checked[todo.id];
+						const lockReason = getTodoLockReason(todo, today);
+						const isLocked = !!lockReason;
 
 						return (
-							<View key={todo.id} style={[sectionStyles.todoItem, isCompleted ? sectionStyles.todoCompleted : null]}>
+							<View
+								key={todo.id}
+								style={[
+									sectionStyles.todoItem,
+									todo.importance === 'Important+' ? sectionStyles.todoImportantPlus : todo.importance === 'Important' ? sectionStyles.todoImportant : null,
+									todo.isChallenge ? sectionStyles.challengeRow : null,
+									isCompleted ? sectionStyles.todoCompleted : null,
+									isLocked ? { opacity: 0.65 } : null,
+								]}>
 								<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
 									<Text selectable={false} style={[sectionStyles.habitTitle, { textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>
 										{todo.title}
 									</Text>
-									<Checkbox value={isCompleted} onValueChange={value => setState(prev => ({ ...prev, checked: { ...prev.checked, [todo.id]: value } }))} />
+									<Checkbox
+										value={isCompleted}
+										onValueChange={value => {
+											if (lockReason) {
+												Alert.alert('To-Do Locked', lockReason);
+												return;
+											}
+											setState(prev => ({ ...prev, checked: { ...prev.checked, [todo.id]: value } }));
+										}}
+									/>
 								</View>
 
 								<Text style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
 									{[todo.category, todo.importance].filter(Boolean).join(' - ')}
 									{todo.dueDate ? `${todo.category || todo.importance ? ' - ' : ''}Due ${todo.dueDate}` : ''}
 								</Text>
+
+								{todo.isChallenge ? (
+									<Text style={{ fontSize: 12, color: '#1565C0', marginTop: 6 }}>
+										Challenge reward: {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
+									</Text>
+								) : null}
+
+								{lockReason ? <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>{lockReason}</Text> : null}
 
 								{todo.subGoals.length > 0 ? (
 									<View style={{ marginTop: 8 }}>

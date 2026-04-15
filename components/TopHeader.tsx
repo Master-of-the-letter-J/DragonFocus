@@ -6,6 +6,7 @@ import { useFury } from '@/context/FuryProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ProgressBar from './ProgressBar';
@@ -14,9 +15,14 @@ interface TopHeaderProps {
 	isHomePage?: boolean;
 }
 
-export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
-	void isHomePage;
+const formatFireXp = (value: number) => {
+	if (value < 1_000) return Math.floor(value).toString();
+	if (value < 1_000_000_000_000) return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+	return value.toExponential(1).replace('+', '');
+};
 
+export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
+	const router = useRouter();
 	const dragon = useDragon();
 	const scarLevel = useScarLevel();
 	const streak = useStreak();
@@ -37,7 +43,7 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	const healthColor = healthPercent < 33 ? '#e74c3c' : healthPercent < 67 ? '#f39c12' : '#27ae60';
 
 	const currentLevel = scarLevel.getCurrentLevelInfo();
-	const isMaxScarLevel = scarLevel.currentScarLevel >= 10;
+	const isMaxScarLevel = scarLevel.getNextLevelInfo() === null;
 	const xpGoal = Math.max(1, currentLevel.levelUpRequiredXP || 1);
 	const xpPercent = isMaxScarLevel ? 100 : Math.min(100, (scarLevel.currentXP / xpGoal) * 100);
 
@@ -58,11 +64,25 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	return (
 		<Pressable onPress={() => setActiveStat(null)}>
 			<View style={styles.container}>
+				<View style={styles.statWrapperSmall}>
+					<Pressable style={styles.stat} onPress={() => router.push('/pages/premium')}>
+						<MaterialIcons name="auto-awesome" size={18} color="#7C3AED" />
+						<Text style={styles.statText}>Pact</Text>
+					</Pressable>
+				</View>
+
+				<View style={styles.statWrapperSmall}>
+					<Pressable style={styles.stat} onPress={() => router.push('/pages/settings')}>
+						<MaterialIcons name="settings" size={18} color="#374151" />
+						<Text style={styles.statText}>Settings</Text>
+					</Pressable>
+				</View>
+
 				<View style={styles.statWrapper}>
 					<Pressable onPress={() => setActiveStat('Scar Level')}>
 						<ProgressBar progress={xpPercent} outerStyle={[styles.progressOuter, dangerOutline && styles.dangerBarOutline]} innerStyle={{ backgroundColor: '#3cc8e7' }} />
 						<Text style={styles.progressText}>
-							Scar {scarLevel.currentScarLevel} ({currentLevel.name}) {isMaxScarLevel ? '• Maxed' : `• ${Math.floor(scarLevel.currentXP)} / ${xpGoal} Fire XP`}
+							Scar {scarLevel.currentScarLevel} ({currentLevel.name}) {isMaxScarLevel ? '| Maxed' : `| ${formatFireXp(scarLevel.currentXP)} / ${formatFireXp(xpGoal)} Fire XP`}
 						</Text>
 					</Pressable>
 					{activeStat === 'Scar Level' && <Tooltip text="Fire XP and Scar Level" />}

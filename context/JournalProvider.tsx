@@ -27,6 +27,13 @@ export interface JournalEntry {
 	todoCount?: number;
 	todoCompleted?: number;
 	todoFailed?: number;
+	plannedHabitTitles?: string[];
+	plannedTodoTitles?: string[];
+	completedHabitTitles?: string[];
+	remainingHabitTitles?: string[];
+	completedTodoTitles?: string[];
+	pendingTodoTitles?: string[];
+	failedTodoTitles?: string[];
 }
 
 export interface JournalDay {

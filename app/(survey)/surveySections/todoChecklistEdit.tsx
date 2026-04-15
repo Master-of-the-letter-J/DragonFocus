@@ -1,5 +1,5 @@
 import { Text, View } from '@/components/Themed';
-import { GOAL_TODO_ADVICE } from '@/constants/advice';
+import { GOAL_TODO_ADVICE } from '@/data/advice-data';
 import { TodoEditor } from '@/components/goalEditor';
 import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
 import { usePremium } from '@/context/PremiumProvider';
@@ -76,7 +76,15 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 
 			return (
 				<ScaleDecorator>
-					<TouchableOpacity activeOpacity={0.95} disabled={isActive} style={[sectionStyles.todoItem, isChallengeTodo ? { backgroundColor: '#E8F4FF' } : null, isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null]}>
+					<TouchableOpacity
+						activeOpacity={0.95}
+						disabled={isActive}
+						style={[
+							sectionStyles.todoItem,
+							todo.importance === 'Important+' ? sectionStyles.todoImportantPlus : todo.importance === 'Important' ? sectionStyles.todoImportant : null,
+							isChallengeTodo ? { backgroundColor: '#E8F4FF' } : null,
+							isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null,
+						]}>
 						<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
 							<View style={{ flex: 1 }}>
 								<Text selectable={false} style={sectionStyles.habitTitle}>
@@ -103,6 +111,12 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 								</Pressable>
 							</View>
 						</View>
+
+						{isChallengeTodo ? (
+							<Text style={{ fontSize: 12, color: '#1565C0', marginTop: 8 }}>
+								Challenge active | reward {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
+							</Text>
+						) : null}
 
 						{todo.subGoals.length > 0 ? (
 							<View style={{ marginTop: 8 }}>
@@ -153,6 +167,9 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 					}
 					ListFooterComponent={
 						<View>
+							<Text style={{ marginTop: 8, fontSize: 12, color: '#6B7280' }}>
+								To-Do slots: {state.localTodos.length} / {premium.isPremium ? 'Unlimited' : todoLimit}
+							</Text>
 							<Pressable
 								style={[sectionStyles.smallButton, !canAddMoreTodos ? sectionStyles.buttonDisabled : null]}
 								onPress={() => (canAddMoreTodos ? goals.addTodo?.({ title: 'New To-Do' }) : null)}

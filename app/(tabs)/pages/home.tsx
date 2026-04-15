@@ -4,7 +4,8 @@ import TopHeader from '@/components/TopHeader';
 import { images } from '@/constants';
 import { useDragonClicking } from '@/context/DragonClickingProvider';
 import { useDragon } from '@/context/DragonProvider';
-import { useItems } from '@/context/ItemsProvider';
+import { useItemEconomy } from '@/context/ItemEconomyProvider';
+import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { usePopulation } from '@/context/PopulationProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import { useToast } from '@/context/ToastProvider';
@@ -26,7 +27,8 @@ const formatDuration = (seconds: number) => {
 
 export default function HomePage() {
 	const dragon = useDragon();
-	const items = useItems();
+	const itemEconomy = useItemEconomy();
+	const itemSnacks = useItemSnacks();
 	const dragonClicking = useDragonClicking();
 	const router = useRouter();
 	const survey = useSurvey();
@@ -44,16 +46,16 @@ export default function HomePage() {
 	const morningPercent = survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today ? 100 : (savedMorning?.progressPercent ?? 0);
 	const nightPercent = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today ? 100 : (savedNight?.progressPercent ?? 0);
 
-	const ownedSnacks = useMemo(() => items.shopItems.filter(item => item.type === 'snack' && (items.ownedItems[item.id] || 0) > 0), [items.ownedItems, items.shopItems]);
-	const totalSnackCount = ownedSnacks.reduce((sum, snack) => sum + (items.ownedItems[snack.id] || 0), 0);
-	const effectList = items.getEffectDisplayList();
+	const ownedSnacks = useMemo(() => itemSnacks.snackItems.filter(item => (itemSnacks.ownedItems[item.id] || 0) > 0), [itemSnacks.ownedItems, itemSnacks.snackItems]);
+	const totalSnackCount = ownedSnacks.reduce((sum, snack) => sum + (itemSnacks.ownedItems[snack.id] || 0), 0);
+	const effectList = itemSnacks.getEffectDisplayList();
 
 	useEffect(() => {
-		if (!items.snackToast) return;
+		if (!itemSnacks.snackToast) return;
 		showToast(
 			{
-				title: items.snackToast.name,
-				message: items.snackToast.topEffect,
+				title: itemSnacks.snackToast.name,
+				message: itemSnacks.snackToast.topEffect,
 				shadowColor: '#0EA5E9',
 				textColor: '#111827',
 				shadowAmount: 16,
@@ -61,12 +63,12 @@ export default function HomePage() {
 			},
 			{ durationMs: 1600 },
 		);
-		items.consumeSnackToast();
-	}, [items, showToast]);
+		itemSnacks.consumeSnackToast();
+	}, [itemSnacks, showToast]);
 
 	useEffect(() => {
-		if (items.pendingIdleSummary) setIdleModalOpen(true);
-	}, [items.pendingIdleSummary]);
+		if (itemEconomy.pendingIdleSummary) setIdleModalOpen(true);
+	}, [itemEconomy.pendingIdleSummary]);
 
 	useEffect(() => {
 		if (!dragon.lastLifecycleEvent) return;
@@ -79,7 +81,7 @@ export default function HomePage() {
 		}
 
 		if (dragon.lastLifecycleEvent.type === 'died') {
-			items.addCustomEffect?.({
+			itemSnacks.addCustomEffect?.({
 				sourceItemId: 'status_mourning_1',
 				name: 'Mourning I',
 				furyPerDay: 20,
@@ -101,7 +103,7 @@ export default function HomePage() {
 		}
 
 		dragon.clearLifecycleEvent();
-	}, [dragon, items]);
+	}, [dragon, itemSnacks]);
 
 	const getSurveyButtonState = (type: 'morning' | 'night') => {
 		const isCompleted = type === 'morning' ? survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today : survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
@@ -169,7 +171,7 @@ export default function HomePage() {
 							hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
 							onPress={() => {
 								dragonClicking.addClick();
-								const reward = items.processDragonClick();
+								const reward = itemEconomy.processDragonClick();
 								if (reward > 0) {
 									showToast({ title: 'Dragon Click', message: `+${reward.toFixed(2)} coins`, shadowColor: '#F59E0B', backgroundColor: '#FFFBEB' }, { durationMs: 900 });
 								}
@@ -225,9 +227,9 @@ export default function HomePage() {
 									<View style={{ flex: 1 }}>
 										<Text style={styles.snackName}>{snack.name}</Text>
 										<Text style={styles.modalText}>{snack.description}</Text>
-										<Text style={styles.modalText}>Owned: {items.ownedItems[snack.id] || 0}</Text>
+										<Text style={styles.modalText}>Owned: {itemSnacks.ownedItems[snack.id] || 0}</Text>
 									</View>
-									<Pressable style={styles.useSnackBtn} onPress={() => items.useItem(snack.id)}>
+									<Pressable style={styles.useSnackBtn} onPress={() => itemSnacks.useSnack(snack.id)}>
 										<Text style={styles.useSnackBtnText}>Use</Text>
 									</Pressable>
 								</View>
@@ -240,28 +242,28 @@ export default function HomePage() {
 				</View>
 			</Modal>
 
-			<Modal visible={idleModalOpen && !!items.pendingIdleSummary} transparent animationType="fade" onRequestClose={() => {
+			<Modal visible={idleModalOpen && !!itemEconomy.pendingIdleSummary} transparent animationType="fade" onRequestClose={() => {
 				setIdleModalOpen(false);
-				items.consumeIdleSummary();
+				itemEconomy.consumeIdleSummary();
 			}}>
 				<View style={styles.modalBackdrop}>
 					<View style={styles.modalCard}>
 						<Text style={styles.modalTitle}>Idle Rewards</Text>
-						{items.pendingIdleSummary && (
+						{itemEconomy.pendingIdleSummary && (
 							<View>
-								<Text style={styles.modalText}>Away for: {formatDuration(items.pendingIdleSummary.elapsedSeconds)}</Text>
-								<Text style={styles.modalText}>Coins earned: +{items.pendingIdleSummary.coins.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Fire XP earned: +{items.pendingIdleSummary.fireXp.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Shards earned: +{items.pendingIdleSummary.shards}</Text>
-								<Text style={styles.modalText}>Fury earned: +{items.pendingIdleSummary.furyEarned.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Fury lost: -{items.pendingIdleSummary.furyLost.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Health earned: +{items.pendingIdleSummary.healthEarned.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Health lost: -{items.pendingIdleSummary.healthLost.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Away for: {formatDuration(itemEconomy.pendingIdleSummary.elapsedSeconds)}</Text>
+								<Text style={styles.modalText}>Coins earned: +{itemEconomy.pendingIdleSummary.coins.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Fire XP earned: +{itemEconomy.pendingIdleSummary.fireXp.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Shards earned: +{itemEconomy.pendingIdleSummary.shards}</Text>
+								<Text style={styles.modalText}>Fury earned: +{itemEconomy.pendingIdleSummary.furyEarned.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Fury lost: -{itemEconomy.pendingIdleSummary.furyLost.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Health earned: +{itemEconomy.pendingIdleSummary.healthEarned.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Health lost: -{itemEconomy.pendingIdleSummary.healthLost.toFixed(2)}</Text>
 							</View>
 						)}
 						<Pressable style={styles.closeModalBtn} onPress={() => {
 							setIdleModalOpen(false);
-							items.consumeIdleSummary();
+							itemEconomy.consumeIdleSummary();
 						}}>
 							<Text style={styles.closeModalBtnText}>Collect</Text>
 						</Pressable>

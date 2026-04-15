@@ -1,4 +1,5 @@
-import { SUGGESTED_HABIT_GOALS, SUGGESTED_TODO_GOALS, SuggestedHabitGoal, SuggestedTodoGoal } from '@/constants/suggestgoals';
+import { SUGGESTED_HABIT_GOALS, type SuggestedHabitGoal } from '@/data/suggested-habit-goals-data';
+import { SUGGESTED_TODO_GOALS, type SuggestedTodoGoal } from '@/data/suggested-todo-goals-data';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 import { useDragonCoins } from './DragonCoinsProvider';
 import { useShards } from './DragonShardsProvider';
@@ -62,6 +63,15 @@ export interface TodoGoal {
 	createdAt: number;
 }
 
+export interface TodoChallengeDetails {
+	length: 7 | 14 | 30;
+	goalLengthDays: number;
+	coinCost: number;
+	shardCost: number;
+	rewardCoins: number;
+	rewardShards: number;
+}
+
 interface GoalsContextType {
 	habits: HabitGoal[];
 	todos: TodoGoal[];
@@ -93,6 +103,8 @@ interface GoalsContextType {
 	canAddHabit: (scarLevel: number, isPremium: boolean) => boolean;
 	canAddTodo: (scarLevel: number, isPremium: boolean) => boolean;
 	enableChallenge: (id: string, length: number) => { success: boolean; message?: string };
+	getTodoChallengeDetails: (dueDate?: string | null, createdAt?: number) => TodoChallengeDetails | null;
+	enableTodoChallenge: (id: string, draft?: Partial<TodoGoal>) => { success: boolean; message?: string; details?: TodoChallengeDetails };
 }
 
 const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
@@ -109,6 +121,19 @@ const PRESET_HABITS: HabitGoal[] = [
 const SUGGESTED = ['Read 10 pages', 'Run 1 mile', 'Practice instrument 30 min', 'Write 100 words', 'Cold shower', 'Stretch for 10 minutes', 'Do 20 push-ups', 'Meditate 15 minutes', 'Take a walk', 'Learn something new', 'Journal about your day', 'Drink 8 glasses of water', 'Tidy your space', 'Call a friend or family', 'Exercise for 30 minutes', 'Cook a healthy meal', 'Do yoga for 20 minutes', 'Take a cold bath', 'Study for 1 hour', 'Plan your day ahead'];
 
 const GOAL_TEMPLATES = ['Run for (Time) minutes', 'Do (Amount) push-ups', 'Walk for (Time) minutes', 'Practice (Activity) for (Time) minutes', 'Read for (Time) minutes', 'Write (Amount) words', 'Stretch for (Time) minutes', 'Meditate for (Time) minutes', 'Drink (Amount) glasses of water', 'Do (Amount) squats'];
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CHALLENGE_TIERS: TodoChallengeDetails[] = [
+	{ length: 7, goalLengthDays: 7, coinCost: 50, shardCost: 1, rewardCoins: 125, rewardShards: 5 },
+	{ length: 14, goalLengthDays: 14, coinCost: 100, shardCost: 2, rewardCoins: 300, rewardShards: 15 },
+	{ length: 30, goalLengthDays: 30, coinCost: 250, shardCost: 5, rewardCoins: 1000, rewardShards: 50 },
+];
+
+const toDateKey = (value: number | string | Date) => {
+	const date = value instanceof Date ? value : new Date(value);
+	return date.toISOString().split('T')[0];
+};
+
+const toStartOfDayMs = (dateKey: string) => new Date(`${dateKey}T00:00:00`).getTime();
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
 	const [habits, setHabits] = useState<HabitGoal[]>(PRESET_HABITS);
@@ -161,6 +186,19 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 	const coins = useDragonCoins();
 	const shards = useShards();
 
+	const getTodoChallengeDetails = (dueDate?: string | null, createdAt = Date.now()): TodoChallengeDetails | null => {
+		if (!dueDate) return null;
+		const createdKey = toDateKey(createdAt);
+		const dueTime = toStartOfDayMs(dueDate);
+		if (Number.isNaN(dueTime)) return null;
+		const createdTime = toStartOfDayMs(createdKey);
+		if (dueTime < createdTime) return null;
+
+		const goalLengthDays = Math.max(1, Math.floor((dueTime - createdTime) / DAY_MS) + 1);
+		const tier = goalLengthDays <= 7 ? CHALLENGE_TIERS[0] : goalLengthDays <= 14 ? CHALLENGE_TIERS[1] : CHALLENGE_TIERS[2];
+		return { ...tier, goalLengthDays };
+	};
+
 	/**
 	 * Enable a habit challenge: spends coins/shards and marks habit as challenge-started
 	 */
@@ -172,13 +210,15 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 		let shardCost = 0;
 		switch (length) {
 			case 7:
-				coinCost = 10;
+				coinCost = 50;
+				shardCost = 1;
 				break;
 			case 14:
-				coinCost = 25;
+				coinCost = 100;
+				shardCost = 2;
 				break;
 			case 30:
-				coinCost = 50;
+				coinCost = 250;
 				shardCost = 5;
 				break;
 			default:
@@ -209,6 +249,49 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 			),
 		);
 		return { success: true };
+	};
+
+	const enableTodoChallenge = (id: string, draft?: Partial<TodoGoal>) => {
+		const existingTodo = todos.find(item => item.id === id);
+		if (!existingTodo) return { success: false, message: 'To-do not found' };
+		const todo = { ...existingTodo, ...draft };
+		if (todo.isChallenge) return { success: false, message: 'Challenge already active' };
+		const details = getTodoChallengeDetails(todo.dueDate, todo.createdAt);
+		if (!details) return { success: false, message: 'Add a valid due date before enabling challenge mode.' };
+
+		if (details.coinCost > 0 && !coins.spendCoins(details.coinCost)) return { success: false, message: 'Not enough coins' };
+		if (details.shardCost > 0 && !shards.spendShards(details.shardCost)) {
+			if (details.coinCost > 0) coins.addCoins(details.coinCost);
+			return { success: false, message: 'Not enough shards' };
+		}
+
+		const startDate = new Date().toISOString().split('T')[0];
+		setTodos(prev =>
+			prev.map(item =>
+				item.id === id
+					? (() => {
+							const nextCategories =
+								draft?.categories ??
+								(draft?.category !== undefined ? (draft.category ? [draft.category] : []) : item.categories ?? (item.category ? [item.category] : []));
+							return {
+								...item,
+								...draft,
+								categories: nextCategories,
+								category: nextCategories[0],
+								isChallenge: true,
+								challengeLength: details.length,
+								challengeStartDate: startDate,
+								challengeRewardClaimed: false,
+								rewardCoins: details.rewardCoins,
+								rewardShards: details.rewardShards,
+								challengeStatus: 'active',
+							};
+						})()
+					: item,
+			),
+		);
+
+		return { success: true, details };
 	};
 
 	const addHabit = (h: Partial<HabitGoal>) => {
@@ -383,21 +466,13 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 
 	// Helper functions for scar level based limits
 	const getMaxHabits = (scarLevel: number, isPremium: boolean): number => {
-		if (isPremium) return Infinity; // Unlimited for premium
-		let max = 10; // Base = 10
-		if (scarLevel >= 4) max += 5; // +5 at level 4
-		if (scarLevel >= 8) max += 5; // +5 at level 8
-		if (scarLevel >= 10) max += 5; // +5 at level 10
-		return max;
+		if (isPremium) return Infinity;
+		return 20 + Math.max(0, scarLevel) * 3;
 	};
 
 	const getMaxTodos = (scarLevel: number, isPremium: boolean): number => {
-		if (isPremium) return Infinity; // Unlimited for premium
-		let max = 10; // Base = 10
-		if (scarLevel >= 4) max += 5; // +5 at level 4
-		if (scarLevel >= 8) max += 5; // +5 at level 8
-		if (scarLevel >= 10) max += 5; // +5 at level 10
-		return max;
+		if (isPremium) return Infinity;
+		return 40 + Math.max(0, scarLevel) * 6;
 	};
 
 	const canAddHabit = (scarLevel: number, isPremium: boolean): boolean => {
@@ -448,6 +523,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 				canAddHabit,
 				canAddTodo,
 				enableChallenge,
+				getTodoChallengeDetails,
+				enableTodoChallenge,
 			}}>
 			{children}
 		</GoalsContext.Provider>

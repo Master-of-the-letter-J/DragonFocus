@@ -1,5 +1,5 @@
 ﻿import { Text, View } from '@/components/Themed';
-import { QUOTES, type Quote } from '@/constants/quotes';
+import { QUOTES, type Quote } from '@/data/quotes-data';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';

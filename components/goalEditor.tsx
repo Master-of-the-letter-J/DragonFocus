@@ -2,7 +2,7 @@ import ProgressBar from '@/components/ProgressBar';
 import type { HabitGoal, TodoGoal } from '@/context/GoalsProvider';
 import { useGoals } from '@/context/GoalsProvider';
 import { useQuestions } from '@/context/QuestionProvider';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 
@@ -181,6 +181,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 	const [subGoals, setSubGoals] = useState(todo.subGoals || []);
 	const [newSubGoal, setNewSubGoal] = useState('');
 	const [editingSubGoalId, setEditingSubGoalId] = useState<string | null>(null);
+	const todoChallengeDetails = useMemo(() => goals.getTodoChallengeDetails(form.dueDate, todo.createdAt), [form.dueDate, goals, todo.createdAt]);
 
 	const addSubGoal = () => {
 		if (!newSubGoal.trim()) return;
@@ -193,12 +194,11 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 		setNewSubGoal('');
 	};
 
-	const toggleSubGoal = (id: string) => {
-		setSubGoals(subGoals.map(sg => (sg.id === id ? { ...sg, completed: !sg.completed } : sg)));
-	};
-
 	const deleteSubGoal = (id: string) => {
-		setSubGoals(subGoals.filter(sg => sg.id !== id));
+		Alert.alert('Delete Sub-Goal', 'Warning: deleting this sub-goal removes it permanently. Continue?', [
+			{ text: 'Cancel', style: 'cancel' },
+			{ text: 'Delete', style: 'destructive', onPress: () => setSubGoals(subGoals.filter(sg => sg.id !== id)) },
+		]);
 	};
 
 	const updateSubGoalTitle = (id: string, title: string) => {
@@ -212,12 +212,6 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 			Alert.alert('Error', 'To-Do title cannot be empty');
 			return;
 		}
-		// Disallow edits to challenge to-dos
-		if ((todo as any).isChallenge) {
-			Alert.alert('Locked', 'This to-do is a challenge and cannot be edited.');
-			onClose();
-			return;
-		}
 		goals.editTodo(todo.id, {
 			title: form.title,
 			importance: form.importance as any,
@@ -226,6 +220,44 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 			subGoals,
 		});
 		onClose();
+	};
+
+	const handleEnableChallenge = () => {
+		if (!todoChallengeDetails) {
+			Alert.alert('Add a Due Date', 'Set a valid due date before enabling challenge mode.');
+			return;
+		}
+		if (!form.title.trim()) {
+			Alert.alert('Error', 'To-Do title cannot be empty');
+			return;
+		}
+
+		Alert.alert(
+			'Enable To-Do Challenge',
+			`Spend ${todoChallengeDetails.coinCost} coins${todoChallengeDetails.shardCost > 0 ? ` and ${todoChallengeDetails.shardCost} shards` : ''} to lock this title and due date, then earn ${todoChallengeDetails.rewardCoins} coins and ${todoChallengeDetails.rewardShards} shards if completed on time?`,
+			[
+				{ text: 'Cancel', style: 'cancel' },
+				{
+					text: 'Enable',
+					onPress: () => {
+						const draft = {
+							title: form.title,
+							importance: form.importance as any,
+							category: form.category,
+							dueDate: form.dueDate,
+							subGoals,
+						};
+						const result = goals.enableTodoChallenge(todo.id, draft);
+						if (!result.success) {
+							Alert.alert('Unable to enable', result.message || 'Failed to enable to-do challenge.');
+							return;
+						}
+						Alert.alert('Challenge enabled', `${result.details?.length ?? todoChallengeDetails.length}-day challenge mode is active for this to-do.`);
+						onClose();
+					},
+				},
+			],
+		);
 	};
 
 	const handleDelete = () => {
@@ -278,6 +310,25 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 
 				<Text style={styles.label}>Due Date (optional)</Text>
 				<TextInput editable={!todo.isChallenge} value={form.dueDate} onChangeText={t => setForm({ ...form, dueDate: t })} placeholder="YYYY-MM-DD" style={styles.input} />
+
+				<Text style={styles.label}>Challenge Mode</Text>
+				{todo.isChallenge ? (
+					<Text style={{ color: '#1565C0', marginBottom: 8 }}>
+						Challenge active: tier {todo.challengeLength} days | reward {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
+					</Text>
+				) : todoChallengeDetails ? (
+					<View style={{ marginBottom: 12 }}>
+						<Text style={{ color: '#4B5563', marginBottom: 8 }}>
+							This due date maps to a {todoChallengeDetails.length}-day challenge tier. Cost: {todoChallengeDetails.coinCost} coins
+							{todoChallengeDetails.shardCost > 0 ? ` | ${todoChallengeDetails.shardCost} shards` : ''}. Reward: {todoChallengeDetails.rewardCoins} coins | {todoChallengeDetails.rewardShards} shards.
+						</Text>
+						<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleEnableChallenge}>
+							<Text style={[styles.buttonText, styles.buttonTextLight]}>Enable Challenge Mode</Text>
+						</Pressable>
+					</View>
+				) : (
+					<Text style={{ color: '#6B7280', marginBottom: 8 }}>Add a valid due date to unlock challenge mode for this to-do.</Text>
+				)}
 
 				{/* SUB-GOALS SECTION */}
 				<Text style={styles.label}>Sub-Goals</Text>
@@ -345,18 +396,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 							</View>
 
 							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-								<Pressable
-									onPress={() => toggleSubGoal(item.id)}
-									style={{
-										width: 22,
-										height: 22,
-										borderRadius: 4,
-										borderWidth: 1,
-										borderColor: '#999',
-										backgroundColor: item.completed ? '#4CAF50' : 'transparent',
-										marginRight: 12,
-									}}
-								/>
+								<Text style={{ width: 22, marginRight: 12, color: '#6B7280', fontWeight: '700' }}>-</Text>
 
 								<TextInput
 									value={item.title}

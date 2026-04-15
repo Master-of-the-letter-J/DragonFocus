@@ -14,7 +14,7 @@ export interface Achievement {
 	title: string;
 	description: string;
 	unlockedAt?: string | null;
-	secret?: boolean; // Hidden until unlocked
+	secret?: boolean;
 	points?: number;
 }
 
@@ -30,195 +30,42 @@ interface AchievementsContextType {
 const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
 
 const DEFAULT_ACHIEVEMENTS: Achievement[] = [
-	// Habit achievements
-	{
-		id: 'first_habit',
-		emoji: '🌱',
-		title: 'Seed Planted',
-		description: 'Add your first habit',
-		secret: false,
-	},
-	{
-		id: 'five_habits',
-		emoji: '🌿',
-		title: 'Growing Garden',
-		description: 'Create 5 unique habits',
-		secret: false,
-	},
-	{
-		id: 'ten_habits',
-		emoji: '🌳',
-		title: 'Forest of Discipline',
-		description: 'Create 10 unique habits',
-		secret: false,
-	},
+	{ id: 'first_habit', emoji: '\uD83C\uDF31', title: 'Seed Planted', description: 'Add your first habit' },
+	{ id: 'five_habits', emoji: '\uD83C\uDF3F', title: 'Growing Garden', description: 'Create 5 unique habits' },
+	{ id: 'ten_habits', emoji: '\uD83C\uDF33', title: 'Forest of Discipline', description: 'Create 10 unique habits' },
 
-	// Streak achievements
-	{
-		id: 'streak_7',
-		emoji: '🔥',
-		title: 'Week of Fire',
-		description: 'Achieve a 7-day streak',
-		secret: false,
-	},
-	{
-		id: 'streak_30',
-		emoji: '🌟',
-		title: 'Monthly Champion',
-		description: 'Achieve a 30-day streak',
-		secret: false,
-	},
-	{
-		id: 'streak_100',
-		emoji: '⭐',
-		title: 'Century Champion',
-		description: 'Achieve a 100-day streak',
-		secret: false,
-	},
+	{ id: 'streak_7', emoji: '\uD83D\uDD25', title: 'Week of Fire', description: 'Achieve a 7-day streak' },
+	{ id: 'streak_30', emoji: '\uD83C\uDF1F', title: 'Monthly Champion', description: 'Achieve a 30-day streak' },
+	{ id: 'streak_100', emoji: '\u2B50', title: 'Century Champion', description: 'Achieve a 100-day streak' },
 
-	// Coin achievements
-	{
-		id: 'coins_100',
-		emoji: '💰',
-		title: 'First Fortune',
-		description: 'Earn 100 coins',
-		secret: false,
-	},
-	{
-		id: 'coins_1000',
-		emoji: '💎',
-		title: 'Dragon Hoard',
-		description: 'Accumulate 1000 coins',
-		secret: false,
-	},
-	{
-		id: 'coins_10000',
-		emoji: '👑',
-		title: 'Royal Treasury',
-		description: 'Accumulate 10000 coins',
-		secret: false,
-	},
+	{ id: 'coins_100', emoji: '\uD83D\uDCB0', title: 'First Fortune', description: 'Earn 100 coins' },
+	{ id: 'coins_1000', emoji: '\uD83D\uDC8E', title: 'Dragon Hoard', description: 'Accumulate 1000 coins' },
+	{ id: 'coins_10000', emoji: '\uD83D\uDC51', title: 'Royal Treasury', description: 'Accumulate 10000 coins' },
 
-	// Goal achievements
-	{
-		id: 'goals_10',
-		emoji: '✅',
-		title: 'Accomplished',
-		description: 'Complete 10 goals',
-		secret: false,
-	},
-	{
-		id: 'goals_50',
-		emoji: '🎯',
-		title: 'Focused Warrior',
-		description: 'Complete 50 goals',
-		secret: false,
-	},
-	{
-		id: 'goals_100',
-		emoji: '🏆',
-		title: 'Goal Mastery',
-		description: 'Complete 100 goals',
-		secret: false,
-	},
+	{ id: 'goals_10', emoji: '\u2705', title: 'Accomplished', description: 'Complete 10 goals' },
+	{ id: 'goals_50', emoji: '\uD83C\uDFAF', title: 'Focused Warrior', description: 'Complete 50 goals' },
+	{ id: 'goals_100', emoji: '\uD83C\uDFC6', title: 'Goal Mastery', description: 'Complete 100 goals' },
 
-	// Dragon age achievements
-	{
-		id: 'dragon_100',
-		emoji: '🐉',
-		title: 'Century Dragon',
-		description: 'Reach age 100',
-		secret: false,
-	},
-	{
-		id: 'dragon_365',
-		emoji: '🐲',
-		title: 'Year-Old Wyrm',
-		description: 'Reach age 365 (Wyrm)',
-		secret: false,
-	},
+	{ id: 'dragon_100', emoji: '\uD83D\uDC09', title: 'Century Dragon', description: 'Reach age 100' },
+	{ id: 'dragon_365', emoji: '\uD83D\uDC32', title: 'Year-Old Wyrm', description: 'Reach age 365 (Wyrm)' },
 
-	// Scar level achievements
-	{
-		id: 'scar_5',
-		emoji: '🧿',
-		title: 'Spiritual Path',
-		description: 'Reach Scar Level 5',
-		secret: false,
-	},
-	{
-		id: 'scar_10',
-		emoji: '👁️',
-		title: 'All-Seeing Eye',
-		description: 'Reach Scar Level 10',
-		secret: false,
-	},
+	{ id: 'scar_1', emoji: 'S1', title: 'Marked by Fire', description: 'Reach Scar Level 1' },
+	{ id: 'scar_10', emoji: 'S10', title: 'Legend of Scars', description: 'Reach Scar Level 10' },
+	{ id: 'scar_15', emoji: 'S15', title: 'Traumatic Scars', description: 'Reach Scar Level 15' },
+	{ id: 'scar_30', emoji: 'S30', title: 'Ultimate Dragon Warrior', description: 'Reach the final XP tier at Scar Level 30' },
 
-	// Population achievements
-	{
-		id: 'population_1m',
-		emoji: '👥',
-		title: 'Popular Dragon',
-		description: 'Reach 1 million population',
-		secret: false,
-	},
-	{
-		id: 'population_1b',
-		emoji: '🌍',
-		title: 'Global Icon',
-		description: 'Reach 1 billion population',
-		secret: false,
-	},
+	{ id: 'population_1m', emoji: '\uD83D\uDC65', title: 'Popular Dragon', description: 'Reach 1 million population' },
+	{ id: 'population_1b', emoji: '\uD83C\uDF0D', title: 'Global Icon', description: 'Reach 1 billion population' },
 
-	// Shards achievements
-	{
-		id: 'shards_50',
-		emoji: '✨',
-		title: 'Crystal Collector',
-		description: 'Earn 50 shards',
-		secret: false,
-	},
+	{ id: 'shards_50', emoji: '\u2728', title: 'Crystal Collector', description: 'Earn 50 shards' },
 
-	// Dragon health achievements
-	{
-		id: 'perfect_health',
-		emoji: '❤️',
-		title: 'Full Vitality',
-		description: 'Have your dragon at full health',
-		secret: false,
-	},
+	{ id: 'perfect_health', emoji: '\u2764\uFE0F', title: 'Full Vitality', description: 'Have your dragon at full health' },
 
-	// Fury achievements
-	{
-		id: 'fury_chill',
-		emoji: '🧘',
-		title: 'Zen Dragon',
-		description: 'Achieve minimum fury (Yin)',
-		secret: false,
-	},
-	{
-		id: 'fury_raging',
-		emoji: '💢',
-		title: 'Primal Rage',
-		description: 'Reach maximum fury (Yang)',
-		secret: true,
-	},
+	{ id: 'fury_chill', emoji: '\uD83E\uDDD8', title: 'Zen Dragon', description: 'Achieve minimum fury (Yin)' },
+	{ id: 'fury_raging', emoji: '\uD83D\uDCA2', title: 'Primal Rage', description: 'Reach maximum fury (Yang)', secret: true },
 
-	// Survey achievements
-	{
-		id: 'surveys_7',
-		emoji: '📋',
-		title: 'Survey Enthusiast',
-		description: 'Complete 7 surveys',
-		secret: false,
-	},
-	{
-		id: 'surveys_30',
-		emoji: '📊',
-		title: 'Daily Tracker',
-		description: 'Complete 30 surveys',
-		secret: false,
-	},
+	{ id: 'surveys_7', emoji: '\uD83D\uDCCB', title: 'Survey Enthusiast', description: 'Complete 7 surveys' },
+	{ id: 'surveys_30', emoji: '\uD83D\uDCCA', title: 'Daily Tracker', description: 'Complete 30 surveys' },
 ];
 
 export function AchievementsProvider({ children }: { children: ReactNode }) {
@@ -233,19 +80,17 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 
 	const [achievements, setAchievements] = useState<Achievement[]>(DEFAULT_ACHIEVEMENTS);
 
-	// Auto-unlock achievements based on game state
 	useEffect(() => {
 		const unlockIfMissing = (id: string) => {
 			setAchievements(prev => {
-				const achievement = prev.find(a => a.id === id);
+				const achievement = prev.find(item => item.id === id);
 				if (achievement && !achievement.unlockedAt) {
-					return prev.map(a => (a.id === id ? { ...a, unlockedAt: new Date().toISOString() } : a));
+					return prev.map(item => (item.id === id ? { ...item, unlockedAt: new Date().toISOString() } : item));
 				}
 				return prev;
 			});
 		};
 
-		// Check all achievement conditions
 		if (goals.habits.length > 0) unlockIfMissing('first_habit');
 		if (goals.habits.length >= 5) unlockIfMissing('five_habits');
 		if (goals.habits.length >= 10) unlockIfMissing('ten_habits');
@@ -258,7 +103,6 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 		if (coins.coins >= 1000) unlockIfMissing('coins_1000');
 		if (coins.coins >= 10000) unlockIfMissing('coins_10000');
 
-		// Count completed goals (rough estimate from habits/todos)
 		const completedGoalsEstimate = goals.habits.length * 5 + goals.todos.length * 2;
 		if (completedGoalsEstimate >= 10) unlockIfMissing('goals_10');
 		if (completedGoalsEstimate >= 50) unlockIfMissing('goals_50');
@@ -267,11 +111,13 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 		if (dragon.age >= 100) unlockIfMissing('dragon_100');
 		if (dragon.age >= 365) unlockIfMissing('dragon_365');
 
-		if (scarLevel.currentScarLevel >= 5) unlockIfMissing('scar_5');
+		if (scarLevel.currentScarLevel >= 1) unlockIfMissing('scar_1');
 		if (scarLevel.currentScarLevel >= 10) unlockIfMissing('scar_10');
+		if (scarLevel.currentScarLevel >= 15) unlockIfMissing('scar_15');
+		if (scarLevel.currentScarLevel >= 30) unlockIfMissing('scar_30');
 
-		if (population.population >= 1000000) unlockIfMissing('population_1m');
-		if (population.population >= 1000000000) unlockIfMissing('population_1b');
+		if (population.population >= 1_000_000) unlockIfMissing('population_1m');
+		if (population.population >= 1_000_000_000) unlockIfMissing('population_1b');
 
 		if (shards.shards >= 50) unlockIfMissing('shards_50');
 
@@ -279,28 +125,22 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 
 		if (fury.furyMeter <= 10) unlockIfMissing('fury_chill');
 		if (fury.furyMeter >= 90) unlockIfMissing('fury_raging');
-
-		// Survey count would need to be tracked separately - placeholder for now
-		// if (surveyCount >= 7) unlockIfMissing('surveys_7');
-		// if (surveyCount >= 30) unlockIfMissing('surveys_30');
 	}, [dragon.age, dragon.hp, dragon.maxHP, coins.coins, goals.habits.length, goals.todos.length, streak.streak, scarLevel.currentScarLevel, fury.furyMeter, population.population, shards.shards]);
 
-	const unlockedCount = achievements.filter(a => a.unlockedAt).length;
+	const unlockedCount = achievements.filter(item => item.unlockedAt).length;
 	const totalCount = achievements.length;
 
-	const isUnlocked = (id: string): boolean => {
-		return achievements.some(a => a.id === id && a.unlockedAt);
-	};
+	const isUnlocked = (id: string): boolean => achievements.some(item => item.id === id && item.unlockedAt);
 
 	const unlock = (id: string) => {
-		setAchievements(prev => prev.map(a => (a.id === id && !a.unlockedAt ? { ...a, unlockedAt: new Date().toISOString() } : a)));
+		setAchievements(prev => prev.map(item => (item.id === id && !item.unlockedAt ? { ...item, unlockedAt: new Date().toISOString() } : item)));
 	};
 
 	return (
 		<AchievementsContext.Provider
 			value={{
-				achievements: achievements.map(a => (a.secret && !a.unlockedAt ? { ...a, title: '??? Secret Achievement', description: 'Complete a challenge to unlock' } : a)),
-				unlockedAchievements: achievements.filter(a => a.unlockedAt),
+				achievements: achievements.map(item => (item.secret && !item.unlockedAt ? { ...item, title: '??? Secret Achievement', description: 'Complete a challenge to unlock' } : item)),
+				unlockedAchievements: achievements.filter(item => item.unlockedAt),
 				unlockedCount,
 				totalCount,
 				isUnlocked,

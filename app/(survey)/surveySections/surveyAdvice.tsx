@@ -1,5 +1,5 @@
 ﻿import { Text, View } from '@/components/Themed';
-import { SURVEY_ADVICE, type AdviceItem } from '@/constants/advice';
+import { SURVEY_ADVICE, type AdviceItem } from '@/data/advice-data';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';

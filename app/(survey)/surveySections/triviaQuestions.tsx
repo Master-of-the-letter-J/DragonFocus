@@ -1,5 +1,5 @@
 import { Text, View } from '@/components/Themed';
-import { TRIVIA, type TriviaQuestion } from '@/constants/prompts';
+import { TRIVIA, type TriviaQuestion } from '@/data/prompts-data';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -64,7 +64,7 @@ export function useTriviaQuestionsSection({ surveyType, questionSettings, enable
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enableTrivia ?? survey.options.enableRandomMC ?? true;
 
-	const count = clamp(surveyType === 'morning' ? resolvedSettings.trivia.morningCount : resolvedSettings.trivia.eveningCount, 0, 3);
+	const count = clamp(surveyType === 'morning' ? resolvedSettings.trivia.morningCount : resolvedSettings.trivia.nightCount, 0, 3);
 
 	const pool = useMemo(() => TRIVIA.filter(t => isCategoryEnabled(resolvedSettings.trivia.types, t.category)), [resolvedSettings.trivia.types]);
 	const isEnabled = resolvedEnable && count > 0 && pool.length > 0;

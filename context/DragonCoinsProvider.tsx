@@ -76,9 +76,8 @@ export function DragonCoinsProvider({ children }: { children: ReactNode }) {
 
 	const calculateSurveyCoins = (isMorningOrNight: boolean, streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false): number => {
 		const baseCoins = 10;
-		const streakBonus = Math.max(0, streak);
 		const multiplier = captureMultiplier(yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
-		return Math.max(0, Math.floor((baseCoins + streakBonus) * multiplier));
+		return Math.max(0, Math.floor(baseCoins * multiplier));
 	};
 
 	const calculateFireXP = (coinsEarned: number): number => {

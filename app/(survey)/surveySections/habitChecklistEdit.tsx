@@ -1,5 +1,5 @@
 import { Text, View } from '@/components/Themed';
-import { GOAL_HABIT_ADVICE } from '@/constants/advice';
+import { GOAL_HABIT_ADVICE } from '@/data/advice-data';
 import { HabitEditor } from '@/components/goalEditor';
 import { useGoals, type HabitGoal } from '@/context/GoalsProvider';
 import { usePremium } from '@/context/PremiumProvider';
@@ -12,9 +12,9 @@ import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
 
 const CHALLENGE_OPTIONS = [
-	{ days: 7, cost: 10, rewardCoins: 100, rewardShards: 10, costShards: 0 },
-	{ days: 14, cost: 25, rewardCoins: 250, rewardShards: 25, costShards: 0 },
-	{ days: 30, cost: 50, rewardCoins: 750, rewardShards: 60, costShards: 5 },
+	{ days: 7, cost: 50, rewardCoins: 100, rewardShards: 10, costShards: 1 },
+	{ days: 14, cost: 100, rewardCoins: 250, rewardShards: 25, costShards: 2 },
+	{ days: 30, cost: 250, rewardCoins: 750, rewardShards: 75, costShards: 5 },
 ];
 
 export interface HabitChecklistEditState {
@@ -182,7 +182,7 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 							</View>
 						) : (
 							<View style={{ marginTop: 8 }}>
-								<Text style={{ fontSize: 12, color: '#555' }}>Challenge active - rewards are granted on successful completion during the evening survey.</Text>
+								<Text style={{ fontSize: 12, color: '#555' }}>Challenge active - rewards are granted on successful completion during the night survey.</Text>
 							</View>
 						)}
 					</TouchableOpacity>
@@ -223,6 +223,9 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 					}
 					ListFooterComponent={
 						<View>
+							<Text style={{ marginTop: 8, fontSize: 12, color: '#6B7280' }}>
+								Habit slots: {state.localHabits.length} / {premium.isPremium ? 'Unlimited' : habitLimit}
+							</Text>
 							<Pressable
 								style={[sectionStyles.smallButton, !canAddMoreHabits ? sectionStyles.buttonDisabled : null]}
 								onPress={() => (canAddMoreHabits ? goals.addHabit?.({ title: 'New Habit' }) : null)}

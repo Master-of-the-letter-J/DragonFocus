@@ -4,7 +4,8 @@ import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
-import { useItems } from '@/context/ItemsProvider';
+import { useItemEconomy } from '@/context/ItemEconomyProvider';
+import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
@@ -26,6 +27,12 @@ import { sectionStyles } from './surveySections/sectionStyles';
 import { useTodoChecklistEditSection } from './surveySections/todoChecklistEdit';
 import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
 
+const countWords = (value: string) =>
+	value
+		.trim()
+		.split(/\s+/)
+		.filter(Boolean).length;
+
 export default function SurveyMorningPage() {
 	const survey = useSurvey();
 	const coins = useDragonCoins();
@@ -34,7 +41,8 @@ export default function SurveyMorningPage() {
 	const scarLevel = useScarLevel();
 	const fury = useFury();
 	const streakCtx = useStreak();
-	const items = useItems();
+	const itemEconomy = useItemEconomy();
+	const itemSnacks = useItemSnacks();
 	const premium = usePremium();
 	const journal = useJournal();
 	const router = useRouter();
@@ -146,6 +154,7 @@ export default function SurveyMorningPage() {
 	const submitSurvey = () => {
 		const alreadyDoneToday = survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted;
 		let totalCoinsEarned = 0;
+		let rewardShards = 0;
 		let furyDelta = 0;
 
 		const moodIndex = mood.state.selectedIndex;
@@ -157,30 +166,71 @@ export default function SurveyMorningPage() {
 		const yangValue = fury?.furyMeter ?? 0;
 		const dragonShardsCount = shards?.shards ?? 0;
 		const scar = scarLevel?.currentScarLevel ?? 0;
-		const snackMult = typeof items?.getActiveCoinMultiplier === 'function' ? items.getActiveCoinMultiplier() : 1;
+		const snackMult = itemEconomy.getActiveCoinMultiplier();
+		const jeopardyMultiplier = Math.max(1, itemEconomy.getActiveJeopardyMultiplier?.() ?? 1);
 		const isPremiumFlag = premium?.isPremium ?? false;
+		const coinMultiplier = typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1;
 
 		if (!alreadyDoneToday) {
 			const morningCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(true, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
 			totalCoinsEarned += morningCoins;
 			coins.addCoins?.(morningCoins);
+			rewardShards += 1;
 			shards.addShards?.(1);
-			if (typeof fury.addFury === 'function') fury.addFury(furyDelta);
 
-			const hasPromptText = Object.values(shortAnswers.state.responses).some(text => text.trim().length > 0);
-			if (hasPromptText) {
-				const extra = Math.floor(2 * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+			const promptRewardCount = Object.values(shortAnswers.state.responses).filter(text => countWords(text) >= 25).length;
+			if (promptRewardCount > 0) {
+				const extra = Math.floor(5 * promptRewardCount * coinMultiplier);
 				coins.addCoins?.(extra);
 				totalCoinsEarned += extra;
 			}
+
+			if (trivia.section.isEnabled) {
+				const correctCount = trivia.correctCount();
+				const incorrectCount = Math.max(0, trivia.state.items.length - correctCount);
+				const triviaCoins = Math.floor(correctCount * 5 * jeopardyMultiplier * coinMultiplier);
+				if (triviaCoins > 0) {
+					coins.addCoins?.(triviaCoins);
+					totalCoinsEarned += triviaCoins;
+				}
+				if (jeopardyMultiplier > 1 && incorrectCount > 0) {
+					const penalty = Math.min(coins.getCoins?.() ?? 0, Math.floor(incorrectCount * 5 * jeopardyMultiplier));
+					if (penalty > 0) {
+						coins.spendCoins?.(penalty);
+						totalCoinsEarned -= penalty;
+					}
+				}
+			}
+
+			const surveyBonus = itemSnacks.getSurveyCompletionBonus?.(Math.max(0, totalCoinsEarned), rewardShards, scar);
+			if (surveyBonus) {
+				const bonusCoins = Math.max(0, surveyBonus.finalCoins - Math.max(0, totalCoinsEarned));
+				const bonusShards = Math.max(0, surveyBonus.finalShards - rewardShards);
+				if (bonusCoins > 0) {
+					coins.addCoins?.(bonusCoins);
+					totalCoinsEarned += bonusCoins;
+				}
+				if (bonusShards > 0) {
+					shards.addShards?.(bonusShards);
+					rewardShards += bonusShards;
+				}
+				if ((surveyBonus.snackDrops ?? 0) > 0) {
+					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops, scar);
+				}
+			}
+		}
+
+		if (!alreadyDoneToday && typeof fury.addFury === 'function') {
+			fury.addFury(furyDelta);
+			const healthDelta = 2 - furyDelta;
+			if (healthDelta > 0) dragon.healHp?.(healthDelta);
+			if (healthDelta < 0) dragon.damageHp?.(Math.abs(healthDelta));
 		}
 
 		const fireXPFromCoins = typeof coins?.calculateFireXP === 'function' ? coins.calculateFireXP(totalCoinsEarned) : 0;
-		const bonusFireXP = (dragon?.age ?? 0) * 10;
-
-		const xpEarned = alreadyDoneToday ? 0 : fireXPFromCoins + bonusFireXP;
+		const xpEarned = alreadyDoneToday ? 0 : fireXPFromCoins;
 		const effectiveFury = alreadyDoneToday ? 0 : furyDelta;
-		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins + bonusFireXP);
+		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins);
 
 		survey.completeMorningSurvey?.();
 
@@ -195,18 +245,20 @@ export default function SurveyMorningPage() {
 			surveyType: 'morning',
 			goalsCompleted: habitEdit.state.localHabits.length,
 			goalsIncomplete: 0,
-			rewards: { coins: totalCoinsEarned, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: alreadyDoneToday ? 0 : 1 },
+			rewards: { coins: totalCoinsEarned, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: rewardShards },
 			text: journalEntry.section.isEnabled ? journalEntry.state.text : undefined,
 			promptText: promptText || undefined,
 			moodMorning: moodLabel,
 			todoCount: todoEdit.state.localTodos.length,
 			todoCompleted: 0,
 			todoFailed: 0,
+			plannedHabitTitles: habitEdit.state.localHabits.map(habit => habit.title).filter(Boolean),
+			plannedTodoTitles: todoEdit.state.localTodos.map(todo => todo.title).filter(Boolean),
 		});
 
 		setResults({
 			coinsEarned: totalCoinsEarned,
-			shardsEarned: alreadyDoneToday ? 0 : 1,
+			shardsEarned: rewardShards,
 			xpEarned: xpEarned,
 			furyDelta: effectiveFury,
 		});

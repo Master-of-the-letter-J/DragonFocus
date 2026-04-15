@@ -27,7 +27,7 @@ export function useJournalEntrySection({ surveyType, questionSettings, initialTe
 	const defaultEnable = surveyType === 'morning' ? survey.options.enableJournalMorning : survey.options.enableJournalNight;
 	const resolvedEnable = enableJournal ?? defaultEnable ?? true;
 
-	const normalizedType = surveyType === 'night' ? 'evening' : 'morning';
+	const normalizedType = surveyType === 'night' ? 'night' : 'morning';
 	const isEnabled = useMemo(() => {
 		if (!resolvedEnable) return false;
 		const setting = resolvedSettings.journalEntry.setting;

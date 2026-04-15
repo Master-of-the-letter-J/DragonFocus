@@ -15,7 +15,7 @@ export default function TutorialPage() {
 
 				<Text style={styles.h1}>Daily Surveys</Text>
 				<Text style={styles.p}>
-					The morning survey helps plan the day. The evening survey checks what was finished and grants the main completion rewards. Settings can enable or disable advice, prompts,
+					The morning survey helps plan the day. The night survey checks what was finished and grants the main completion rewards. Settings can enable or disable advice, prompts,
 					trivia, quotes, and journal sections.
 				</Text>
 				<Text style={styles.bullet}>- Same-day survey refills count as refills, not fresh full surveys.</Text>
@@ -35,9 +35,8 @@ export default function TutorialPage() {
 				<Text style={styles.bullet}>- Deleting a challenge reward removes that challenge without claiming the reward.</Text>
 
 				<Text style={styles.h2}>Challenge Rewards</Text>
-				<Text style={styles.bullet}>- 7-day challenge: 100 coins and 10 shards</Text>
-				<Text style={styles.bullet}>- 14-day challenge: 250 coins and 25 shards</Text>
-				<Text style={styles.bullet}>- 30-day challenge: 750 coins and 60 shards</Text>
+				<Text style={styles.bullet}>- Habit challenges reward 100 / 250 / 750 coins and 10 / 25 / 75 shards for 7 / 14 / 30 days.</Text>
+				<Text style={styles.bullet}>- Timed to-do challenges reward 125 / 300 / 1000 coins and 5 / 15 / 50 shards for 7 / 14 / 30 day tiers.</Text>
 
 				<Text style={styles.h1}>Dragon Lifecycle</Text>
 				<Text style={styles.p}>
@@ -55,7 +54,7 @@ export default function TutorialPage() {
 				<Text style={styles.bullet}>- Fire XP is earned at 10 times the coins gained from reward actions.</Text>
 				<Text style={styles.bullet}>- Dragon souls come from ascension and power late-game conversion tools.</Text>
 
-				<Text style={styles.h1}>Shop and Status Effects</Text>
+				<Text style={styles.h1}>Market and Status Effects</Text>
 				<Text style={styles.p}>
 					The market includes snacks, generators, clickers, soul multipliers, cosmetics, and backgrounds. Some items require scar levels or mixed currency costs.
 				</Text>
@@ -77,8 +76,8 @@ export default function TutorialPage() {
 				</Text>
 				<Text style={styles.bullet}>- Coins, generators, and clickers are reset after ascension.</Text>
 				<Text style={styles.bullet}>- Ascension sickness removes 15 HP per day for 7 days, plus 1 extra day per ascension.</Text>
-				<Text style={styles.bullet}>- The Soul Convertor turns souls into shards with a permanently scaling cost.</Text>
-				<Text style={styles.bullet}>- The Shop Resetor resets snack prices once per ascension.</Text>
+				<Text style={styles.bullet}>- The Soul Converter turns souls into shards with a permanently scaling cost.</Text>
+				<Text style={styles.bullet}>- The Snack Price Reset resets snack prices once per ascension.</Text>
 
 				<Text style={styles.h1}>Journal and Logs</Text>
 				<Text style={styles.p}>
@@ -91,6 +90,7 @@ export default function TutorialPage() {
 					Survey settings update the live survey configuration automatically. General settings also include dev-only tools to test new days, currencies, dragon age, and other
 					progression flows.
 				</Text>
+				<Text style={styles.bullet}>- Settings now include Survey, General, and Tutorial tabs.</Text>
 				<Text style={styles.bullet}>- Force New Day clears the survey-day lockout state.</Text>
 				<Text style={styles.bullet}>- Dev mode helps keep cheat actions gated and intentional.</Text>
 

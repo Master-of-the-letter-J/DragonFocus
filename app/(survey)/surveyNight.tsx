@@ -6,7 +6,8 @@ import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useGoals } from '@/context/GoalsProvider';
-import { useItems } from '@/context/ItemsProvider';
+import { useItemEconomy } from '@/context/ItemEconomyProvider';
+import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
@@ -30,7 +31,40 @@ import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
 const CHALLENGE_REWARDS: Record<number, { coins: number; shards: number }> = {
 	7: { coins: 100, shards: 10 },
 	14: { coins: 250, shards: 25 },
-	30: { coins: 750, shards: 60 },
+	30: { coins: 750, shards: 75 },
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const countWords = (value: string) =>
+	value
+		.trim()
+		.split(/\s+/)
+		.filter(Boolean).length;
+
+const diffDays = (start: string, end: string) => {
+	const startMs = new Date(`${start}T00:00:00`).getTime();
+	const endMs = new Date(`${end}T00:00:00`).getTime();
+	return Math.max(0, Math.floor((endMs - startMs) / DAY_MS));
+};
+
+const getTodoReward = (todo: { dueDate?: string | null; createdAt: number; completedDate?: string | null }) => {
+	const completedDate = todo.completedDate ?? new Date().toISOString().split('T')[0];
+	const createdDate = new Date(todo.createdAt).toISOString().split('T')[0];
+
+	if (!todo.dueDate || completedDate <= todo.dueDate) {
+		if (!todo.dueDate) return { coins: 10, fury: -4 };
+		const goalLengthDays = diffDays(createdDate, todo.dueDate) + 1;
+		if (goalLengthDays > 30) return { coins: 60, fury: -24 };
+		if (goalLengthDays >= 7) return { coins: 20, fury: -8 };
+		return { coins: 10, fury: -4 };
+	}
+
+	const lateDays = diffDays(todo.dueDate, completedDate);
+	if (lateDays > 30) return { coins: 10, fury: -1 };
+	if (lateDays >= 7) return { coins: 5, fury: -1 };
+	if (lateDays >= 1) return { coins: 2, fury: -1 };
+	return { coins: 1, fury: -1 };
 };
 
 export default function SurveyNightPage() {
@@ -41,7 +75,8 @@ export default function SurveyNightPage() {
 	const scarLevel = useScarLevel();
 	const fury = useFury();
 	const streakCtx = useStreak();
-	const items = useItems();
+	const itemEconomy = useItemEconomy();
+	const itemSnacks = useItemSnacks();
 	const premium = usePremium();
 	const journal = useJournal();
 	const goals = useGoals();
@@ -147,7 +182,7 @@ export default function SurveyNightPage() {
 	const submitSurvey = () => {
 		const alreadyDoneToday = survey.lastNightSurveyDate === today && survey.nightSurveyCompleted;
 		let totalCoinsEarned = 0;
-		let totalGoalCoins = 0;
+		let totalShardsEarned = 0;
 		let furyDelta = 0;
 
 		const moodIndex = mood.state.selectedIndex;
@@ -159,15 +194,17 @@ export default function SurveyNightPage() {
 		const yangValue = fury?.furyMeter ?? 0;
 		const dragonShardsCount = shards?.shards ?? 0;
 		const scar = scarLevel?.currentScarLevel ?? 0;
-		const snackMult = typeof items?.getActiveCoinMultiplier === 'function' ? items.getActiveCoinMultiplier() : 1;
+		const snackMult = itemEconomy.getActiveCoinMultiplier();
+		const jeopardyMultiplier = Math.max(1, itemEconomy.getActiveJeopardyMultiplier?.() ?? 1);
 		const isPremiumFlag = premium?.isPremium ?? false;
+		const coinMultiplier = typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1;
 
 		if (!alreadyDoneToday) {
 			const nightCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(false, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
 			totalCoinsEarned += nightCoins;
 			coins.addCoins?.(nightCoins);
+			totalShardsEarned += 1;
 			shards.addShards?.(1);
-			if (typeof fury?.addFury === 'function') fury.addFury(furyDelta);
 		}
 
 		const habitSnapshot = habitFill.getCompletionSnapshot();
@@ -188,21 +225,47 @@ export default function SurveyNightPage() {
 		const totalGoalsCompleted = habitSnapshot.completedHabitIds.length + todoSnapshot.completedTodoIds.length;
 
 		if (rewardHabitIds.length > 0) {
-			const streakBonus = habitSnapshot.updatedHabits.some(h => (h.streak ?? 0) >= 5) ? 5 : 0;
-			const baseHabitCoins = 5 * rewardHabitIds.length + streakBonus;
-			const awarded = Math.floor(baseHabitCoins * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
-			totalGoalCoins += awarded;
+			const baseHabitCoins = habitSnapshot.updatedHabits
+				.filter(habit => rewardHabitIds.includes(habit.id))
+				.reduce((sum, habit) => sum + 5 + Math.min(5, habit.streak ?? 0), 0);
+			const awarded = Math.floor(baseHabitCoins * coinMultiplier);
+			totalCoinsEarned += awarded;
 			coins.addCoins?.(awarded);
+			furyDelta -= rewardHabitIds.length * 2;
 			dragon?.addHealthFromGoal?.(rewardHabitIds.length * 2);
 		}
 
 		if (rewardTodoIds.length > 0) {
-			const baseTodoCoins = 10 * rewardTodoIds.length;
-			const awarded = Math.floor(baseTodoCoins * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
-			totalGoalCoins += awarded;
+			const todoRewards = todoSnapshot.updatedTodos.filter(todo => rewardTodoIds.includes(todo.id)).map(todo => getTodoReward(todo));
+			const awarded = Math.floor(todoRewards.reduce((sum, reward) => sum + reward.coins, 0) * coinMultiplier);
+			const furyReward = todoRewards.reduce((sum, reward) => sum + reward.fury, 0);
+			totalCoinsEarned += awarded;
 			coins.addCoins?.(awarded);
+			furyDelta += furyReward;
 			dragon?.addHealthFromGoal?.(rewardTodoIds.length * 2);
 		}
+
+		const todoChallengeFinishers = todoSnapshot.updatedTodos.filter(
+			todo => todo.isChallenge && !!todo.dueDate && rewardTodoIds.includes(todo.id) && !todo.challengeRewardClaimed && !!todo.completedDate && todo.completedDate <= todo.dueDate,
+		);
+		if (todoChallengeFinishers.length > 0) {
+			todoChallengeFinishers.forEach(todo => {
+				if ((todo.rewardCoins ?? 0) > 0) {
+					coins?.addCoins?.(todo.rewardCoins ?? 0);
+					totalCoinsEarned += todo.rewardCoins ?? 0;
+				}
+				if ((todo.rewardShards ?? 0) > 0) {
+					shards?.addShards?.(todo.rewardShards ?? 0);
+					totalShardsEarned += todo.rewardShards ?? 0;
+				}
+				goals?.editTodo?.(todo.id, { challengeRewardClaimed: true, challengeStatus: 'completed' });
+			});
+		}
+
+		const lateCompletedChallengeTodos = todoSnapshot.updatedTodos.filter(
+			todo => todo.isChallenge && !!todo.dueDate && rewardTodoIds.includes(todo.id) && !!todo.completedDate && todo.completedDate > todo.dueDate,
+		);
+		lateCompletedChallengeTodos.forEach(todo => goals?.editTodo?.(todo.id, { challengeStatus: 'failed' }));
 
 		const challengeFinishers = habitSnapshot.updatedHabits.filter(h => h.isChallenge && h.challengeLength && h.challengeStartDate && !h.challengeRewardClaimed && (h.streak ?? 0) >= (h.challengeLength ?? 0));
 		if (challengeFinishers.length > 0) {
@@ -211,42 +274,90 @@ export default function SurveyNightPage() {
 				const reward = CHALLENGE_REWARDS[len] ?? { coins: 0, shards: 0 };
 				if (reward.coins > 0) {
 					coins?.addCoins?.(reward.coins);
-					totalGoalCoins += reward.coins;
+					totalCoinsEarned += reward.coins;
 				}
 				if (reward.shards > 0) {
 					shards?.addShards?.(reward.shards);
+					totalShardsEarned += reward.shards;
 				}
 				goals?.editHabit?.(h.id, { challengeRewardClaimed: true });
 			});
 		}
+
+		const overdueIncompleteTodoIds = todoSnapshot.updatedTodos
+			.filter(todo => !!todo.dueDate && today > todo.dueDate && !todo.completedDate)
+			.map(todo => todo.id);
+		overdueIncompleteTodoIds.forEach(id => goals.failTodo?.(id, true));
 
 		if (dragon?.hp <= 0) {
 			dragon?.die?.();
 		}
 
 		if (!alreadyDoneToday) {
-			const hasPromptText = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses }).some(text => text.trim().length > 0);
-			if (hasPromptText) {
-				const extra = Math.floor(2 * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
+			const promptRewardCount = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses }).filter(text => countWords(text) >= 25).length;
+			if (promptRewardCount > 0) {
+				const extra = Math.floor(5 * promptRewardCount * coinMultiplier);
 				coins.addCoins?.(extra);
 				totalCoinsEarned += extra;
 			}
 
-			const correctTriviaCount = trivia.correctCount();
-			if (correctTriviaCount > 0) {
-				const extra = Math.floor(2 * (typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1));
-				coins.addCoins?.(extra);
-				totalCoinsEarned += extra;
+			if (trivia.section.isEnabled) {
+				const correctTriviaCount = trivia.correctCount();
+				const incorrectTriviaCount = Math.max(0, trivia.state.items.length - correctTriviaCount);
+				const triviaCoins = Math.floor(correctTriviaCount * 5 * jeopardyMultiplier * coinMultiplier);
+				if (triviaCoins > 0) {
+					coins.addCoins?.(triviaCoins);
+					totalCoinsEarned += triviaCoins;
+				}
+				if (jeopardyMultiplier > 1 && incorrectTriviaCount > 0) {
+					const penalty = Math.min(coins.getCoins?.() ?? 0, Math.floor(incorrectTriviaCount * 5 * jeopardyMultiplier));
+					if (penalty > 0) {
+						coins.spendCoins?.(penalty);
+						totalCoinsEarned -= penalty;
+					}
+				}
+			}
+
+			if (survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted) {
+				const bothBonusCoins = Math.floor((10 + Math.max(0, streakVal)) * coinMultiplier);
+				coins.addCoins?.(bothBonusCoins);
+				totalCoinsEarned += bothBonusCoins;
+				shards.addShards?.(1);
+				totalShardsEarned += 1;
+				furyDelta -= Math.max(0, streakVal);
+				streakCtx.incrementStreak?.();
+			}
+
+			const surveyBonus = itemSnacks.getSurveyCompletionBonus?.(Math.max(0, totalCoinsEarned), totalShardsEarned, scar);
+			if (surveyBonus) {
+				const bonusCoins = Math.max(0, surveyBonus.finalCoins - Math.max(0, totalCoinsEarned));
+				const bonusShards = Math.max(0, surveyBonus.finalShards - totalShardsEarned);
+				if (bonusCoins > 0) {
+					coins.addCoins?.(bonusCoins);
+					totalCoinsEarned += bonusCoins;
+				}
+				if (bonusShards > 0) {
+					shards.addShards?.(bonusShards);
+					totalShardsEarned += bonusShards;
+				}
+				if ((surveyBonus.snackDrops ?? 0) > 0) {
+					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops, scar);
+				}
 			}
 		}
 
-		const totalCoins = totalCoinsEarned + totalGoalCoins;
-		const fireXPFromCoins = typeof coins?.calculateFireXP === 'function' ? coins.calculateFireXP(totalCoins) : 0;
-		const bonusFireXP = (dragon?.age ?? 0) * 10;
+		if (!alreadyDoneToday && typeof fury?.addFury === 'function') {
+			fury.addFury(furyDelta);
+			const healthDelta = 2 - furyDelta;
+			if (healthDelta > 0) dragon.healHp?.(healthDelta);
+			if (healthDelta < 0) dragon.damageHp?.(Math.abs(healthDelta));
+		}
 
-		const xpEarned = alreadyDoneToday ? 0 : fireXPFromCoins + bonusFireXP;
+		const totalCoins = totalCoinsEarned;
+		const fireXPFromCoins = typeof coins?.calculateFireXP === 'function' ? coins.calculateFireXP(totalCoins) : 0;
+		const xpEarned = alreadyDoneToday ? 0 : fireXPFromCoins;
 		const effectiveFury = alreadyDoneToday ? 0 : furyDelta;
-		if (!alreadyDoneToday) scarLevel?.addXP?.(fireXPFromCoins + bonusFireXP);
+		if (!alreadyDoneToday) scarLevel?.addXP?.(fireXPFromCoins);
 
 		survey.completeNightSurvey?.();
 		survey.recordNightSnapshot?.({ habitIds: habitSnapshot.completedHabitIds, todoIds: todoSnapshot.completedTodoIds });
@@ -257,6 +368,15 @@ export default function SurveyNightPage() {
 			.map(text => text.trim())
 			.filter(Boolean)
 			.join('\n\n');
+		const completedHabitTitles = habitSnapshot.updatedHabits.filter(habit => habitSnapshot.completedHabitIds.includes(habit.id)).map(habit => habit.title);
+		const remainingHabitTitles = habitSnapshot.updatedHabits.filter(habit => !habitSnapshot.completedHabitIds.includes(habit.id)).map(habit => habit.title);
+		const completedTodoTitles = todoSnapshot.updatedTodos.filter(todo => todoSnapshot.completedTodoIds.includes(todo.id)).map(todo => todo.title);
+		const pendingTodoTitles = todoSnapshot.updatedTodos
+			.filter(todo => !todoSnapshot.completedTodoIds.includes(todo.id) && !todo.completedDate)
+			.map(todo => todo.title);
+		const failedTodoTitles = todoSnapshot.updatedTodos
+			.filter(todo => (!!todo.dueDate && today > todo.dueDate && !todo.completedDate) || !!todo.failed || (!!todo.completedDate && !!todo.dueDate && todo.completedDate > todo.dueDate))
+			.map(todo => todo.title);
 
 		journal.addEntry?.({
 			id: `entry_${today}_night_${Date.now()}`,
@@ -267,17 +387,22 @@ export default function SurveyNightPage() {
 			text: journalEntry.section.isEnabled ? journalEntry.state.text : undefined,
 			promptText: promptText || undefined,
 			moodEvening: moodLabel,
-			rewards: { coins: totalCoins, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: alreadyDoneToday ? 0 : 1 },
+			rewards: { coins: totalCoins, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: totalShardsEarned },
 			triviaResult: trivia.section.isEnabled ? `${trivia.correctCount()}/${trivia.state.items.length}` : undefined,
 			triviaCorrect: trivia.section.isEnabled ? trivia.correctCount() > 0 : undefined,
 			todoCount: goals.todos.length,
 			todoCompleted: todoSnapshot.completedTodoIds.length,
-			todoFailed: goals.todos.filter(todo => !!todo.failed).length,
+			todoFailed: failedTodoTitles.length,
+			completedHabitTitles,
+			remainingHabitTitles,
+			completedTodoTitles,
+			pendingTodoTitles,
+			failedTodoTitles,
 		});
 
 		setResults({
 			coinsEarned: totalCoins,
-			shardsEarned: alreadyDoneToday ? 0 : 1,
+			shardsEarned: totalShardsEarned,
 			xpEarned: xpEarned,
 			furyDelta: effectiveFury,
 			goalsCompleted: totalGoalsCompleted,

@@ -1,6 +1,7 @@
 import { images } from '@/constants';
 import { useAscension } from '@/context/AscensionProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
+import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import React from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,10 +10,13 @@ export default function AscensionPage() {
 	const ascension = useAscension();
 	const souls = useDragonSouls();
 	const shards = useShards();
+	const itemEconomy = useItemEconomy();
 
 	const requirements = ascension.getAscensionRequirements();
 	const rewards = ascension.getAscensionRewards();
 	const soulConverterCost = ascension.getSoulConverterCost();
+	const soulRespecCost = ascension.getSoulRespecCost();
+	const soulRespecRefund = Math.floor(itemEconomy.getSoulMultiplierRefundTotal());
 	const snackResetCost = ascension.getSnackResetCost();
 	const canAscend = ascension.canAscend();
 
@@ -59,7 +63,7 @@ export default function AscensionPage() {
 			</View>
 
 			<View style={styles.card}>
-				<Text style={styles.cardTitle}>Soul Convertor</Text>
+				<Text style={styles.cardTitle}>Soul Converter</Text>
 				<Text style={styles.description}>Convert Dragon Souls into Dragon Shards one click at a time. This price never resets.</Text>
 				<Text style={styles.previewText}>Current cost: {soulConverterCost} Dragon Souls for 1 Dragon Shard</Text>
 				<Pressable
@@ -77,26 +81,59 @@ export default function AscensionPage() {
 			</View>
 
 			<View style={styles.card}>
-				<Text style={styles.cardTitle}>Shop Resetor</Text>
-				<Text style={styles.description}>Reset the snack shop to its default prices. You can only do this once per ascension.</Text>
-				<Text style={styles.previewText}>Cost: {snackResetCost.souls} Dragon Souls + {snackResetCost.shards} Dragon Shards</Text>
+				<Text style={styles.cardTitle}>Soul Multiplier Respec</Text>
+				<Text style={styles.description}>Refund 100% of your spent Dragon Souls from soul multipliers, then clear those upgrades. This always costs 50 Dragon Shards.</Text>
+				<Text style={styles.previewText}>Refund preview: {soulRespecRefund} Dragon Souls</Text>
 				<Text style={styles.previewText}>Current Shards: {shards.getShards()}</Text>
 				<Pressable
-					style={[styles.secondaryButton, ascension.shopResetUsedThisAscension && styles.disabledButton]}
-					disabled={ascension.shopResetUsedThisAscension}
+					style={[styles.secondaryButton, soulRespecRefund <= 0 && styles.disabledButton]}
+					disabled={soulRespecRefund <= 0}
 					onPress={() => {
-						const result = ascension.resetSnackShop();
-						if (!result.success) {
-							Alert.alert('Shop reset blocked', result.message ?? 'Unable to reset snack prices.');
-							return;
-						}
-						Alert.alert('Snack shop reset', 'Snack prices are back to their default values for this ascension.');
+						Alert.alert(
+							'Respec Soul Multipliers',
+							`Spend ${soulRespecCost} Dragon Shards to refund ${soulRespecRefund} Dragon Souls and remove all owned soul multipliers?`,
+							[
+								{ text: 'Cancel', style: 'cancel' },
+								{
+									text: 'Respec',
+									style: 'destructive',
+									onPress: () => {
+										const result = ascension.respecSoulMultipliers();
+										if (!result.success) {
+											Alert.alert('Respec blocked', result.message ?? 'Unable to respec soul multipliers.');
+											return;
+										}
+										Alert.alert('Soul multipliers reset', `Spent ${result.cost} Dragon Shards and refunded ${result.refundedSouls} Dragon Souls.`);
+									},
+								},
+							],
+						);
 					}}>
-					<Text style={styles.secondaryButtonText}>{ascension.shopResetUsedThisAscension ? 'Already Used This Ascension' : 'Reset Snack Shop'}</Text>
+					<Text style={styles.secondaryButtonText}>{soulRespecRefund > 0 ? 'Respec Soul Multipliers' : 'No Soul Multipliers Owned'}</Text>
 				</Pressable>
 			</View>
 
-			<Text style={styles.footerText}>Lair subtitle: Ascension adds 1 million population, applies Ascension Sickness, and starts a new long-term soul economy for future runs.</Text>
+			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Snack Market Reset</Text>
+				<Text style={styles.description}>Reset snack prices in the market back to their default values. You can only do this once per ascension.</Text>
+				<Text style={styles.previewText}>Cost: {snackResetCost.souls} Dragon Souls + {snackResetCost.shards} Dragon Shards</Text>
+				<Text style={styles.previewText}>Current Shards: {shards.getShards()}</Text>
+				<Pressable
+					style={[styles.secondaryButton, ascension.snackResetUsedThisAscension && styles.disabledButton]}
+					disabled={ascension.snackResetUsedThisAscension}
+					onPress={() => {
+						const result = ascension.resetSnackMarket();
+						if (!result.success) {
+							Alert.alert('Market reset blocked', result.message ?? 'Unable to reset snack prices.');
+							return;
+						}
+						Alert.alert('Snack prices reset', 'Snack prices are back to their default market values for this ascension.');
+					}}>
+					<Text style={styles.secondaryButtonText}>{ascension.snackResetUsedThisAscension ? 'Already Used This Ascension' : 'Reset Snack Prices'}</Text>
+				</Pressable>
+			</View>
+
+			<Text style={styles.footerText}>Lair subtitle: ascension adds 1 million population, applies Ascension Sickness, and unlocks soul systems that shape future market runs.</Text>
 		</ScrollView>
 	);
 }

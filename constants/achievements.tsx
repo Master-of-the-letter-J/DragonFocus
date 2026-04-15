@@ -2,7 +2,7 @@ export interface Achievement {
   id: string;
   title: string;
   description: string;
-  category: 'surveys' | 'dragon_stats' | 'coins' | 'journal' | 'age' | 'scar' | 'challenges' | 'secret';
+  category: 'surveys' | 'dragon_stats' | 'coins' | 'market' | 'journal' | 'age' | 'scar' | 'challenges' | 'secret';
   icon: string;
   unlocked: boolean;
 }
@@ -38,12 +38,12 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'clicking_gremlin', title: 'Clicking Gremlin', description: 'Hit the daily click limit', category: 'coins', icon: '\u{1F479}', unlocked: false },
   { id: 'finger_of_steel', title: 'Finger of Steel', description: 'Tap the dragon 10,000 times', category: 'coins', icon: '\u{1F446}', unlocked: false },
 
-  // Shop & Cosmetics
-  { id: 'snack_sampler', title: 'Snack Sampler', description: 'Buy 10 snacks', category: 'journal', icon: '\u{1F37F}', unlocked: false },
-  { id: 'snack_connoisseur', title: 'Snack Connoisseur', description: 'Buy every snack type', category: 'journal', icon: '\u{1F468}\u200D\u{1F373}', unlocked: false },
-  { id: 'fashion_dragon', title: 'Fashion Dragon', description: 'Equip your first cosmetic', category: 'journal', icon: '\u{1F457}', unlocked: false },
-  { id: 'drip_overload', title: 'Drip Overload', description: 'Equip 5 cosmetics at once', category: 'journal', icon: '\u2728', unlocked: false },
-  { id: 'drip_god', title: 'Draconic Drip God', description: 'Own every cosmetic', category: 'journal', icon: '\u{1F451}', unlocked: false },
+  // Market & Cosmetics
+  { id: 'snack_sampler', title: 'Snack Sampler', description: 'Buy 10 snacks', category: 'market', icon: '\u{1F37F}', unlocked: false },
+  { id: 'snack_connoisseur', title: 'Snack Connoisseur', description: 'Buy every snack type', category: 'market', icon: '\u{1F468}\u200D\u{1F373}', unlocked: false },
+  { id: 'fashion_dragon', title: 'Fashion Dragon', description: 'Equip your first cosmetic', category: 'market', icon: '\u{1F457}', unlocked: false },
+  { id: 'drip_overload', title: 'Drip Overload', description: 'Equip 5 cosmetics at once', category: 'market', icon: '\u2728', unlocked: false },
+  { id: 'drip_god', title: 'Draconic Drip God', description: 'Own every cosmetic', category: 'market', icon: '\u{1F451}', unlocked: false },
 
   // Journal & Goal Tracking
   { id: 'dear_diary', title: 'Dear Diary', description: 'Write your first journal entry', category: 'journal', icon: '\u{1F4D4}', unlocked: false },
