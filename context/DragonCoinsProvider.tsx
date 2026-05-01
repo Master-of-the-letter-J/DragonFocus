@@ -1,14 +1,27 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
+
+interface DragonCoinState {
+	coins: number;
+	coinMultiplier: number;
+	totalCoinsEarned: number;
+	totalSurveyCoinsEarned: number;
+	coinsSinceLastAscension: number;
+	externalCoinMultiplier: number;
+}
 
 interface DragonCoinsContextType {
 	coins: number;
 	coinMultiplier: number;
 	totalCoinsEarned: number;
+	totalSurveyCoinsEarned: number;
 	coinsSinceLastAscension: number;
 	addCoins: (amount: number) => void;
 	spendCoins: (amount: number) => boolean;
 	getCoins: () => number;
 	getCoinsSinceLastAscension: () => number;
+	getTotalSurveyCoinsEarned: () => number;
+	registerSurveyCoins: (amount: number) => void;
 	// Formula: (1 - Yang * 0.005) * (1 + DragonShards * 0.01) * (1 + 0.1 * ScarLevel) * SnackMultipliers * (2 if Premium)
 	calculateCoinMultiplier: (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => number;
 	calculateSurveyCoins: (isMorningOrNight: boolean, streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => number;
@@ -17,6 +30,7 @@ interface DragonCoinsContextType {
 	addNightSurveyCoins: (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
 	addAdditionalSurveyCoins: (streak: number, yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
 	addClickingCoins: (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number, isPremium: boolean) => void;
+	setExternalCoinMultiplier: (amount: number) => void;
 	markAscended: () => void;
 	resetCoins?: () => void;
 }
@@ -25,33 +39,65 @@ const DragonCoinsContext = createContext<DragonCoinsContextType | undefined>(und
 
 const round4 = (v: number) => Math.round(v * 10000) / 10000;
 
+const INITIAL_DRAGON_COIN_STATE: DragonCoinState = {
+	coins: 0,
+	coinMultiplier: 1,
+	totalCoinsEarned: 0,
+	totalSurveyCoinsEarned: 0,
+	coinsSinceLastAscension: 0,
+	externalCoinMultiplier: 1,
+};
+
 export function DragonCoinsProvider({ children }: { children: ReactNode }) {
-	const [coins, setCoins] = useState(0);
-	const [coinMultiplier, setCoinMultiplier] = useState(1);
-	const [totalCoinsEarned, setTotalCoinsEarned] = useState(0);
-	const [coinsSinceLastAscension, setCoinsSinceLastAscension] = useState(0);
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.dragonCoins, INITIAL_DRAGON_COIN_STATE);
 
 	const addCoins = (amount: number) => {
-		setCoins(prev => Math.max(0, prev + amount));
-		if (amount > 0) {
-			setTotalCoinsEarned(prev => prev + amount);
-			setCoinsSinceLastAscension(prev => prev + amount);
-		}
+		setState(current => ({
+			...current,
+			coins: Math.max(0, current.coins + amount),
+			totalCoinsEarned: amount > 0 ? current.totalCoinsEarned + amount : current.totalCoinsEarned,
+			coinsSinceLastAscension: amount > 0 ? current.coinsSinceLastAscension + amount : current.coinsSinceLastAscension,
+		}));
 	};
 
 	const spendCoins = (amount: number): boolean => {
-		if (coins >= amount) {
-			setCoins(prev => prev - amount);
+		if (state.coins >= amount) {
+			setState(current => ({
+				...current,
+				coins: Math.max(0, current.coins - amount),
+			}));
 			return true;
 		}
 		return false;
 	};
 
-	const getCoins = () => coins;
-	const getCoinsSinceLastAscension = () => coinsSinceLastAscension;
+	const getCoins = () => state.coins;
+	const getCoinsSinceLastAscension = () => state.coinsSinceLastAscension;
+	const getTotalSurveyCoinsEarned = () => state.totalSurveyCoinsEarned;
 
-	const resetCoins = () => setCoins(0);
-	const markAscended = () => setCoinsSinceLastAscension(0);
+	const resetCoins = () =>
+		setState(current => ({
+			...current,
+			coins: 0,
+		}));
+	const markAscended = () =>
+		setState(current => ({
+			...current,
+			coinsSinceLastAscension: 0,
+		}));
+	const registerSurveyCoins = (amount: number) => {
+		if (amount <= 0) return;
+		setState(current => ({
+			...current,
+			totalSurveyCoinsEarned: current.totalSurveyCoinsEarned + amount,
+		}));
+	};
+	const setExternalCoinMultiplier = (amount: number) => {
+		setState(current => ({
+			...current,
+			externalCoinMultiplier: Math.max(1, amount),
+		}));
+	};
 
 	const calculateCoinMultiplier = (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false): number => {
 		const clampedYang = Math.max(0, Math.min(100, yangValue));
@@ -65,12 +111,15 @@ export function DragonCoinsProvider({ children }: { children: ReactNode }) {
 		const scarMultiplier = 1 + 0.1 * safeScar;
 		const premiumMultiplier = isPremium ? 2 : 1;
 
-		return round4(yangMultiplier * shardMultiplier * scarMultiplier * safeSnackMultiplier * premiumMultiplier);
+		return round4(yangMultiplier * shardMultiplier * scarMultiplier * safeSnackMultiplier * premiumMultiplier * state.externalCoinMultiplier);
 	};
 
 	const captureMultiplier = (yangValue: number, dragonShards: number, scarLevel: number, snackMultipliers: number = 1, isPremium: boolean = false) => {
 		const multiplier = calculateCoinMultiplier(yangValue, dragonShards, scarLevel, snackMultipliers, isPremium);
-		setCoinMultiplier(multiplier);
+		setState(current => ({
+			...current,
+			coinMultiplier: multiplier,
+		}));
 		return multiplier;
 	};
 
@@ -111,14 +160,17 @@ export function DragonCoinsProvider({ children }: { children: ReactNode }) {
 	return (
 		<DragonCoinsContext.Provider
 			value={{
-				coins,
-				coinMultiplier,
-				totalCoinsEarned,
-				coinsSinceLastAscension,
+				coins: state.coins,
+				coinMultiplier: state.coinMultiplier,
+				totalCoinsEarned: state.totalCoinsEarned,
+				totalSurveyCoinsEarned: state.totalSurveyCoinsEarned,
+				coinsSinceLastAscension: state.coinsSinceLastAscension,
 				addCoins,
 				spendCoins,
 				getCoins,
 				getCoinsSinceLastAscension,
+				getTotalSurveyCoinsEarned,
+				registerSurveyCoins,
 				calculateCoinMultiplier,
 				calculateSurveyCoins,
 				calculateFireXP,
@@ -126,6 +178,7 @@ export function DragonCoinsProvider({ children }: { children: ReactNode }) {
 				addNightSurveyCoins,
 				addAdditionalSurveyCoins,
 				addClickingCoins,
+				setExternalCoinMultiplier,
 				markAscended,
 				resetCoins,
 			}}>

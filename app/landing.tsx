@@ -1,6 +1,7 @@
+import { images } from '@/constants';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const FEATURES = [
 	{ title: 'Morning Survey', description: 'Plan your habits, to-dos, and focus before the day drifts.' },
@@ -49,45 +50,35 @@ export default function LandingPage() {
 		<>
 			<Stack.Screen options={{ headerShown: false }} />
 			<View style={styles.container}>
-				<Animated.View
-					pointerEvents="none"
-					style={[
-						styles.backgroundOrbLarge,
-						{
-							opacity: glowA.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.65] }),
-							transform: [
-								{ translateY: glowA.interpolate({ inputRange: [0, 1], outputRange: [0, 24] }) },
-								{ scale: glowA.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) },
-							],
-						},
-					]}
-				/>
-				<Animated.View
-					pointerEvents="none"
-					style={[
-						styles.backgroundOrbSmall,
-						{
-							opacity: glowB.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] }),
-							transform: [
-								{ translateY: glowB.interpolate({ inputRange: [0, 1], outputRange: [0, -18] }) },
-								{ scale: glowB.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) },
-							],
-						},
-					]}
-				/>
+				<View style={styles.castleBand}>
+					{Array.from({ length: 9 }).map((_, index) => (
+						<View key={index} style={styles.crenel} />
+					))}
+				</View>
 
-				<View style={styles.heroCard}>
+				<View style={styles.heroPanel}>
 					<View style={styles.brandRow}>
 						<View style={styles.brandMark}>
-							<Text style={styles.brandMarkText}>DF</Text>
+							<Text style={styles.brandMarkText}>🐉</Text>
 						</View>
 						<View style={{ flex: 1 }}>
-							<Text style={styles.kicker}>Dragon companion focus tracker</Text>
+							<Text style={styles.kicker}>Medieval focus ritual</Text>
 							<Text style={styles.title}>Dragon Focus</Text>
 						</View>
 					</View>
 
 					<Text style={styles.subtitle}>Guide the day. Protect your dragon. Turn consistent surveys into long-term power.</Text>
+
+					<Animated.View
+						style={[
+							styles.dragonStage,
+							{
+								opacity: glowA.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }),
+								transform: [{ translateY: glowB.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }],
+							},
+						]}>
+						<Image source={images.dragon} style={styles.heroDragon} />
+					</Animated.View>
 
 					<View style={styles.statusStrip}>
 						<Text style={styles.statusTitle}>Spawn sequence</Text>
@@ -134,35 +125,33 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#07111F',
+		backgroundColor: '#111827',
 		paddingHorizontal: 20,
 		paddingTop: 64,
 		paddingBottom: 36,
 	},
-	backgroundOrbLarge: {
+	castleBand: {
 		position: 'absolute',
-		top: -80,
-		right: -40,
-		width: 280,
-		height: 280,
-		borderRadius: 999,
-		backgroundColor: '#A83B15',
+		top: 0,
+		left: 0,
+		right: 0,
+		height: 34,
+		backgroundColor: '#374151',
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+		alignItems: 'flex-start',
 	},
-	backgroundOrbSmall: {
-		position: 'absolute',
-		bottom: 120,
-		left: -70,
-		width: 220,
-		height: 220,
-		borderRadius: 999,
-		backgroundColor: '#1E5C78',
+	crenel: {
+		width: 24,
+		height: 22,
+		backgroundColor: '#111827',
 	},
-	heroCard: {
-		borderRadius: 28,
+	heroPanel: {
+		borderRadius: 8,
 		padding: 22,
-		backgroundColor: 'rgba(7, 17, 31, 0.82)',
+		backgroundColor: '#1F2937',
 		borderWidth: 1,
-		borderColor: 'rgba(255, 255, 255, 0.12)',
+		borderColor: '#B45309',
 		marginBottom: 20,
 	},
 	brandRow: {
@@ -174,8 +163,8 @@ const styles = StyleSheet.create({
 	brandMark: {
 		width: 64,
 		height: 64,
-		borderRadius: 18,
-		backgroundColor: '#D97706',
+		borderRadius: 8,
+		backgroundColor: '#7C2D12',
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderWidth: 1,
@@ -183,9 +172,9 @@ const styles = StyleSheet.create({
 	},
 	brandMarkText: {
 		color: '#FFF7ED',
-		fontSize: 22,
+		fontSize: 28,
 		fontWeight: '900',
-		letterSpacing: 1.5,
+		letterSpacing: 0,
 	},
 	kicker: {
 		color: '#F59E0B',
@@ -208,11 +197,20 @@ const styles = StyleSheet.create({
 		marginBottom: 18,
 	},
 	statusStrip: {
-		borderRadius: 18,
+		borderRadius: 8,
 		padding: 16,
 		backgroundColor: 'rgba(245, 158, 11, 0.12)',
 		borderWidth: 1,
 		borderColor: 'rgba(245, 158, 11, 0.24)',
+	},
+	dragonStage: {
+		alignItems: 'center',
+		marginBottom: 12,
+	},
+	heroDragon: {
+		width: 190,
+		height: 150,
+		resizeMode: 'contain',
 	},
 	statusTitle: {
 		color: '#FCD34D',
@@ -234,7 +232,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 14,
-		borderRadius: 22,
+		borderRadius: 8,
 		padding: 18,
 		backgroundColor: 'rgba(255, 255, 255, 0.08)',
 		borderWidth: 1,
@@ -263,7 +261,7 @@ const styles = StyleSheet.create({
 	button: {
 		backgroundColor: '#D97706',
 		paddingVertical: 18,
-		borderRadius: 18,
+		borderRadius: 8,
 		alignItems: 'center',
 		borderWidth: 1,
 		borderColor: 'rgba(255, 255, 255, 0.2)',

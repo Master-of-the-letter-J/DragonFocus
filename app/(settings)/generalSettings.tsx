@@ -8,6 +8,7 @@ import { useItemCore } from '@/context/ItemCoreProvider';
 import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { usePremium } from '@/context/PremiumProvider';
+import { usePopulation } from '@/context/PopulationProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
@@ -30,6 +31,7 @@ export default function GeneralSettings() {
 	const scarLevel = useScarLevel();
 	const fury = useFury();
 	const premium = usePremium();
+	const population = usePopulation();
 	const streak = useStreak();
 	const shards = useShards();
 	const souls = useDragonSouls();
@@ -42,8 +44,14 @@ export default function GeneralSettings() {
 	const handleVolumeChange = (key: VolumeKey, value: number) => setVolumes(prev => ({ ...prev, [key]: value }));
 
 	const simulateDay = () => {
+		const today = new Date().toISOString().split('T')[0];
+		const skippedSurveyCount = Number(!(survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today)) + Number(!(survey.nightSurveyCompleted && survey.lastNightSurveyDate === today));
+
 		dragon.incrementAge?.();
 		itemEconomy.processDailyPayouts?.();
+		population.dailyPopulationUpdate(fury.furyMeter, dragon.age);
+		if (skippedSurveyCount > 0) fury.incrementFuryFromSkippedSurveys(skippedSurveyCount);
+		dragon.dailyHealthPenalty(fury.furyMeter);
 		survey.forceNewDay();
 	};
 

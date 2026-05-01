@@ -1,3 +1,4 @@
+import { formatAbbreviatedNumber } from '@/constants/number-abbreviation';
 import { images } from '@/constants';
 import { useAscension } from '@/context/AscensionProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
@@ -23,28 +24,47 @@ export default function AscensionPage() {
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.header}>Ascension</Text>
-			<Text style={styles.soulsText}>Dragon Souls: {souls.getSouls()}</Text>
+			<Text style={styles.soulsText}>Dragon Souls: {formatAbbreviatedNumber(souls.getSouls())}</Text>
+			<Text style={styles.footerText}>Lifetime Souls Earned: {formatAbbreviatedNumber(souls.getTotalSoulsEarned())}</Text>
 			<Image source={images.dragonHeart} style={styles.heartImage} />
 
 			<View style={styles.card}>
+				<Text style={styles.cardTitle}>Unlock Ascension</Text>
+				<Text style={styles.description}>Ascension is unlocked once for 50 coins after Scar Level 4. The ritual itself is now blocked only by active Ascension Sickness, not a separate cooldown.</Text>
+				<Pressable
+					style={[styles.secondaryButton, ascension.ascensionUnlocked && styles.disabledButton]}
+					disabled={ascension.ascensionUnlocked}
+					onPress={() => {
+						const result = ascension.unlockAscension();
+						if (!result.success) {
+							Alert.alert('Unlock blocked', result.message ?? 'Unable to unlock ascension.');
+							return;
+						}
+						Alert.alert('Ascension unlocked', 'The ascension ritual is now permanently available in the lair.');
+					}}>
+					<Text style={styles.secondaryButtonText}>{ascension.ascensionUnlocked ? 'Already Unlocked' : `Unlock for ${formatAbbreviatedNumber(ascension.getAscensionUnlockCost())} Coins`}</Text>
+				</Pressable>
+			</View>
+
+			<View style={styles.card}>
 				<Text style={styles.cardTitle}>Ascend Your Dragon</Text>
-				<Text style={styles.description}>Ascension sacrifices coins, generators, and clickers, then converts that run into Dragon Souls and Dragon Shards.</Text>
+				<Text style={styles.description}>Ascension sacrifices coins, generators, and clickers, then converts that run into Dragon Souls and Dragon Shards. Your current Dragon Souls now reset to that run&apos;s reward each time you ascend.</Text>
 
 				<View style={styles.requirementsList}>
 					{requirements.map(requirement => (
 						<Text key={requirement.label} style={[styles.requirementText, requirement.met ? styles.requirementMet : styles.requirementUnmet]}>
-							{requirement.met ? '[x]' : '[ ]'} {requirement.label}
+							{requirement.met ? '✅' : '☐'} {requirement.label}
 						</Text>
 					))}
 				</View>
 
 				<View style={styles.previewBox}>
 					<Text style={styles.previewTitle}>Ascension Preview</Text>
-					<Text style={styles.previewText}>Souls: +{rewards.souls}</Text>
-					<Text style={styles.previewText}>Shards: +{rewards.shards}</Text>
-					<Text style={styles.previewText}>Generators sacrificed: {rewards.generatorsSacrificed}</Text>
-					<Text style={styles.previewText}>Clickers sacrificed: {rewards.clickersSacrificed}</Text>
-					<Text style={styles.previewText}>Coin bank used: {rewards.coinsBanked}</Text>
+					<Text style={styles.previewText}>Souls: +{formatAbbreviatedNumber(rewards.souls)}</Text>
+					<Text style={styles.previewText}>Shards: +{formatAbbreviatedNumber(rewards.shards)}</Text>
+					<Text style={styles.previewText}>Generators sacrificed: {formatAbbreviatedNumber(rewards.generatorsSacrificed)}</Text>
+					<Text style={styles.previewText}>Clickers sacrificed: {formatAbbreviatedNumber(rewards.clickersSacrificed)}</Text>
+					<Text style={styles.previewText}>Coin bank used: {formatAbbreviatedNumber(rewards.coinsBanked)}</Text>
 				</View>
 
 				<Pressable
@@ -56,13 +76,13 @@ export default function AscensionPage() {
 							Alert.alert('Ascension blocked', result.message ?? 'Requirements not met.');
 							return;
 						}
-						Alert.alert('Ascension complete', `You earned ${result.rewards?.souls ?? 0} Dragon Souls and ${result.rewards?.shards ?? 0} Dragon Shards.`);
+						Alert.alert('Ascension complete', `You earned ${formatAbbreviatedNumber(result.rewards?.souls ?? 0)} Dragon Souls and ${formatAbbreviatedNumber(result.rewards?.shards ?? 0)} Dragon Shards.`);
 					}}>
 					<Text style={styles.primaryButtonText}>Ascend</Text>
 				</Pressable>
 			</View>
 
-			<View style={styles.card}>
+			<View style={[styles.card, styles.bottomToolsCard]}>
 				<Text style={styles.cardTitle}>Soul Converter</Text>
 				<Text style={styles.description}>Convert Dragon Souls into Dragon Shards one click at a time. This price never resets.</Text>
 				<Text style={styles.previewText}>Current cost: {soulConverterCost} Dragon Souls for 1 Dragon Shard</Text>
@@ -80,11 +100,11 @@ export default function AscensionPage() {
 				</Pressable>
 			</View>
 
-			<View style={styles.card}>
+			<View style={[styles.card, styles.bottomToolsCard]}>
 				<Text style={styles.cardTitle}>Soul Multiplier Respec</Text>
-				<Text style={styles.description}>Refund 100% of your spent Dragon Souls from soul multipliers, then clear those upgrades. This always costs 50 Dragon Shards.</Text>
-				<Text style={styles.previewText}>Refund preview: {soulRespecRefund} Dragon Souls</Text>
-				<Text style={styles.previewText}>Current Shards: {shards.getShards()}</Text>
+				<Text style={styles.description}>Refund 100% of your spent Dragon Souls from soul prophets and relics, then clear those upgrades. This always costs 50 Dragon Shards.</Text>
+				<Text style={styles.previewText}>Refund preview: {formatAbbreviatedNumber(soulRespecRefund)} Dragon Souls</Text>
+				<Text style={styles.previewText}>Current Shards: {formatAbbreviatedNumber(shards.getShards())}</Text>
 				<Pressable
 					style={[styles.secondaryButton, soulRespecRefund <= 0 && styles.disabledButton]}
 					disabled={soulRespecRefund <= 0}
@@ -97,15 +117,15 @@ export default function AscensionPage() {
 								{
 									text: 'Respec',
 									style: 'destructive',
-									onPress: () => {
-										const result = ascension.respecSoulMultipliers();
-										if (!result.success) {
-											Alert.alert('Respec blocked', result.message ?? 'Unable to respec soul multipliers.');
-											return;
-										}
-										Alert.alert('Soul multipliers reset', `Spent ${result.cost} Dragon Shards and refunded ${result.refundedSouls} Dragon Souls.`);
-									},
+								onPress: () => {
+									const result = ascension.respecSoulMultipliers();
+									if (!result.success) {
+										Alert.alert('Respec blocked', result.message ?? 'Unable to respec soul multipliers.');
+										return;
+									}
+									Alert.alert('Soul multipliers reset', `Spent ${formatAbbreviatedNumber(result.cost)} Dragon Shards and refunded ${formatAbbreviatedNumber(result.refundedSouls)} Dragon Souls.`);
 								},
+							},
 							],
 						);
 					}}>
@@ -113,11 +133,11 @@ export default function AscensionPage() {
 				</Pressable>
 			</View>
 
-			<View style={styles.card}>
+			<View style={[styles.card, styles.bottomToolsCard]}>
 				<Text style={styles.cardTitle}>Snack Market Reset</Text>
 				<Text style={styles.description}>Reset snack prices in the market back to their default values. You can only do this once per ascension.</Text>
-				<Text style={styles.previewText}>Cost: {snackResetCost.souls} Dragon Souls + {snackResetCost.shards} Dragon Shards</Text>
-				<Text style={styles.previewText}>Current Shards: {shards.getShards()}</Text>
+				<Text style={styles.previewText}>Cost: {formatAbbreviatedNumber(snackResetCost.souls)} Dragon Souls + {formatAbbreviatedNumber(snackResetCost.shards)} Dragon Shards</Text>
+				<Text style={styles.previewText}>Current Shards: {formatAbbreviatedNumber(shards.getShards())}</Text>
 				<Pressable
 					style={[styles.secondaryButton, ascension.snackResetUsedThisAscension && styles.disabledButton]}
 					disabled={ascension.snackResetUsedThisAscension}
@@ -144,6 +164,7 @@ const styles = StyleSheet.create({
 	soulsText: { fontSize: 18, fontWeight: '700', color: 'rgb(153, 102, 204)', marginBottom: 12 },
 	heartImage: { width: 92, height: 92, alignSelf: 'center', marginBottom: 16, resizeMode: 'contain' },
 	card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, marginBottom: 16 },
+	bottomToolsCard: { marginBottom: 12 },
 	cardTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },
 	description: { fontSize: 13, lineHeight: 20, color: '#4B5563', marginBottom: 12 },
 	requirementsList: { gap: 6, marginBottom: 14 },

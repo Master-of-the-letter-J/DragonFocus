@@ -1,10 +1,13 @@
+import { formatAbbreviatedNumber, formatCoinNumber, formatDecimalNumber } from '@/constants/number-abbreviation';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
+import { useDragonEmbers } from '@/context/DragonEmbersProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
+import { useSurvey } from '@/context/SurveyProvider';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -15,12 +18,6 @@ interface TopHeaderProps {
 	isHomePage?: boolean;
 }
 
-const formatFireXp = (value: number) => {
-	if (value < 1_000) return Math.floor(value).toString();
-	if (value < 1_000_000_000_000) return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
-	return value.toExponential(1).replace('+', '');
-};
-
 export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	const router = useRouter();
 	const dragon = useDragon();
@@ -29,9 +26,12 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	const coins = useDragonCoins();
 	const shards = useShards();
 	const souls = useDragonSouls();
+	const embers = useDragonEmbers();
 	const fury = useFury();
+	const survey = useSurvey();
 
 	const [activeStat, setActiveStat] = useState<string | null>(null);
+	const [showSurveyMenu, setShowSurveyMenu] = useState(false);
 
 	useEffect(() => {
 		if (!activeStat) return;
@@ -47,13 +47,17 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	const xpGoal = Math.max(1, currentLevel.levelUpRequiredXP || 1);
 	const xpPercent = isMaxScarLevel ? 100 : Math.min(100, (scarLevel.currentXP / xpGoal) * 100);
 
-	const furyPercent = Math.max(0, Math.min(100, fury.furyMeter));
+	const furyPercent = Math.max(0, Math.min(100, (fury.furyMeter / Math.max(1, fury.maxFury)) * 100));
 	let furyColor = '#dcdcdc';
 	if (furyPercent < 33) furyColor = '#e0e0e0';
 	else if (furyPercent < 67) furyColor = '#9e9e9e';
 	else furyColor = '#111';
 
 	const dangerOutline = healthPercent < 33 || furyPercent > 67;
+	const today = new Date().toISOString().split('T')[0];
+	const pendingMorning = !(survey.morningSurveyCompleted && survey.lastMorningSurveyDate === today);
+	const pendingNight = !(survey.nightSurveyCompleted && survey.lastNightSurveyDate === today);
+	const hasPendingSurvey = !isHomePage && (pendingMorning || pendingNight);
 
 	const Tooltip = ({ text }: { text: string }) => (
 		<View style={styles.tooltipBox}>
@@ -62,8 +66,35 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 	);
 
 	return (
-		<Pressable onPress={() => setActiveStat(null)}>
+		<Pressable onPress={() => {
+			setActiveStat(null);
+			setShowSurveyMenu(false);
+		}}>
 			<View style={styles.container}>
+				{hasPendingSurvey ? (
+					<View style={styles.statWrapperSmall}>
+						<Pressable style={styles.stat} onPress={() => setShowSurveyMenu(current => !current)}>
+							<MaterialIcons name="menu" size={18} color="#111827" />
+							<Text style={[styles.statText, styles.pendingSurveyText]}>Surveys</Text>
+						</Pressable>
+						{showSurveyMenu ? (
+							<View style={styles.surveyMenu}>
+								<Text style={styles.surveyMenuTitle}>Pending Surveys</Text>
+								{pendingMorning ? (
+									<Pressable style={styles.surveyMenuButton} onPress={() => router.push('/surveyMorning')}>
+										<Text style={styles.surveyMenuButtonText}>Morning Survey</Text>
+									</Pressable>
+								) : null}
+								{pendingNight ? (
+									<Pressable style={styles.surveyMenuButton} onPress={() => router.push('/surveyNight')}>
+										<Text style={styles.surveyMenuButtonText}>Night Survey</Text>
+									</Pressable>
+								) : null}
+							</View>
+						) : null}
+					</View>
+				) : null}
+
 				<View style={styles.statWrapperSmall}>
 					<Pressable style={styles.stat} onPress={() => router.push('/pages/premium')}>
 						<MaterialIcons name="auto-awesome" size={18} color="#7C3AED" />
@@ -82,7 +113,7 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 					<Pressable onPress={() => setActiveStat('Scar Level')}>
 						<ProgressBar progress={xpPercent} outerStyle={[styles.progressOuter, dangerOutline && styles.dangerBarOutline]} innerStyle={{ backgroundColor: '#3cc8e7' }} />
 						<Text style={styles.progressText}>
-							Scar {scarLevel.currentScarLevel} ({currentLevel.name}) {isMaxScarLevel ? '| Maxed' : `| ${formatFireXp(scarLevel.currentXP)} / ${formatFireXp(xpGoal)} Fire XP`}
+							Scar {scarLevel.currentScarLevel} ({currentLevel.name}) {isMaxScarLevel ? '| Maxed' : `| ${formatAbbreviatedNumber(scarLevel.currentXP)} / ${formatAbbreviatedNumber(xpGoal)} Fire XP`}
 						</Text>
 					</Pressable>
 					{activeStat === 'Scar Level' && <Tooltip text="Fire XP and Scar Level" />}
@@ -92,7 +123,7 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 					<Pressable onPress={() => setActiveStat('Health Bar')}>
 						<ProgressBar progress={healthPercent} outerStyle={[styles.progressOuter, dangerOutline && styles.dangerBarOutline]} innerStyle={{ backgroundColor: healthColor }} />
 						<Text style={styles.progressText}>
-							{dragon.hp} / {dragon.maxHP} HP
+							{formatDecimalNumber(dragon.hp)} / {formatDecimalNumber(dragon.maxHP)} HP
 						</Text>
 					</Pressable>
 					{activeStat === 'Health Bar' && <Tooltip text="Dragon Health" />}
@@ -101,15 +132,17 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 				<View style={styles.statWrapper}>
 					<Pressable onPress={() => setActiveStat('Fury Meter')}>
 						<ProgressBar progress={furyPercent} outerStyle={[styles.progressOuter, dangerOutline && styles.dangerBarOutline]} innerStyle={{ backgroundColor: furyColor }} />
-						<Text style={[styles.progressText, furyPercent > 67 && styles.textLight]}>Fury {Math.round(furyPercent)} / 100</Text>
+						<Text style={styles.progressText}>
+							Fury {formatAbbreviatedNumber(fury.furyMeter)} / {formatAbbreviatedNumber(fury.maxFury)}
+						</Text>
 					</Pressable>
 					{activeStat === 'Fury Meter' && <Tooltip text="Dragon Fury" />}
 				</View>
 
 				<View style={styles.statWrapperSmall}>
 					<Pressable style={styles.stat} onPress={() => setActiveStat('Coins')}>
-						<Text style={styles.coinIcon}>$</Text>
-						<Text style={styles.statText}>{Number(coins.coins).toFixed(0)}</Text>
+						<Text style={styles.coinIcon}>🪙</Text>
+						<Text style={styles.statText}>{formatCoinNumber(coins.coins)}</Text>
 					</Pressable>
 					{activeStat === 'Coins' && <Tooltip text="Dragon Coins" />}
 				</View>
@@ -117,7 +150,7 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 				<View style={styles.statWrapperSmall}>
 					<Pressable style={styles.stat} onPress={() => setActiveStat('Shards')}>
 						<MaterialIcons name="diamond" size={18} color="#3498db" />
-						<Text style={styles.statText}>{shards.getShards()}</Text>
+						<Text style={styles.statText}>{formatAbbreviatedNumber(shards.getShards())}</Text>
 					</Pressable>
 					{activeStat === 'Shards' && <Tooltip text="Dragon Shards" />}
 				</View>
@@ -125,9 +158,17 @@ export default function TopHeader({ isHomePage = true }: TopHeaderProps) {
 				<View style={styles.statWrapperSmall}>
 					<Pressable style={styles.stat} onPress={() => setActiveStat('Souls')}>
 						<MaterialIcons name="blur-on" size={18} color="rgb(153, 102, 204)" />
-						<Text style={styles.statText}>{souls.getSouls()}</Text>
+						<Text style={styles.statText}>{formatAbbreviatedNumber(souls.getSouls())}</Text>
 					</Pressable>
 					{activeStat === 'Souls' && <Tooltip text="Dragon Souls" />}
+				</View>
+
+				<View style={styles.statWrapperSmall}>
+					<Pressable style={styles.stat} onPress={() => setActiveStat('Embers')}>
+						<MaterialIcons name="whatshot" size={18} color="#C2410C" />
+						<Text style={styles.statText}>{formatAbbreviatedNumber(embers.getEmbers())}</Text>
+					</Pressable>
+					{activeStat === 'Embers' && <Tooltip text="Dragon Embers" />}
 				</View>
 
 				<View style={styles.statWrapperSmall}>
@@ -159,9 +200,9 @@ const styles = StyleSheet.create({
 	statWrapperSmall: { flexShrink: 1, minWidth: 60 },
 	progressOuter: { height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: '#ecf0f1' },
 	progressText: { fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 2, color: '#333' },
-	textLight: { color: '#fff' },
 	stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 	statText: { fontSize: 12, fontWeight: '700', color: '#333' },
+	pendingSurveyText: { color: '#92400E' },
 	coinIcon: { fontSize: 16, fontWeight: '800' },
 	tooltipBox: {
 		position: 'absolute',
@@ -176,4 +217,23 @@ const styles = StyleSheet.create({
 	},
 	tooltipText: { color: '#fff', fontSize: 11, fontWeight: '600' },
 	dangerBarOutline: { borderWidth: 1, borderColor: '#e53935', shadowColor: '#e53935', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+	surveyMenu: {
+		position: 'absolute',
+		top: 26,
+		left: 0,
+		width: 180,
+		backgroundColor: '#fff',
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: '#E5E7EB',
+		padding: 12,
+		zIndex: 20,
+		shadowColor: '#000',
+		shadowOpacity: 0.12,
+		shadowRadius: 6,
+		shadowOffset: { width: 0, height: 4 },
+	},
+	surveyMenuTitle: { fontSize: 12, fontWeight: '800', color: '#111827', marginBottom: 8 },
+	surveyMenuButton: { backgroundColor: '#111827', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, marginTop: 6 },
+	surveyMenuButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });

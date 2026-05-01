@@ -1,5 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import { GOAL_TODO_ADVICE } from '@/data/advice-data';
+import { getGoalCategories, getImportanceMeta, isGoalChallengeActive } from '@/data/goal-utils';
 import { TodoEditor } from '@/components/goalEditor';
 import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
 import { usePremium } from '@/context/PremiumProvider';
@@ -72,7 +73,9 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 	const renderTodoItem = useCallback(
 		({ item, drag, isActive }: RenderItemParams<TodoGoal>) => {
 			const todo = item;
-			const isChallengeTodo = !!todo.isChallenge;
+			const isChallengeTodo = isGoalChallengeActive(todo);
+			const importanceMeta = getImportanceMeta(todo.importance);
+			const categories = getGoalCategories(todo.categories, todo.category);
 
 			return (
 				<ScaleDecorator>
@@ -81,7 +84,6 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 						disabled={isActive}
 						style={[
 							sectionStyles.todoItem,
-							todo.importance === 'Important+' ? sectionStyles.todoImportantPlus : todo.importance === 'Important' ? sectionStyles.todoImportant : null,
 							isChallengeTodo ? { backgroundColor: '#E8F4FF' } : null,
 							isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null,
 						]}>
@@ -90,9 +92,20 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 								<Text selectable={false} style={sectionStyles.habitTitle}>
 									{todo.title}
 								</Text>
+								<View style={sectionStyles.metaRow}>
+									<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>
+										{importanceMeta.label}
+									</Text>
+									{categories.map(category => (
+										<View key={`${todo.id}-${category}`} style={sectionStyles.categoryChip}>
+											<Text selectable={false} style={sectionStyles.categoryChipText}>
+												{category}
+											</Text>
+										</View>
+									))}
+								</View>
 								<Text selectable={false} style={sectionStyles.habitMeta}>
-									{[todo.category, todo.importance].filter(Boolean).join(' - ')}
-									{todo.dueDate ? ` - due ${todo.dueDate}` : ''}
+									{todo.dueDate ? `Due ${todo.dueDate}` : 'No due date'}
 								</Text>
 							</View>
 							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -188,11 +201,12 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 												key={suggestion.title}
 												style={sectionStyles.suggestedItem}
 												onPress={() => {
-													goals.addTodo?.({
-														title: suggestion.title,
-														category: suggestion.category,
-														dueDate: suggestion.dueDate ? new Date(Date.now() + suggestion.dueDate * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
-													});
+							goals.addTodo?.({
+								title: suggestion.title,
+								categories: [suggestion.category],
+								category: suggestion.category,
+								dueDate: suggestion.dueDate ? new Date(Date.now() + suggestion.dueDate * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
+							});
 													goals.rerollSuggestedTodos?.(premium.isPremium);
 												}}>
 												<Text selectable={false}>

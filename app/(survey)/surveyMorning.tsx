@@ -10,7 +10,8 @@ import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
-import { useSurvey } from '@/context/SurveyProvider';
+import { useSurvey, type SurveyProgressState } from '@/context/SurveyProvider';
+import { useTranscension } from '@/context/TranscensionProvider';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView } from 'react-native';
@@ -45,9 +46,11 @@ export default function SurveyMorningPage() {
 	const itemSnacks = useItemSnacks();
 	const premium = usePremium();
 	const journal = useJournal();
+	const transcension = useTranscension();
 	const router = useRouter();
 
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+	const isRetake = survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted;
 
 	const [currentSection, setCurrentSection] = useState(0);
 	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
@@ -57,13 +60,24 @@ export default function SurveyMorningPage() {
 	const slideAnim = useRef(new Animated.Value(-100)).current;
 
 	const advice = useSurveyAdviceSection();
-	const mood = useMoodQuestionSection();
+	const mood = useMoodQuestionSection({
+		readOnly: isRetake,
+		lockedMessage: 'Mood is visible for refills, but it stays locked after your first morning submission of the day.',
+	});
 	const habitEdit = useHabitChecklistEditSection();
 	const todoEdit = useTodoChecklistEditSection();
-	const shortAnswers = useShortAnswersSection({ surveyType: 'morning' });
+	const shortAnswers = useShortAnswersSection({
+		surveyType: 'morning',
+		readOnly: isRetake,
+		lockedMessage: 'Short answers are locked on morning refills and keep your original responses for today.',
+	});
 	const trivia = useTriviaQuestionsSection({ surveyType: 'morning' });
 	const journalEntry = useJournalEntrySection({ surveyType: 'morning' });
-	const extraPrompts = useExtraPromptsSection({ mode: 'create' });
+	const extraPrompts = useExtraPromptsSection({
+		mode: 'create',
+		readOnly: isRetake,
+		lockedMessage: 'Extra prompts are locked on morning refills and keep the prompts you already set for tonight.',
+	});
 	const quote = useQuoteSection({ surveyType: 'morning' });
 
 	const resultsSection = useResultsSection({
@@ -73,18 +87,20 @@ export default function SurveyMorningPage() {
 	});
 
 	const sections = useMemo(() => {
-		return [
+		const surveySections = [
 			advice.section,
 			mood.section,
 			habitEdit.section,
 			todoEdit.section,
 			shortAnswers.section,
+			extraPrompts.section,
 			trivia.section,
 			journalEntry.section,
-			extraPrompts.section,
 			quote.section,
-		].filter(section => section.isEnabled);
-	}, [advice.section, mood.section, habitEdit.section, todoEdit.section, shortAnswers.section, trivia.section, journalEntry.section, extraPrompts.section, quote.section]);
+		];
+
+		return surveySections.filter((section): section is typeof advice.section => !!section && section.isEnabled);
+	}, [advice.section, extraPrompts.section, habitEdit.section, journalEntry.section, mood.section, quote.section, shortAnswers.section, todoEdit.section, trivia.section]);
 
 	const totalSections = sections.length;
 	const section = sections[currentSection];
@@ -130,29 +146,32 @@ export default function SurveyMorningPage() {
 		setShowSurveyLabel(true);
 	}, [survey, today]);
 
+	const buildSaveState = (overrides: Partial<SurveyProgressState> = {}): SurveyProgressState => ({
+		savedAt: today,
+		section: currentSection,
+		sectionData: {
+			advice: advice.saveState(),
+			mood: mood.saveState(),
+			habitEdit: habitEdit.saveState(),
+			todoEdit: todoEdit.saveState(),
+			shortAnswers: shortAnswers.saveState(),
+			trivia: trivia.saveState(),
+			journal: journalEntry.saveState(),
+			extraPrompts: extraPrompts.saveState(),
+			quote: quote.saveState(),
+		},
+		progressPercent: totalSections ? Math.floor(((currentSection + 1) / totalSections) * 100) : 0,
+		...overrides,
+	});
+
 	const handleExitSurvey = () => {
-		const saveState = {
-			savedAt: today,
-			section: currentSection,
-			sectionData: {
-				advice: advice.saveState(),
-				mood: mood.saveState(),
-				habitEdit: habitEdit.saveState(),
-				todoEdit: todoEdit.saveState(),
-				shortAnswers: shortAnswers.saveState(),
-				trivia: trivia.saveState(),
-				journal: journalEntry.saveState(),
-				extraPrompts: extraPrompts.saveState(),
-				quote: quote.saveState(),
-			},
-			progressPercent: totalSections ? Math.floor(((currentSection + 1) / totalSections) * 100) : 0,
-		};
+		const saveState = buildSaveState();
 		survey.saveProgress?.('morning', saveState);
 		router.back();
 	};
 
 	const submitSurvey = () => {
-		const alreadyDoneToday = survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted;
+		const alreadyDoneToday = isRetake;
 		let totalCoinsEarned = 0;
 		let rewardShards = 0;
 		let furyDelta = 0;
@@ -170,6 +189,7 @@ export default function SurveyMorningPage() {
 		const jeopardyMultiplier = Math.max(1, itemEconomy.getActiveJeopardyMultiplier?.() ?? 1);
 		const isPremiumFlag = premium?.isPremium ?? false;
 		const coinMultiplier = typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1;
+		const surveyDuplicationMultiplier = transcension.getSurveyDuplicationMultiplier();
 
 		if (!alreadyDoneToday) {
 			const morningCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(true, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
@@ -215,7 +235,20 @@ export default function SurveyMorningPage() {
 					rewardShards += bonusShards;
 				}
 				if ((surveyBonus.snackDrops ?? 0) > 0) {
-					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops, scar);
+					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops * surveyDuplicationMultiplier, scar);
+				}
+			}
+
+			if (surveyDuplicationMultiplier > 1) {
+				const duplicatedCoins = Math.max(0, totalCoinsEarned * (surveyDuplicationMultiplier - 1));
+				const duplicatedShards = Math.max(0, rewardShards * (surveyDuplicationMultiplier - 1));
+				if (duplicatedCoins > 0) {
+					coins.addCoins?.(duplicatedCoins);
+					totalCoinsEarned += duplicatedCoins;
+				}
+				if (duplicatedShards > 0) {
+					shards.addShards?.(duplicatedShards);
+					rewardShards += duplicatedShards;
 				}
 			}
 		}
@@ -227,12 +260,18 @@ export default function SurveyMorningPage() {
 			if (healthDelta < 0) dragon.damageHp?.(Math.abs(healthDelta));
 		}
 
-		const fireXPFromCoins = typeof coins?.calculateFireXP === 'function' ? coins.calculateFireXP(totalCoinsEarned) : 0;
-		const xpEarned = alreadyDoneToday ? 0 : fireXPFromCoins;
+		if (!alreadyDoneToday) {
+			coins.registerSurveyCoins?.(Math.max(0, totalCoinsEarned));
+		}
+		const xpEarned = alreadyDoneToday ? 0 : scarLevel.addSurveyXP?.(Math.max(0, totalCoinsEarned), dragon.age, isPremiumFlag) ?? 0;
 		const effectiveFury = alreadyDoneToday ? 0 : furyDelta;
-		if (!alreadyDoneToday) scarLevel.addXP?.(fireXPFromCoins);
 
-		survey.completeMorningSurvey?.();
+		const completedSaveState = buildSaveState({
+			section: 0,
+			progressPercent: 100,
+			completed: true,
+		});
+		survey.completeMorningSurvey?.(completedSaveState);
 
 		const promptText = Object.values(shortAnswers.state.responses)
 			.map(text => text.trim())
@@ -256,11 +295,34 @@ export default function SurveyMorningPage() {
 			plannedTodoTitles: todoEdit.state.localTodos.map(todo => todo.title).filter(Boolean),
 		});
 
+		const resultGroups = [
+			{
+				title: 'Survey Answers',
+				entries: [
+					moodLabel ? `Mood: ${moodLabel}` : 'Mood question skipped',
+					'Habit editor reviewed',
+					'To-do editor reviewed',
+					`Short answers written: ${Object.values(shortAnswers.state.responses).filter(text => text.trim().length > 0).length}`,
+					trivia.section.isEnabled ? `Trivia answered: ${trivia.state.items.length}` : 'Trivia skipped',
+					journalEntry.section.isEnabled ? `Journal entry length: ${journalEntry.state.text.trim().length} characters` : 'Journal entry skipped',
+				],
+			},
+			{
+				title: 'Habit Goals',
+				entries: habitEdit.state.localHabits.length > 0 ? habitEdit.state.localHabits.map(habit => habit.title) : ['No habit goals planned'],
+			},
+			{
+				title: 'To-Do Goals',
+				entries: todoEdit.state.localTodos.length > 0 ? todoEdit.state.localTodos.map(todo => todo.title) : ['No to-do goals planned'],
+			},
+		];
+
 		setResults({
 			coinsEarned: totalCoinsEarned,
 			shardsEarned: rewardShards,
 			xpEarned: xpEarned,
 			furyDelta: effectiveFury,
+			groups: alreadyDoneToday ? [{ title: 'Retake Notes', entries: ['This was a refill survey, so rewards stayed locked while editable planning sections remained available.'] }, ...resultGroups] : resultGroups,
 		});
 		setShowResults(true);
 	};

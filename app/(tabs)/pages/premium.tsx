@@ -4,7 +4,7 @@ import { useScarLevel } from '@/context/ScarLevelProvider';
 import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 
-type PremiumPlan = 'trial' | 'monthly' | 'yearly';
+type PremiumPlan = 'monthly' | 'yearly' | 'permanent';
 
 const BENEFITS = [
 	{
@@ -62,7 +62,7 @@ export default function PremiumPage() {
 			<TopHeader isHomePage={false} />
 			<ScrollView contentContainerStyle={styles.scrollContent}>
 				<Text style={styles.title}>Dragon Pact</Text>
-				<Text style={styles.subtitle}>Premium perks for faster progression, more flexibility, and future cosmetic rewards.</Text>
+				<Text style={styles.subtitle}>Dragon Pact uses the current launch pricing: simple monthly access, a low yearly option, or a one-time permanent unlock.</Text>
 
 				<View style={styles.benefitsSection}>
 					<Text style={styles.sectionTitle}>Premium Benefits</Text>
@@ -89,25 +89,13 @@ export default function PremiumPage() {
 
 					<View style={styles.planCard}>
 						<View style={styles.planHeader}>
-							<Text style={styles.planName}>Free Trial</Text>
-							<Text style={styles.planBadge}>3 Days</Text>
-						</View>
-						<Text style={styles.planPrice}>Free</Text>
-						<Text style={styles.planSubtext}>Try the premium toolset before subscribing.</Text>
-						<Pressable style={[styles.subscribeButton, styles.trialButton]} onPress={() => handleSubscribe('trial')}>
-							<Text style={[styles.subscribeText, styles.trialText]}>Start Free Trial</Text>
-						</Pressable>
-					</View>
-
-					<View style={styles.planCard}>
-						<View style={styles.planHeader}>
 							<Text style={styles.planName}>Monthly</Text>
 							<Text style={styles.planBadge}>Flexible</Text>
 						</View>
 						<Text style={styles.planPrice}>
 							$1.99<Text style={styles.planDuration}>/month</Text>
 						</Text>
-						<Text style={styles.planSubtext}>Good for testing premium without a longer commitment.</Text>
+						<Text style={styles.planSubtext}>A flexible pact for trying premium progression, extra rerolls, and expanded goal capacity month to month.</Text>
 						<Pressable style={styles.subscribeButton} onPress={() => handleSubscribe('monthly')}>
 							<Text style={styles.subscribeText}>Subscribe Monthly</Text>
 						</Pressable>
@@ -116,14 +104,28 @@ export default function PremiumPage() {
 					<View style={[styles.planCard, styles.yearlyCard]}>
 						<View style={styles.planHeader}>
 							<Text style={[styles.planName, styles.yearlyName]}>Yearly</Text>
-							<Text style={[styles.planBadge, styles.yearlyBadge]}>Best Value</Text>
+							<Text style={[styles.planBadge, styles.yearlyBadge]}>Launch Special</Text>
 						</View>
 						<Text style={[styles.planPrice, styles.yearlyPrice]}>
-							$9.99<Text style={styles.planDuration}>/year</Text>
+							$4.99<Text style={styles.planDuration}>/year</Text>
 						</Text>
-						<Text style={[styles.planSubtext, styles.yearlySubtext]}>The lowest recurring price and the clearest long-term value.</Text>
+						<Text style={[styles.planSubtext, styles.yearlySubtext]}>The best short-term value while launch pricing is active.</Text>
 						<Pressable style={[styles.subscribeButton, styles.yearlyButton]} onPress={() => handleSubscribe('yearly')}>
 							<Text style={[styles.subscribeText, styles.yearlySubscribeText]}>Subscribe Yearly</Text>
+						</Pressable>
+					</View>
+
+					<View style={[styles.planCard, styles.permanentCard]}>
+						<View style={styles.planHeader}>
+							<Text style={[styles.planName, styles.permanentName]}>Permanent</Text>
+							<Text style={[styles.planBadge, styles.permanentBadge]}>Best Value</Text>
+						</View>
+						<Text style={[styles.planPrice, styles.permanentPrice]}>
+							$9.99<Text style={styles.planDuration}> once</Text>
+						</Text>
+						<Text style={[styles.planSubtext, styles.permanentSubtext]}>Pay once for permanent Dragon Pact access at the current launch-special permanent price.</Text>
+						<Pressable style={[styles.subscribeButton, styles.permanentButton]} onPress={() => handleSubscribe('permanent')}>
+							<Text style={[styles.subscribeText, styles.permanentSubscribeText]}>Buy Permanent</Text>
 						</Pressable>
 					</View>
 				</View>
@@ -137,8 +139,8 @@ export default function PremiumPage() {
 					</View>
 
 					<View style={styles.faqItem}>
-						<Text style={styles.faqQuestion}>What happens after the 3-day trial?</Text>
-						<Text style={styles.faqAnswer}>The app will need real billing wired in first. For now, the premium buttons stay placeholder actions.</Text>
+						<Text style={styles.faqQuestion}>What happens when these buttons are pressed right now?</Text>
+						<Text style={styles.faqAnswer}>Real billing still needs to be wired up. The pricing and layout are ready, but checkout is still placeholder-only.</Text>
 					</View>
 
 					<View style={styles.faqItem}>
@@ -279,27 +281,46 @@ const styles = StyleSheet.create({
 		color: '#4caf50',
 		fontWeight: '600',
 	},
+	permanentCard: {
+		borderColor: '#C2410C',
+		backgroundColor: '#FFF7ED',
+		borderWidth: 3,
+	},
+	permanentName: {
+		color: '#9A3412',
+	},
+	permanentBadge: {
+		backgroundColor: '#C2410C',
+		color: '#fff',
+	},
+	permanentPrice: {
+		color: '#9A3412',
+	},
+	permanentSubtext: {
+		color: '#9A3412',
+		fontWeight: '600',
+	},
 	subscribeButton: {
 		backgroundColor: '#4caf50',
 		paddingVertical: 12,
 		borderRadius: 8,
 		alignItems: 'center',
 	},
-	trialButton: {
-		backgroundColor: '#f0f0f0',
-	},
 	yearlyButton: {
 		backgroundColor: '#2e7d32',
+	},
+	permanentButton: {
+		backgroundColor: '#C2410C',
 	},
 	subscribeText: {
 		color: '#fff',
 		fontSize: 16,
 		fontWeight: '700',
 	},
-	trialText: {
-		color: '#333',
-	},
 	yearlySubscribeText: {
+		color: '#fff',
+	},
+	permanentSubscribeText: {
 		color: '#fff',
 	},
 	faqSection: {

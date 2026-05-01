@@ -27,6 +27,9 @@ export interface UseShortAnswersParams {
 	randomPromptCount?: number;
 	extraPrompts?: string[];
 	enablePrompts?: boolean;
+	readOnly?: boolean;
+	lockedMessage?: string;
+	minResponseLength?: number;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -59,7 +62,16 @@ const promptCategoryEnabled = (settings: QuestionSettings['prompts']['types'], c
 	return false;
 };
 
-export function useShortAnswersSection({ surveyType, questionSettings, randomPromptCount, extraPrompts = [], enablePrompts }: UseShortAnswersParams): SectionHookResult<ShortAnswersState> & { promptItems: PromptItem[] } {
+export function useShortAnswersSection({
+	surveyType,
+	questionSettings,
+	randomPromptCount,
+	extraPrompts = [],
+	enablePrompts,
+	readOnly = false,
+	lockedMessage,
+	minResponseLength = 25,
+}: UseShortAnswersParams): SectionHookResult<ShortAnswersState> & { promptItems: PromptItem[] } {
 	const { questionSettings: contextSettings } = useQuestions();
 	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
@@ -107,12 +119,13 @@ export function useShortAnswersSection({ surveyType, questionSettings, randomPro
 	}, [extraPromptItems, fixedCustom, state.randomPrompts]);
 
 	const allFilled = useMemo(() => {
+		if (readOnly) return true;
 		if (!isEnabled || promptItems.length === 0) return true;
 		return promptItems.every(item => {
 			const val = state.responses[item.id] ?? '';
-			return val.trim().length > 0;
+			return val.trim().length >= minResponseLength;
 		});
-	}, [isEnabled, promptItems, state.responses]);
+	}, [isEnabled, minResponseLength, promptItems, readOnly, state.responses]);
 
 	const enableNext = useCallback(() => setState(prev => ({ ...prev, nextEnabled: true })), []);
 
@@ -135,6 +148,7 @@ export function useShortAnswersSection({ surveyType, questionSettings, randomPro
 		return (
 			<View>
 				<Text style={sectionStyles.question}>Short Answers</Text>
+				{readOnly ? <Text style={[sectionStyles.subtleText, { marginBottom: 12 }]}>{lockedMessage ?? 'Short answers are locked on refill surveys.'}</Text> : null}
 				{promptItems.map(item => (
 					<View key={item.id} style={{ marginBottom: 16 }}>
 						<View style={sectionStyles.arrowRow}>
@@ -142,24 +156,28 @@ export function useShortAnswersSection({ surveyType, questionSettings, randomPro
 							<Text style={sectionStyles.arrowText}>{item.text}</Text>
 						</View>
 						<TextInput
+							editable={!readOnly}
 							value={state.responses[item.id] ?? ''}
-							onChangeText={text => setState(prev => ({ ...prev, responses: { ...prev.responses, [item.id]: text } }))}
-							placeholder="Your response..."
+							onChangeText={text => {
+								if (readOnly) return;
+								setState(prev => ({ ...prev, responses: { ...prev.responses, [item.id]: text } }));
+							}}
+							placeholder={readOnly ? 'Locked on refill' : `Your response... (${minResponseLength}+ characters)`}
 							multiline
-							style={sectionStyles.textInputArea}
+							style={[sectionStyles.textInputArea, readOnly ? { opacity: 0.7 } : null]}
 						/>
 					</View>
 				))}
 			</View>
 		);
-	}, [isEnabled, promptItems, state.responses]);
+	}, [isEnabled, lockedMessage, minResponseLength, promptItems, readOnly, state.responses]);
 
 	return {
 		section: {
 			key: 'shortAnswers',
 			label: 'Short Answers',
 			isEnabled,
-			isNextEnabled: state.nextEnabled || promptItems.length === 0,
+			isNextEnabled: readOnly || allFilled || promptItems.length === 0,
 			enableNext: isEnabled ? enableNext : null,
 			render,
 		},

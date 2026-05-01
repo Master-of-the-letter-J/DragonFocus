@@ -1,25 +1,46 @@
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import {
+	DEFAULT_HABIT_GOAL_TEMPLATES,
+	DEFAULT_TODO_GOAL_TEMPLATES,
+	GOAL_WEEKDAY_OPTIONS,
+	type GoalChallengeTier,
+	type GoalImportance,
+	getChallengeTierByDays,
+	getGoalCategories,
+	getHabitCompletionStreak,
+	getGoalLengthDays,
+	getTodoChallengeTier,
+	isGoalChallengeActive,
+} from '@/data/goal-utils';
 import { SUGGESTED_HABIT_GOALS, type SuggestedHabitGoal } from '@/data/suggested-habit-goals-data';
 import { SUGGESTED_TODO_GOALS, type SuggestedTodoGoal } from '@/data/suggested-todo-goals-data';
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { ReactNode, createContext, useContext } from 'react';
 import { useDragonCoins } from './DragonCoinsProvider';
 import { useShards } from './DragonShardsProvider';
 
-// Simple uid generator to avoid extra dependency in prototype
 function uid() {
 	return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
 
-export type Importance = 'Important+' | 'Important' | 'Default';
+const getTodayKey = () => new Date().toISOString().split('T')[0];
+
+const buildDueDate = (dueInDays?: number) => {
+	if (!dueInDays || dueInDays <= 0) return null;
+	return new Date(Date.now() + dueInDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+};
+
+const pickRandomSuggestions = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5).slice(0, 6);
+
+export type Importance = GoalImportance;
 
 export interface HabitGoal {
 	id: string;
 	title: string;
 	importance: Importance;
 	numberFlair?: number;
-	timeFlair?: number; // minutes
+	timeFlair?: number;
 	category?: string;
 	categories?: string[];
-	// which days the habit shows up (e.g. ['Mon','Tue'])
 	daysOfWeek?: string[];
 	timesPerWeek?: number;
 	streak: number;
@@ -52,7 +73,6 @@ export interface TodoGoal {
 	completedDate?: string | null;
 	failed?: boolean;
 	failedDate?: string | null;
-	// Challenge fields for to-dos
 	isChallenge?: boolean;
 	challengeLength?: number;
 	challengeStartDate?: string | null;
@@ -63,13 +83,20 @@ export interface TodoGoal {
 	createdAt: number;
 }
 
-export interface TodoChallengeDetails {
-	length: 7 | 14 | 30;
+export interface TodoChallengeDetails extends GoalChallengeTier {
 	goalLengthDays: number;
-	coinCost: number;
-	shardCost: number;
-	rewardCoins: number;
-	rewardShards: number;
+}
+
+interface GoalStoreState {
+	habits: HabitGoal[];
+	todos: TodoGoal[];
+	suggestedHabitGoals: SuggestedHabitGoal[];
+	suggestedTodoGoals: SuggestedTodoGoal[];
+	rerollTracker: {
+		date: string;
+		habit: number;
+		todo: number;
+	};
 }
 
 interface GoalsContextType {
@@ -97,7 +124,6 @@ interface GoalsContextType {
 	goalTemplates: string[];
 	createGoalFromTemplate: (template: string, type: 'habit' | 'todo') => void;
 	resetGoals?: () => void;
-	// Scar level based limits
 	getMaxHabits: (scarLevel: number, isPremium: boolean) => number;
 	getMaxTodos: (scarLevel: number, isPremium: boolean) => number;
 	canAddHabit: (scarLevel: number, isPremium: boolean) => boolean;
@@ -109,65 +135,106 @@ interface GoalsContextType {
 
 const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 
-const PRESET_HABITS: HabitGoal[] = [
-	{ id: uid(), title: 'Make Bed', importance: 'Default', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: 'Brush Teeth', importance: 'Default', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: 'Drink 8 Cups of Water', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: 'Meditate 10 Minutes', importance: 'Important+', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: 'Exercise 30 minutes or more', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
-	{ id: uid(), title: 'Sleep with Good Bedtime', importance: 'Important', daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], timesPerWeek: 7, streak: 0, createdAt: Date.now() },
+const GOAL_TEMPLATES = [
+	'Run for (Time) minutes',
+	'Do (Amount) push-ups',
+	'Walk for (Time) minutes',
+	'Practice (Activity) for (Time) minutes',
+	'Read for (Time) minutes',
+	'Write (Amount) words',
+	'Stretch for (Time) minutes',
+	'Meditate for (Time) minutes',
+	'Drink (Amount) glasses of water',
+	'Do (Amount) squats',
 ];
 
-const SUGGESTED = ['Read 10 pages', 'Run 1 mile', 'Practice instrument 30 min', 'Write 100 words', 'Cold shower', 'Stretch for 10 minutes', 'Do 20 push-ups', 'Meditate 15 minutes', 'Take a walk', 'Learn something new', 'Journal about your day', 'Drink 8 glasses of water', 'Tidy your space', 'Call a friend or family', 'Exercise for 30 minutes', 'Cook a healthy meal', 'Do yoga for 20 minutes', 'Take a cold bath', 'Study for 1 hour', 'Plan your day ahead'];
+const buildDefaultHabits = (): HabitGoal[] =>
+	DEFAULT_HABIT_GOAL_TEMPLATES.map(template => {
+		const categories = getGoalCategories(template.categories);
+		return {
+			id: uid(),
+			title: template.title,
+			importance: template.importance,
+			category: categories[0],
+			categories,
+			daysOfWeek: template.daysOfWeek ?? [...GOAL_WEEKDAY_OPTIONS],
+			timesPerWeek: template.timesPerWeek ?? 7,
+			streak: 0,
+			createdAt: Date.now(),
+		};
+	});
 
-const GOAL_TEMPLATES = ['Run for (Time) minutes', 'Do (Amount) push-ups', 'Walk for (Time) minutes', 'Practice (Activity) for (Time) minutes', 'Read for (Time) minutes', 'Write (Amount) words', 'Stretch for (Time) minutes', 'Meditate for (Time) minutes', 'Drink (Amount) glasses of water', 'Do (Amount) squats'];
-const DAY_MS = 24 * 60 * 60 * 1000;
-const CHALLENGE_TIERS: TodoChallengeDetails[] = [
-	{ length: 7, goalLengthDays: 7, coinCost: 50, shardCost: 1, rewardCoins: 125, rewardShards: 5 },
-	{ length: 14, goalLengthDays: 14, coinCost: 100, shardCost: 2, rewardCoins: 300, rewardShards: 15 },
-	{ length: 30, goalLengthDays: 30, coinCost: 250, shardCost: 5, rewardCoins: 1000, rewardShards: 50 },
-];
+const buildDefaultTodos = (): TodoGoal[] =>
+	DEFAULT_TODO_GOAL_TEMPLATES.map(template => {
+		const categories = getGoalCategories(template.categories);
+		return {
+			id: uid(),
+			title: template.title,
+			importance: template.importance,
+			category: categories[0],
+			categories,
+			subGoals: (template.subGoals ?? []).map(title => ({ id: uid(), title, completed: false })),
+			dueDate: buildDueDate(template.dueInDays),
+			completedDate: null,
+			failed: false,
+			failedDate: null,
+			createdAt: Date.now(),
+		};
+	});
 
-const toDateKey = (value: number | string | Date) => {
-	const date = value instanceof Date ? value : new Date(value);
-	return date.toISOString().split('T')[0];
+const createInitialGoalStore = (): GoalStoreState => ({
+	habits: buildDefaultHabits(),
+	todos: buildDefaultTodos(),
+	suggestedHabitGoals: pickRandomSuggestions(SUGGESTED_HABIT_GOALS),
+	suggestedTodoGoals: pickRandomSuggestions(SUGGESTED_TODO_GOALS),
+	rerollTracker: { date: getTodayKey(), habit: 0, todo: 0 },
+});
+
+const normalizeGoalStore = (storedState: GoalStoreState | null, initialState: GoalStoreState): GoalStoreState => {
+	if (!storedState) return initialState;
+
+	return {
+		habits: Array.isArray(storedState.habits) ? storedState.habits : initialState.habits,
+		todos: Array.isArray(storedState.todos) ? storedState.todos : initialState.todos,
+		suggestedHabitGoals: Array.isArray(storedState.suggestedHabitGoals) && storedState.suggestedHabitGoals.length ? storedState.suggestedHabitGoals : initialState.suggestedHabitGoals,
+		suggestedTodoGoals: Array.isArray(storedState.suggestedTodoGoals) && storedState.suggestedTodoGoals.length ? storedState.suggestedTodoGoals : initialState.suggestedTodoGoals,
+		rerollTracker:
+			storedState.rerollTracker && typeof storedState.rerollTracker.date === 'string'
+				? storedState.rerollTracker
+				: initialState.rerollTracker,
+	};
 };
 
-const toStartOfDayMs = (dateKey: string) => new Date(`${dateKey}T00:00:00`).getTime();
-
 export function GoalsProvider({ children }: { children: ReactNode }) {
-	const [habits, setHabits] = useState<HabitGoal[]>(PRESET_HABITS);
-	const [todos, setTodos] = useState<TodoGoal[]>([]);
-	const [suggestedHabitGoals, setSuggestedHabitGoals] = useState<SuggestedHabitGoal[]>(() => {
-		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-		return shuffled.slice(0, 6);
-	});
-	const [suggestedTodoGoals, setSuggestedTodoGoals] = useState<SuggestedTodoGoal[]>(() => {
-		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
-		return shuffled.slice(0, 6);
-	});
-	const [rerollTracker, setRerollTracker] = useState({ date: new Date().toISOString().split('T')[0], habit: 0, todo: 0 });
+	const coins = useDragonCoins();
+	const shards = useShards();
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.goals, createInitialGoalStore, { normalize: normalizeGoalStore });
 
-	const getToday = () => new Date().toISOString().split('T')[0];
 	const getFreshRerollTracker = () => {
-		const today = getToday();
-		return rerollTracker.date === today ? rerollTracker : { date: today, habit: 0, todo: 0 };
+		const today = getTodayKey();
+		return state.rerollTracker.date === today ? state.rerollTracker : { date: today, habit: 0, todo: 0 };
 	};
 
 	const rerollSuggestedHabits = (isPremium = false) => {
 		const fresh = getFreshRerollTracker();
 		if (!isPremium && fresh.habit >= 3) return;
-		const shuffled = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-		setSuggestedHabitGoals(shuffled.slice(0, 6));
-		setRerollTracker({ ...fresh, habit: isPremium ? fresh.habit : fresh.habit + 1 });
+
+		setState(current => ({
+			...current,
+			suggestedHabitGoals: pickRandomSuggestions(SUGGESTED_HABIT_GOALS),
+			rerollTracker: { ...fresh, habit: isPremium ? fresh.habit : fresh.habit + 1 },
+		}));
 	};
 
 	const rerollSuggestedTodos = (isPremium = false) => {
 		const fresh = getFreshRerollTracker();
 		if (!isPremium && fresh.todo >= 3) return;
-		const shuffled = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
-		setSuggestedTodoGoals(shuffled.slice(0, 6));
-		setRerollTracker({ ...fresh, todo: isPremium ? fresh.todo : fresh.todo + 1 });
+
+		setState(current => ({
+			...current,
+			suggestedTodoGoals: pickRandomSuggestions(SUGGESTED_TODO_GOALS),
+			rerollTracker: { ...fresh, todo: isPremium ? fresh.todo : fresh.todo + 1 },
+		}));
 	};
 
 	const getRemainingHabitRerolls = (isPremium: boolean) => {
@@ -182,104 +249,79 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 		return Math.max(0, 3 - fresh.todo);
 	};
 
-	// access coins/shards providers for challenge payments
-	const coins = useDragonCoins();
-	const shards = useShards();
-
 	const getTodoChallengeDetails = (dueDate?: string | null, createdAt = Date.now()): TodoChallengeDetails | null => {
 		if (!dueDate) return null;
-		const createdKey = toDateKey(createdAt);
-		const dueTime = toStartOfDayMs(dueDate);
-		if (Number.isNaN(dueTime)) return null;
-		const createdTime = toStartOfDayMs(createdKey);
-		if (dueTime < createdTime) return null;
-
-		const goalLengthDays = Math.max(1, Math.floor((dueTime - createdTime) / DAY_MS) + 1);
-		const tier = goalLengthDays <= 7 ? CHALLENGE_TIERS[0] : goalLengthDays <= 14 ? CHALLENGE_TIERS[1] : CHALLENGE_TIERS[2];
+		const goalLengthDays = getGoalLengthDays(createdAt, dueDate);
+		if (!goalLengthDays) return null;
+		const tier = getTodoChallengeTier(goalLengthDays);
+		if (!tier) return null;
 		return { ...tier, goalLengthDays };
 	};
 
-	/**
-	 * Enable a habit challenge: spends coins/shards and marks habit as challenge-started
-	 */
 	const enableChallenge = (id: string, length: number) => {
-		const h = habits.find(x => x.id === id);
-		if (!h) return { success: false, message: 'Habit not found' };
-		if (h.isChallenge) return { success: false, message: 'Challenge already active' };
-		let coinCost = 0;
-		let shardCost = 0;
-		switch (length) {
-			case 7:
-				coinCost = 50;
-				shardCost = 1;
-				break;
-			case 14:
-				coinCost = 100;
-				shardCost = 2;
-				break;
-			case 30:
-				coinCost = 250;
-				shardCost = 5;
-				break;
-			default:
-				return { success: false, message: 'Invalid challenge length' };
+		const habit = state.habits.find(item => item.id === id);
+		if (!habit) return { success: false, message: 'Habit not found.' };
+		if (isGoalChallengeActive(habit)) return { success: false, message: 'Challenge already active.' };
+
+		const tier = getChallengeTierByDays(length);
+		if (!tier) return { success: false, message: 'Invalid challenge length.' };
+		if (tier.coinCost > 0 && !coins.spendCoins(tier.coinCost)) return { success: false, message: 'Not enough coins.' };
+		if (tier.shardCost > 0 && !shards.spendShards(tier.shardCost)) {
+			if (tier.coinCost > 0) coins.addCoins(tier.coinCost);
+			return { success: false, message: 'Not enough shards.' };
 		}
 
-		if (coinCost > 0 && !coins.spendCoins(coinCost)) return { success: false, message: 'Not enough coins' };
-		if (shardCost > 0 && !shards.spendShards(shardCost)) {
-			// refund coins if shards failed
-			if (coinCost > 0) coins.addCoins(coinCost);
-			return { success: false, message: 'Not enough shards' };
-		}
-
-		const startDate = new Date().toISOString().split('T')[0];
-		setHabits(prev =>
-			prev.map(x =>
-				x.id === id
+		const startDate = getTodayKey();
+		setState(current => ({
+			...current,
+			habits: current.habits.map(item =>
+				item.id === id
 					? {
-							...x,
+							...item,
 							isChallenge: true,
-							challengeLength: length,
+							challengeLength: tier.days,
 							challengeStartDate: startDate,
 							challengeRewardClaimed: false,
 							challengeStatus: 'active',
 							challengeFailedDate: null,
 						}
-					: x,
+					: item,
 			),
-		);
+		}));
 		return { success: true };
 	};
 
 	const enableTodoChallenge = (id: string, draft?: Partial<TodoGoal>) => {
-		const existingTodo = todos.find(item => item.id === id);
-		if (!existingTodo) return { success: false, message: 'To-do not found' };
+		const existingTodo = state.todos.find(item => item.id === id);
+		if (!existingTodo) return { success: false, message: 'To-do not found.' };
 		const todo = { ...existingTodo, ...draft };
-		if (todo.isChallenge) return { success: false, message: 'Challenge already active' };
+		if (isGoalChallengeActive(todo)) return { success: false, message: 'Challenge already active.' };
+
 		const details = getTodoChallengeDetails(todo.dueDate, todo.createdAt);
 		if (!details) return { success: false, message: 'Add a valid due date before enabling challenge mode.' };
-
-		if (details.coinCost > 0 && !coins.spendCoins(details.coinCost)) return { success: false, message: 'Not enough coins' };
+		if (details.coinCost > 0 && !coins.spendCoins(details.coinCost)) return { success: false, message: 'Not enough coins.' };
 		if (details.shardCost > 0 && !shards.spendShards(details.shardCost)) {
 			if (details.coinCost > 0) coins.addCoins(details.coinCost);
-			return { success: false, message: 'Not enough shards' };
+			return { success: false, message: 'Not enough shards.' };
 		}
 
-		const startDate = new Date().toISOString().split('T')[0];
-		setTodos(prev =>
-			prev.map(item =>
+		const startDate = getTodayKey();
+		setState(current => ({
+			...current,
+			todos: current.todos.map(item =>
 				item.id === id
 					? (() => {
-							const nextCategories =
-								draft?.categories ??
-								(draft?.category !== undefined ? (draft.category ? [draft.category] : []) : item.categories ?? (item.category ? [item.category] : []));
+							const nextCategories = getGoalCategories(
+								draft?.categories ?? item.categories,
+								draft?.category !== undefined ? draft.category : item.category,
+							);
 							return {
 								...item,
 								...draft,
 								categories: nextCategories,
 								category: nextCategories[0],
 								isChallenge: true,
-								challengeLength: details.length,
+								challengeLength: details.days,
 								challengeStartDate: startDate,
 								challengeRewardClaimed: false,
 								rewardCoins: details.rewardCoins,
@@ -289,205 +331,244 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 						})()
 					: item,
 			),
-		);
+		}));
 
 		return { success: true, details };
 	};
 
-	const addHabit = (h: Partial<HabitGoal>) => {
-		const categories = h.categories ?? (h.category ? [h.category] : []);
+	const addHabit = (habit: Partial<HabitGoal>) => {
+		const createdAt = habit.createdAt ?? Date.now();
+		const categories = getGoalCategories(habit.categories, habit.category);
 		const newHabit: HabitGoal = {
 			id: uid(),
-			title: h.title || 'New Habit',
-			importance: h.importance || 'Default',
-			numberFlair: h.numberFlair,
-			timeFlair: h.timeFlair,
+			title: habit.title || 'New Habit',
+			importance: habit.importance || 'default',
+			numberFlair: habit.numberFlair,
+			timeFlair: habit.timeFlair,
 			category: categories[0],
 			categories,
-			daysOfWeek: h.daysOfWeek || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-			timesPerWeek: h.timesPerWeek || 7,
-			streak: 0,
-			lastCompletedDate: null,
-			isChallenge: h.isChallenge || false,
-			challengeLength: h.challengeLength,
-			challengeStartDate: h.challengeStartDate || null,
-			challengeRewardClaimed: h.challengeRewardClaimed || false,
-			challengeStatus: h.challengeStatus || (h.isChallenge ? 'active' : undefined),
-			challengeFailedDate: h.challengeFailedDate || null,
-			createdAt: Date.now(),
+			daysOfWeek: habit.daysOfWeek || [...GOAL_WEEKDAY_OPTIONS],
+			timesPerWeek: habit.timesPerWeek || 7,
+			streak: habit.streak ?? 0,
+			lastCompletedDate: habit.lastCompletedDate ?? null,
+			isChallenge: habit.isChallenge || false,
+			challengeLength: habit.challengeLength,
+			challengeStartDate: habit.challengeStartDate || null,
+			challengeRewardClaimed: habit.challengeRewardClaimed || false,
+			challengeStatus: habit.challengeStatus || (habit.isChallenge ? 'active' : undefined),
+			challengeFailedDate: habit.challengeFailedDate || null,
+			createdAt,
 		};
-		setHabits(prev => [newHabit, ...prev]);
+
+		setState(current => ({
+			...current,
+			habits: [newHabit, ...current.habits],
+		}));
 		return newHabit;
 	};
 
 	const editHabit = (id: string, patch: Partial<HabitGoal>) => {
-		setHabits(prev =>
-			prev.map(h => {
-				if (h.id !== id) return h;
-				const nextCategories = patch.categories ?? (patch.category !== undefined ? (patch.category ? [patch.category] : []) : h.categories ?? (h.category ? [h.category] : []));
+		setState(current => ({
+			...current,
+			habits: current.habits.map(habit => {
+				if (habit.id !== id) return habit;
+				const nextCategories = getGoalCategories(
+					patch.categories ?? habit.categories,
+					patch.category !== undefined ? patch.category : habit.category,
+				);
 				return {
-					...h,
+					...habit,
 					...patch,
 					categories: nextCategories,
 					category: nextCategories[0],
 				};
 			}),
-		);
+		}));
 	};
 
 	const reorderHabits = (orderedHabits: HabitGoal[]) => {
-		setHabits(orderedHabits);
+		setState(current => ({
+			...current,
+			habits: orderedHabits,
+		}));
 	};
 
 	const deleteHabit = (id: string) => {
-		setHabits(prev => prev.filter(h => h.id !== id));
+		setState(current => ({
+			...current,
+			habits: current.habits.filter(habit => habit.id !== id),
+		}));
 	};
 
 	const completeHabitToday = (id: string) => {
-		const today = new Date().toISOString().split('T')[0];
-		setHabits(prev =>
-			prev.map(h => {
-				if (h.id !== id) return h;
-				if (h.lastCompletedDate === today) return h; // already done
-				const newStreak = h.lastCompletedDate && isYesterday(h.lastCompletedDate) ? h.streak + 1 : 1;
-				return { ...h, lastCompletedDate: today, streak: newStreak };
+		const today = getTodayKey();
+		setState(current => ({
+			...current,
+			habits: current.habits.map(habit => {
+				if (habit.id !== id) return habit;
+				if (habit.lastCompletedDate === today) return habit;
+				return {
+					...habit,
+					lastCompletedDate: today,
+					streak: getHabitCompletionStreak(habit, today),
+				};
 			}),
-		);
+		}));
 	};
 
-	const addTodo = (t: Partial<TodoGoal>) => {
-		const categories = t.categories ?? (t.category ? [t.category] : []);
+	const addTodo = (todo: Partial<TodoGoal>) => {
+		const createdAt = todo.createdAt ?? Date.now();
+		const categories = getGoalCategories(todo.categories, todo.category);
 		const newTodo: TodoGoal = {
 			id: uid(),
-			title: t.title || 'New To-Do',
-			importance: t.importance || 'Default',
-			numberFlair: t.numberFlair,
-			timeFlair: t.timeFlair,
+			title: todo.title || 'New To-Do',
+			importance: todo.importance || 'default',
+			numberFlair: todo.numberFlair,
+			timeFlair: todo.timeFlair,
 			category: categories[0],
 			categories,
-			subGoals: t.subGoals || [],
-			dueDate: t.dueDate || null,
-			completedDate: null,
-			failed: false,
-			failedDate: null,
-			isChallenge: t.isChallenge || false,
-			challengeLength: t.challengeLength,
-			challengeStartDate: t.challengeStartDate || null,
-			challengeRewardClaimed: t.challengeRewardClaimed || false,
-			rewardCoins: t.rewardCoins,
-			rewardShards: t.rewardShards,
-			challengeStatus: t.challengeStatus || (t.isChallenge ? 'active' : undefined),
-			createdAt: Date.now(),
+			subGoals: todo.subGoals || [],
+			dueDate: todo.dueDate || null,
+			completedDate: todo.completedDate || null,
+			failed: todo.failed || false,
+			failedDate: todo.failedDate || null,
+			isChallenge: todo.isChallenge || false,
+			challengeLength: todo.challengeLength,
+			challengeStartDate: todo.challengeStartDate || null,
+			challengeRewardClaimed: todo.challengeRewardClaimed || false,
+			rewardCoins: todo.rewardCoins,
+			rewardShards: todo.rewardShards,
+			challengeStatus: todo.challengeStatus || (todo.isChallenge ? 'active' : undefined),
+			createdAt,
 		};
-		setTodos(prev => [newTodo, ...prev]);
+
+		setState(current => ({
+			...current,
+			todos: [newTodo, ...current.todos],
+		}));
 		return newTodo;
 	};
 
 	const editTodo = (id: string, patch: Partial<TodoGoal>) => {
-		setTodos(prev =>
-			prev.map(t => {
-				if (t.id !== id) return t;
-				const nextCategories = patch.categories ?? (patch.category !== undefined ? (patch.category ? [patch.category] : []) : t.categories ?? (t.category ? [t.category] : []));
+		setState(current => ({
+			...current,
+			todos: current.todos.map(todo => {
+				if (todo.id !== id) return todo;
+				const nextCategories = getGoalCategories(
+					patch.categories ?? todo.categories,
+					patch.category !== undefined ? patch.category : todo.category,
+				);
 				return {
-					...t,
+					...todo,
 					...patch,
 					categories: nextCategories,
 					category: nextCategories[0],
 				};
 			}),
-		);
+		}));
 	};
 
 	const reorderTodos = (orderedTodos: TodoGoal[]) => {
-		setTodos(orderedTodos);
+		setState(current => ({
+			...current,
+			todos: orderedTodos,
+		}));
 	};
 
 	const deleteTodo = (id: string) => {
-		setTodos(prev => prev.filter(t => t.id !== id));
+		setState(current => ({
+			...current,
+			todos: current.todos.filter(todo => todo.id !== id),
+		}));
 	};
 
 	const addSubGoal = (todoId: string, title: string) => {
-		const sub: SubGoal = { id: uid(), title, completed: false };
-		setTodos(prev => prev.map(t => (t.id === todoId ? { ...t, subGoals: [...t.subGoals, sub] } : t)));
+		const subGoal: SubGoal = { id: uid(), title, completed: false };
+		setState(current => ({
+			...current,
+			todos: current.todos.map(todo => (todo.id === todoId ? { ...todo, subGoals: [...todo.subGoals, subGoal] } : todo)),
+		}));
 	};
 
 	const toggleSubGoal = (todoId: string, subId: string) => {
-		setTodos(prev =>
-			prev.map(t => {
-				if (t.id !== todoId) return t;
-				return { ...t, subGoals: t.subGoals.map(s => (s.id === subId ? { ...s, completed: !s.completed } : s)) };
+		setState(current => ({
+			...current,
+			todos: current.todos.map(todo => {
+				if (todo.id !== todoId) return todo;
+				return { ...todo, subGoals: todo.subGoals.map(subGoal => (subGoal.id === subId ? { ...subGoal, completed: !subGoal.completed } : subGoal)) };
 			}),
-		);
+		}));
 	};
 
 	const completeTodo = (id: string) => {
-		const todo = todos.find(t => t.id === id);
+		const todo = state.todos.find(item => item.id === id);
 		if (!todo) return false;
-		setTodos(prev =>
-			prev.map(t =>
-				t.id === id
+
+		setState(current => ({
+			...current,
+			todos: current.todos.map(item =>
+				item.id === id
 					? {
-							...t,
-							completedDate: new Date().toISOString().split('T')[0],
+							...item,
+							completedDate: getTodayKey(),
 							failed: false,
 							failedDate: null,
-							challengeStatus: t.isChallenge ? 'completed' : t.challengeStatus,
+							challengeStatus: item.isChallenge ? 'completed' : item.challengeStatus,
 						}
-					: t,
+					: item,
 			),
-		);
+		}));
 		return true;
 	};
 
 	const failTodo = (id: string, fail: boolean) => {
-		const date = fail ? new Date().toISOString().split('T')[0] : null;
-		setTodos(prev =>
-			prev.map(t =>
-				t.id === id
+		const date = fail ? getTodayKey() : null;
+		setState(current => ({
+			...current,
+			todos: current.todos.map(todo =>
+				todo.id === id
 					? {
-							...t,
+							...todo,
 							failed: fail,
 							failedDate: date,
-							challengeStatus: fail && t.isChallenge ? 'failed' : t.challengeStatus,
+							challengeStatus: fail && todo.isChallenge ? 'failed' : todo.challengeStatus,
 						}
-					: t,
+					: todo,
 			),
-		);
+		}));
 	};
 
 	const createGoalFromTemplate = (template: string, type: 'habit' | 'todo') => {
-		const title = template;
 		if (type === 'habit') {
-			addHabit({ title, daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] });
-		} else {
-			addTodo({ title });
+			addHabit({ title: template, daysOfWeek: [...GOAL_WEEKDAY_OPTIONS] });
+			return;
 		}
+
+		addTodo({ title: template });
 	};
 
-	// Helper functions for scar level based limits
-	const getMaxHabits = (scarLevel: number, isPremium: boolean): number => {
+	const getMaxHabits = (scarLevel: number, isPremium: boolean) => {
 		if (isPremium) return Infinity;
 		return 20 + Math.max(0, scarLevel) * 3;
 	};
 
-	const getMaxTodos = (scarLevel: number, isPremium: boolean): number => {
+	const getMaxTodos = (scarLevel: number, isPremium: boolean) => {
 		if (isPremium) return Infinity;
 		return 40 + Math.max(0, scarLevel) * 6;
 	};
 
-	const canAddHabit = (scarLevel: number, isPremium: boolean): boolean => {
-		return habits.length < getMaxHabits(scarLevel, isPremium);
-	};
+	const canAddHabit = (scarLevel: number, isPremium: boolean) => state.habits.length < getMaxHabits(scarLevel, isPremium);
+	const canAddTodo = (scarLevel: number, isPremium: boolean) => state.todos.length < getMaxTodos(scarLevel, isPremium);
 
-	const canAddTodo = (scarLevel: number, isPremium: boolean): boolean => {
-		return todos.length < getMaxTodos(scarLevel, isPremium);
+	const resetGoals = () => {
+		setState(createInitialGoalStore());
 	};
 
 	return (
 		<GoalsContext.Provider
 			value={{
-				habits,
-				todos,
+				habits: state.habits,
+				todos: state.todos,
 				addHabit,
 				editHabit,
 				reorderHabits,
@@ -501,23 +582,15 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 				toggleSubGoal,
 				completeTodo,
 				failTodo,
-				suggestedHabitGoals,
-				suggestedTodoGoals,
+				suggestedHabitGoals: state.suggestedHabitGoals,
+				suggestedTodoGoals: state.suggestedTodoGoals,
 				rerollSuggestedHabits,
 				rerollSuggestedTodos,
 				getRemainingHabitRerolls,
 				getRemainingTodoRerolls,
 				goalTemplates: GOAL_TEMPLATES,
 				createGoalFromTemplate,
-				resetGoals: () => {
-					setHabits(PRESET_HABITS);
-					setTodos([]);
-					setRerollTracker({ date: getToday(), habit: 0, todo: 0 });
-					const shuffled1 = [...SUGGESTED_HABIT_GOALS].sort(() => Math.random() - 0.5);
-					setSuggestedHabitGoals(shuffled1.slice(0, 6));
-					const shuffled2 = [...SUGGESTED_TODO_GOALS].sort(() => Math.random() - 0.5);
-					setSuggestedTodoGoals(shuffled2.slice(0, 6));
-				},
+				resetGoals,
 				getMaxHabits,
 				getMaxTodos,
 				canAddHabit,
@@ -531,15 +604,8 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
 	);
 }
 
-function isYesterday(dateStr: string) {
-	const d = new Date(dateStr);
-	const y = new Date();
-	y.setDate(y.getDate() - 1);
-	return d.toISOString().split('T')[0] === y.toISOString().split('T')[0];
-}
-
 export function useGoals() {
-	const ctx = useContext(GoalsContext);
-	if (!ctx) throw new Error('useGoals must be used within GoalsProvider');
-	return ctx;
+	const context = useContext(GoalsContext);
+	if (!context) throw new Error('useGoals must be used within GoalsProvider');
+	return context;
 }

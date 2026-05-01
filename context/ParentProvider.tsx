@@ -2,6 +2,7 @@ import { AchievementsProvider } from './AchievementsProvider';
 import { AscensionProvider } from './AscensionProvider';
 import { DragonClickingProvider } from './DragonClickingProvider';
 import { DragonCoinsProvider } from './DragonCoinsProvider';
+import { DragonEmbersProvider } from './DragonEmbersProvider';
 import { DragonProvider } from './DragonProvider';
 import { DragonShardsProvider } from './DragonShardsProvider';
 import { DragonSoulsProvider } from './DragonSoulsProvider';
@@ -19,6 +20,7 @@ import { StreakProvider } from './StreakProvider';
 import { SurveyProvider } from './SurveyProvider';
 import { DragonThemeProvider } from './ThemeProvider';
 import { ToastProvider } from './ToastProvider';
+import { TranscensionProvider } from './TranscensionProvider';
 import { WeatherProvider } from './WeatherProvider';
 
 export default function ParentProvider({ children }: { children: React.ReactNode }) {
@@ -33,29 +35,36 @@ export default function ParentProvider({ children }: { children: React.ReactNode
 								<DragonCoinsProvider>
 									<DragonShardsProvider>
 										<DragonSoulsProvider>
-											<PopulationProvider>
-												<WeatherProvider>
-													<ScarLevelProvider>
-														<DragonClickingProvider>
-															<GeneratorsProvider>
-																<ItemsProvider>
-																	<AscensionProvider>
-																		<QuestionProvider>
-																			<SurveyProvider>
-																				<GoalsProvider>
-																					<JournalProvider>
-																						<AchievementsProvider>{children}</AchievementsProvider>
-																					</JournalProvider>
-																				</GoalsProvider>
-																			</SurveyProvider>
-																		</QuestionProvider>
-																	</AscensionProvider>
-																</ItemsProvider>
-															</GeneratorsProvider>
-														</DragonClickingProvider>
-													</ScarLevelProvider>
-												</WeatherProvider>
-											</PopulationProvider>
+											<DragonEmbersProvider>
+												<PopulationProvider>
+													<WeatherProvider>
+														<ScarLevelProvider>
+															<DragonClickingProvider>
+																<GeneratorsProvider>
+																	{/* @requires DragonCoinsProvider @requires DragonShardsProvider @requires DragonSoulsProvider */}
+																	<ItemsProvider>
+																		{/* @requires DragonProvider @requires ScarLevelProvider @requires PopulationProvider @requires ItemsProvider */}
+																		<TranscensionProvider>
+																			{/* @requires DragonProvider @requires DragonCoinsProvider @requires DragonShardsProvider @requires DragonSoulsProvider @requires ItemsProvider @requires TranscensionProvider */}
+																			<AscensionProvider>
+																				<QuestionProvider>
+																					<SurveyProvider>
+																						<GoalsProvider>
+																							<JournalProvider>
+																								<AchievementsProvider>{children}</AchievementsProvider>
+																							</JournalProvider>
+																						</GoalsProvider>
+																					</SurveyProvider>
+																				</QuestionProvider>
+																			</AscensionProvider>
+																		</TranscensionProvider>
+																	</ItemsProvider>
+																</GeneratorsProvider>
+															</DragonClickingProvider>
+														</ScarLevelProvider>
+													</WeatherProvider>
+												</PopulationProvider>
+											</DragonEmbersProvider>
 										</DragonSoulsProvider>
 									</DragonShardsProvider>
 								</DragonCoinsProvider>

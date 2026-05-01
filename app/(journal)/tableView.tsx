@@ -1,3 +1,4 @@
+import { formatAbbreviatedNumber, formatCoinNumber } from '@/constants/number-abbreviation';
 import { useJournal } from '@/context/JournalProvider';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -49,7 +50,7 @@ export default function TableView() {
 								<Text style={styles.cell}>{Math.max(0, plannedGoals - completedGoals)}</Text>
 								<Text style={styles.cell}>{todoCount}</Text>
 								<Text style={styles.cell}>{todoFailed}</Text>
-								<Text style={[styles.cell, { minWidth: 140 }]}>{`${totalCoins}c | ${totalShards}sh | ${totalXp}xp`}</Text>
+								<Text style={[styles.cell, { minWidth: 160 }]}>{`🪙 ${formatCoinNumber(totalCoins)} | 💎 ${formatAbbreviatedNumber(totalShards)} | 🔥 ${formatAbbreviatedNumber(totalXp)}`}</Text>
 								<Pressable style={styles.viewButton} onPress={() => setOpenDate(day.date)}>
 									<Text style={styles.viewButtonText}>Open</Text>
 								</Pressable>

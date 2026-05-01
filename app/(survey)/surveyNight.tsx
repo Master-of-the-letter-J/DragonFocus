@@ -1,6 +1,8 @@
 import { Text, View } from '@/components/Themed';
 import ProgressBar from '@/components/ProgressBar';
 import TopHeader from '@/components/TopHeader';
+import { getHabitCompletionReward, getTodoCompletionReward } from '@/data/goal-reward-utils';
+import { GOAL_CHALLENGE_TIERS, getHabitChallengeFailureDate, isGoalChallengeActive } from '@/data/goal-utils';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
@@ -12,7 +14,8 @@ import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
-import { useSurvey } from '@/context/SurveyProvider';
+import { useSurvey, type SurveyProgressState } from '@/context/SurveyProvider';
+import { useTranscension } from '@/context/TranscensionProvider';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView } from 'react-native';
@@ -28,44 +31,11 @@ import { sectionStyles } from './surveySections/sectionStyles';
 import { useTodoChecklistFillSection } from './surveySections/todoChecklistFill';
 import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
 
-const CHALLENGE_REWARDS: Record<number, { coins: number; shards: number }> = {
-	7: { coins: 100, shards: 10 },
-	14: { coins: 250, shards: 25 },
-	30: { coins: 750, shards: 75 },
-};
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 const countWords = (value: string) =>
 	value
 		.trim()
 		.split(/\s+/)
 		.filter(Boolean).length;
-
-const diffDays = (start: string, end: string) => {
-	const startMs = new Date(`${start}T00:00:00`).getTime();
-	const endMs = new Date(`${end}T00:00:00`).getTime();
-	return Math.max(0, Math.floor((endMs - startMs) / DAY_MS));
-};
-
-const getTodoReward = (todo: { dueDate?: string | null; createdAt: number; completedDate?: string | null }) => {
-	const completedDate = todo.completedDate ?? new Date().toISOString().split('T')[0];
-	const createdDate = new Date(todo.createdAt).toISOString().split('T')[0];
-
-	if (!todo.dueDate || completedDate <= todo.dueDate) {
-		if (!todo.dueDate) return { coins: 10, fury: -4 };
-		const goalLengthDays = diffDays(createdDate, todo.dueDate) + 1;
-		if (goalLengthDays > 30) return { coins: 60, fury: -24 };
-		if (goalLengthDays >= 7) return { coins: 20, fury: -8 };
-		return { coins: 10, fury: -4 };
-	}
-
-	const lateDays = diffDays(todo.dueDate, completedDate);
-	if (lateDays > 30) return { coins: 10, fury: -1 };
-	if (lateDays >= 7) return { coins: 5, fury: -1 };
-	if (lateDays >= 1) return { coins: 2, fury: -1 };
-	return { coins: 1, fury: -1 };
-};
 
 export default function SurveyNightPage() {
 	const survey = useSurvey();
@@ -80,9 +50,11 @@ export default function SurveyNightPage() {
 	const premium = usePremium();
 	const journal = useJournal();
 	const goals = useGoals();
+	const transcension = useTranscension();
 	const router = useRouter();
 
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+	const isRetake = survey.lastNightSurveyDate === today && survey.nightSurveyCompleted;
 
 	const [currentSection, setCurrentSection] = useState(0);
 	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
@@ -91,13 +63,24 @@ export default function SurveyNightPage() {
 	const slideAnim = useRef(new Animated.Value(-100)).current;
 
 	const advice = useSurveyAdviceSection();
-	const mood = useMoodQuestionSection();
+	const mood = useMoodQuestionSection({
+		readOnly: isRetake,
+		lockedMessage: 'Mood is visible for refills, but it stays locked after your first night submission of the day.',
+	});
 	const habitFill = useHabitChecklistFillSection();
 	const todoFill = useTodoChecklistFillSection();
-	const shortAnswers = useShortAnswersSection({ surveyType: 'night' });
+	const shortAnswers = useShortAnswersSection({
+		surveyType: 'night',
+		readOnly: isRetake,
+		lockedMessage: 'Short answers are locked on night refills and keep your original responses for today.',
+	});
 	const trivia = useTriviaQuestionsSection({ surveyType: 'night' });
 	const journalEntry = useJournalEntrySection({ surveyType: 'night' });
-	const extraPrompts = useExtraPromptsSection({ mode: 'answer' });
+	const extraPrompts = useExtraPromptsSection({
+		mode: 'answer',
+		readOnly: isRetake,
+		lockedMessage: 'Extra prompt answers are locked on night refills and keep your original responses for today.',
+	});
 	const quote = useQuoteSection({ surveyType: 'night' });
 
 	const resultsSection = useResultsSection({
@@ -107,18 +90,20 @@ export default function SurveyNightPage() {
 	});
 
 	const sections = useMemo(() => {
-		return [
+		const fullSurveySections = [
 			advice.section,
 			mood.section,
 			habitFill.section,
 			todoFill.section,
 			shortAnswers.section,
+			extraPrompts.section,
 			trivia.section,
 			journalEntry.section,
-			extraPrompts.section,
 			quote.section,
-		].filter(section => section.isEnabled);
-	}, [advice.section, mood.section, habitFill.section, todoFill.section, shortAnswers.section, trivia.section, journalEntry.section, extraPrompts.section, quote.section]);
+		];
+
+		return fullSurveySections.filter(section => section.isEnabled);
+	}, [advice.section, extraPrompts.section, habitFill.section, journalEntry.section, mood.section, quote.section, shortAnswers.section, todoFill.section, trivia.section]);
 
 	const totalSections = sections.length;
 	const section = sections[currentSection];
@@ -158,29 +143,32 @@ export default function SurveyNightPage() {
 		setShowSurveyLabel(true);
 	}, [survey, today]);
 
+	const buildSaveState = (overrides: Partial<SurveyProgressState> = {}): SurveyProgressState => ({
+		savedAt: today,
+		section: currentSection,
+		sectionData: {
+			advice: advice.saveState(),
+			mood: mood.saveState(),
+			habitFill: habitFill.saveState(),
+			todoFill: todoFill.saveState(),
+			shortAnswers: shortAnswers.saveState(),
+			trivia: trivia.saveState(),
+			journal: journalEntry.saveState(),
+			extraPrompts: extraPrompts.saveState(),
+			quote: quote.saveState(),
+		},
+		progressPercent: totalSections ? Math.floor(((currentSection + 1) / totalSections) * 100) : 0,
+		...overrides,
+	});
+
 	const handleExitSurvey = () => {
-		const saveState = {
-			savedAt: today,
-			section: currentSection,
-			sectionData: {
-				advice: advice.saveState(),
-				mood: mood.saveState(),
-				habitFill: habitFill.saveState(),
-				todoFill: todoFill.saveState(),
-				shortAnswers: shortAnswers.saveState(),
-				trivia: trivia.saveState(),
-				journal: journalEntry.saveState(),
-				extraPrompts: extraPrompts.saveState(),
-				quote: quote.saveState(),
-			},
-			progressPercent: totalSections ? Math.floor(((currentSection + 1) / totalSections) * 100) : 0,
-		};
+		const saveState = buildSaveState();
 		survey.saveProgress?.('night', saveState);
 		router.back();
 	};
 
 	const submitSurvey = () => {
-		const alreadyDoneToday = survey.lastNightSurveyDate === today && survey.nightSurveyCompleted;
+		const alreadyDoneToday = isRetake;
 		let totalCoinsEarned = 0;
 		let totalShardsEarned = 0;
 		let furyDelta = 0;
@@ -198,6 +186,7 @@ export default function SurveyNightPage() {
 		const jeopardyMultiplier = Math.max(1, itemEconomy.getActiveJeopardyMultiplier?.() ?? 1);
 		const isPremiumFlag = premium?.isPremium ?? false;
 		const coinMultiplier = typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1;
+		const surveyDuplicationMultiplier = transcension.getSurveyDuplicationMultiplier();
 
 		if (!alreadyDoneToday) {
 			const nightCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(false, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
@@ -222,21 +211,24 @@ export default function SurveyNightPage() {
 			rewardTodoIds = todoSnapshot.completedTodoIds.filter(id => !snap.todoIds.includes(id));
 		}
 
+		const rewardSnapshot = { habitIds: rewardHabitIds, todoIds: rewardTodoIds };
+
 		const totalGoalsCompleted = habitSnapshot.completedHabitIds.length + todoSnapshot.completedTodoIds.length;
 
 		if (rewardHabitIds.length > 0) {
-			const baseHabitCoins = habitSnapshot.updatedHabits
+			const habitRewards = habitSnapshot.updatedHabits
 				.filter(habit => rewardHabitIds.includes(habit.id))
-				.reduce((sum, habit) => sum + 5 + Math.min(5, habit.streak ?? 0), 0);
-			const awarded = Math.floor(baseHabitCoins * coinMultiplier);
+				.map(habit => getHabitCompletionReward(habit));
+			const awarded = Math.floor(habitRewards.reduce((sum, reward) => sum + reward.coins, 0) * coinMultiplier);
+			const furyReward = habitRewards.reduce((sum, reward) => sum + reward.fury, 0);
 			totalCoinsEarned += awarded;
 			coins.addCoins?.(awarded);
-			furyDelta -= rewardHabitIds.length * 2;
+			furyDelta += furyReward;
 			dragon?.addHealthFromGoal?.(rewardHabitIds.length * 2);
 		}
 
 		if (rewardTodoIds.length > 0) {
-			const todoRewards = todoSnapshot.updatedTodos.filter(todo => rewardTodoIds.includes(todo.id)).map(todo => getTodoReward(todo));
+			const todoRewards = todoSnapshot.updatedTodos.filter(todo => rewardTodoIds.includes(todo.id)).map(todo => getTodoCompletionReward(todo));
 			const awarded = Math.floor(todoRewards.reduce((sum, reward) => sum + reward.coins, 0) * coinMultiplier);
 			const furyReward = todoRewards.reduce((sum, reward) => sum + reward.fury, 0);
 			totalCoinsEarned += awarded;
@@ -267,22 +259,32 @@ export default function SurveyNightPage() {
 		);
 		lateCompletedChallengeTodos.forEach(todo => goals?.editTodo?.(todo.id, { challengeStatus: 'failed' }));
 
-		const challengeFinishers = habitSnapshot.updatedHabits.filter(h => h.isChallenge && h.challengeLength && h.challengeStartDate && !h.challengeRewardClaimed && (h.streak ?? 0) >= (h.challengeLength ?? 0));
+		const challengeFinishers = habitSnapshot.updatedHabits.filter(h => isGoalChallengeActive(h) && h.challengeLength && h.challengeStartDate && (h.streak ?? 0) >= (h.challengeLength ?? 0));
 		if (challengeFinishers.length > 0) {
 			challengeFinishers.forEach(h => {
-				const len = Number(h.challengeLength);
-				const reward = CHALLENGE_REWARDS[len] ?? { coins: 0, shards: 0 };
-				if (reward.coins > 0) {
-					coins?.addCoins?.(reward.coins);
-					totalCoinsEarned += reward.coins;
+				const reward = GOAL_CHALLENGE_TIERS.find(tier => tier.days === Number(h.challengeLength)) ?? { rewardCoins: 0, rewardShards: 0 };
+				if (reward.rewardCoins > 0) {
+					coins?.addCoins?.(reward.rewardCoins);
+					totalCoinsEarned += reward.rewardCoins;
 				}
-				if (reward.shards > 0) {
-					shards?.addShards?.(reward.shards);
-					totalShardsEarned += reward.shards;
+				if (reward.rewardShards > 0) {
+					shards?.addShards?.(reward.rewardShards);
+					totalShardsEarned += reward.rewardShards;
 				}
-				goals?.editHabit?.(h.id, { challengeRewardClaimed: true });
+				goals?.editHabit?.(h.id, { challengeRewardClaimed: true, challengeStatus: 'completed' });
 			});
 		}
+
+		goals.habits.forEach(habit => {
+			const completedToday = habitSnapshot.completedHabitIds.includes(habit.id);
+			const failureDate = getHabitChallengeFailureDate(habit, today, completedToday);
+			if (!failureDate) return;
+
+			goals.editHabit?.(habit.id, {
+				challengeStatus: 'failed',
+				challengeFailedDate: failureDate,
+			});
+		});
 
 		const overdueIncompleteTodoIds = todoSnapshot.updatedTodos
 			.filter(todo => !!todo.dueDate && today > todo.dueDate && !todo.completedDate)
@@ -341,7 +343,20 @@ export default function SurveyNightPage() {
 					totalShardsEarned += bonusShards;
 				}
 				if ((surveyBonus.snackDrops ?? 0) > 0) {
-					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops, scar);
+					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops * surveyDuplicationMultiplier, scar);
+				}
+			}
+
+			if (surveyDuplicationMultiplier > 1) {
+				const duplicatedCoins = Math.max(0, totalCoinsEarned * (surveyDuplicationMultiplier - 1));
+				const duplicatedShards = Math.max(0, totalShardsEarned * (surveyDuplicationMultiplier - 1));
+				if (duplicatedCoins > 0) {
+					coins.addCoins?.(duplicatedCoins);
+					totalCoinsEarned += duplicatedCoins;
+				}
+				if (duplicatedShards > 0) {
+					shards.addShards?.(duplicatedShards);
+					totalShardsEarned += duplicatedShards;
 				}
 			}
 		}
@@ -354,14 +369,20 @@ export default function SurveyNightPage() {
 		}
 
 		const totalCoins = totalCoinsEarned;
-		const fireXPFromCoins = typeof coins?.calculateFireXP === 'function' ? coins.calculateFireXP(totalCoins) : 0;
-		const xpEarned = alreadyDoneToday ? 0 : fireXPFromCoins;
+		if (!alreadyDoneToday) {
+			coins.registerSurveyCoins?.(Math.max(0, totalCoins));
+		}
+		const xpEarned = alreadyDoneToday ? 0 : scarLevel?.addSurveyXP?.(Math.max(0, totalCoins), dragon.age, isPremiumFlag) ?? 0;
 		const effectiveFury = alreadyDoneToday ? 0 : furyDelta;
-		if (!alreadyDoneToday) scarLevel?.addXP?.(fireXPFromCoins);
 
-		survey.completeNightSurvey?.();
-		survey.recordNightSnapshot?.({ habitIds: habitSnapshot.completedHabitIds, todoIds: todoSnapshot.completedTodoIds });
-		survey.clearProgress?.('night');
+		const completedSaveState = buildSaveState({
+			section: 0,
+			progressPercent: 100,
+			completed: true,
+			lastSnapshot: rewardSnapshot,
+		});
+		survey.completeNightSurvey?.(completedSaveState);
+		survey.recordNightSnapshot?.(rewardSnapshot);
 		survey.clearEveningPrompts?.(today);
 
 		const promptText = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses })
@@ -377,6 +398,8 @@ export default function SurveyNightPage() {
 		const failedTodoTitles = todoSnapshot.updatedTodos
 			.filter(todo => (!!todo.dueDate && today > todo.dueDate && !todo.completedDate) || !!todo.failed || (!!todo.completedDate && !!todo.dueDate && todo.completedDate > todo.dueDate))
 			.map(todo => todo.title);
+		const blockedHabitRewards = habitSnapshot.updatedHabits.filter(habit => rewardHabitIds.includes(habit.id) && getHabitCompletionReward(habit).rewardBlocked).map(habit => habit.title);
+		const blockedTodoRewards = todoSnapshot.updatedTodos.filter(todo => rewardTodoIds.includes(todo.id) && getTodoCompletionReward(todo).rewardBlocked).map(todo => todo.title);
 
 		journal.addEntry?.({
 			id: `entry_${today}_night_${Date.now()}`,
@@ -406,6 +429,38 @@ export default function SurveyNightPage() {
 			xpEarned: xpEarned,
 			furyDelta: effectiveFury,
 			goalsCompleted: totalGoalsCompleted,
+			groups: [
+				...(alreadyDoneToday ? [{ title: 'Retake Notes', entries: ['This was a refill survey, so locked answers stayed visible and only still-open goal progress could change.'] }] : []),
+				{
+					title: 'Survey Answers',
+					entries: [
+						moodLabel ? `Mood: ${moodLabel}` : 'Mood question skipped',
+						trivia.section.isEnabled ? `Trivia score: ${trivia.correctCount()}/${trivia.state.items.length}` : 'Trivia skipped',
+						journalEntry.section.isEnabled ? `Journal entry length: ${journalEntry.state.text.trim().length} characters` : 'Journal entry skipped',
+					],
+				},
+				{
+					title: 'Habit Goals',
+					entries: completedHabitTitles.length > 0 ? completedHabitTitles.map(title => `Completed: ${title}`) : ['No habit goals completed'],
+				},
+				{
+					title: 'To-Do Goals',
+					entries:
+						completedTodoTitles.length > 0
+							? completedTodoTitles.map(title => `Completed: ${title}`)
+							: pendingTodoTitles.length > 0
+								? pendingTodoTitles.map(title => `Still open: ${title}`)
+								: ['No to-do goals completed'],
+				},
+				{
+					title: 'Reward Notes',
+					entries: [
+						...(failedTodoTitles.length > 0 ? failedTodoTitles.map(title => `Late or failed: ${title}`) : ['No late or failed to-dos']),
+						...(blockedHabitRewards.length > 0 ? blockedHabitRewards.map(title => `No normal habit reward yet: ${title}`) : []),
+						...(blockedTodoRewards.length > 0 ? blockedTodoRewards.map(title => `No normal to-do reward yet: ${title}`) : []),
+					],
+				},
+			],
 		});
 		setShowResults(true);
 	};

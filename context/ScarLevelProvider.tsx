@@ -14,7 +14,10 @@ export interface ScarLevelInfo {
 interface ScarLevelContextType {
 	currentScarLevel: number;
 	currentXP: number;
+	totalSurveyCoinsTracked: number;
 	addXP: (amount: number) => void;
+	addSurveyXP: (surveyCoins: number, dragonAge: number, isPremium?: boolean) => number;
+	addIdleXP: (coinAmount: number, isPremium?: boolean) => number;
 	levelUp: () => void;
 	getCurrentLevelInfo: () => ScarLevelInfo;
 	getNextLevelInfo: () => ScarLevelInfo | null;
@@ -138,6 +141,7 @@ const SCAR_LEVELS: ScarLevelInfo[] = buildScarLevels();
 export function ScarLevelProvider({ children }: { children: ReactNode }) {
 	const [currentScarLevel, setCurrentScarLevel] = useState(0);
 	const [currentXP, setCurrentXP] = useState(0);
+	const [totalSurveyCoinsTracked, setTotalSurveyCoinsTracked] = useState(0);
 
 	const maxScarLevel = SCAR_LEVELS.length - 1;
 
@@ -165,6 +169,24 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 
 		setCurrentScarLevel(nextLevel);
 		setCurrentXP(nextLevel >= maxScarLevel ? 0 : nextXP);
+	};
+
+	const addSurveyXP = (surveyCoins: number, dragonAge: number, isPremium = false) => {
+		if (surveyCoins <= 0 || currentScarLevel >= maxScarLevel) return 0;
+		const ageMultiplier = Math.max(dragonAge / 5, 1);
+		const nextTotalSurveyCoins = totalSurveyCoinsTracked + surveyCoins;
+		const premiumMultiplier = isPremium ? 2 : 1;
+		const xpEarned = Math.max(0, Math.floor((surveyCoins * 10 * ageMultiplier + Math.floor(nextTotalSurveyCoins / 1000)) * premiumMultiplier));
+		setTotalSurveyCoinsTracked(nextTotalSurveyCoins);
+		addXP(xpEarned);
+		return xpEarned;
+	};
+
+	const addIdleXP = (coinAmount: number, isPremium = false) => {
+		if (coinAmount <= 0 || currentScarLevel >= maxScarLevel) return 0;
+		const xpEarned = Math.max(0, Math.floor(Math.sqrt(coinAmount) * (isPremium ? 2 : 1)));
+		addXP(xpEarned);
+		return xpEarned;
 	};
 
 	const levelUp = () => {
@@ -210,7 +232,10 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 			value={{
 				currentScarLevel,
 				currentXP,
+				totalSurveyCoinsTracked,
 				addXP,
+				addSurveyXP,
+				addIdleXP,
 				levelUp,
 				getCurrentLevelInfo,
 				getNextLevelInfo,

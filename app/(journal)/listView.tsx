@@ -1,3 +1,4 @@
+import { formatAbbreviatedNumber, formatCoinNumber } from '@/constants/number-abbreviation';
 import { useJournal } from '@/context/JournalProvider';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -30,7 +31,7 @@ function LogCard({ day }: { day: any }) {
 		<View style={styles.card}>
 			<Pressable onPress={() => setOpen(!open)}>
 				<Text style={styles.title}>{day.date}</Text>
-				<Text style={styles.meta}>Morning: {morning?.moodMorning || '-'} | Night: {evening?.moodEvening || '-'} | Rewards: {totalCoins}c / {totalShards}sh / {totalXp}xp</Text>
+				<Text style={styles.meta}>Morning: {morning?.moodMorning || '-'} | Night: {evening?.moodEvening || '-'} | Rewards: 🪙 {formatCoinNumber(totalCoins)} / 💎 {formatAbbreviatedNumber(totalShards)} / 🔥 {formatAbbreviatedNumber(totalXp)}</Text>
 			</Pressable>
 
 			{open && (

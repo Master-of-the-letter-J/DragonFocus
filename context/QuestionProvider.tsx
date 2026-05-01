@@ -1,4 +1,6 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import { GOAL_CATEGORY_OPTIONS, normalizeGoalCategories, normalizeGoalCategory } from '@/data/goal-utils';
+import React, { ReactNode, createContext, useContext } from 'react';
 
 export type QuestionType = 'advice' | 'quotes' | 'mood' | 'habitGoals' | 'todoGoals' | 'prompts' | 'trivia' | 'journalEntry';
 export type PromptTarget = 'morning' | 'night' | 'both';
@@ -93,8 +95,8 @@ interface QuestionContextType {
 
 const QuestionContext = createContext<QuestionContextType | undefined>(undefined);
 
-export const DEFAULT_HABIT_CATEGORIES = ['Physical', 'Mental', 'Personal', 'Social', 'Creative', 'Wellness'];
-export const DEFAULT_TODO_CATEGORIES = ['Physical', 'Mental', 'Personal', 'Social', 'Creative', 'Wellness', 'Learning'];
+export const DEFAULT_HABIT_CATEGORIES = [...GOAL_CATEGORY_OPTIONS];
+export const DEFAULT_TODO_CATEGORIES = [...GOAL_CATEGORY_OPTIONS];
 
 export const PROMPT_CATEGORY_OPTIONS: Array<{ key: PromptCategoryKey; label: string }> = [
 	{ key: 'SelfDiscovery', label: 'Self Discovery' },
@@ -204,7 +206,109 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 	},
 };
 
+const createDefaultSettings = (): QuestionSettings => ({
+	advice: {
+		enabled: DEFAULT_SETTINGS.advice.enabled,
+		types: { ...DEFAULT_SETTINGS.advice.types },
+	},
+	quotes: {
+		enabled: DEFAULT_SETTINGS.quotes.enabled,
+		types: { ...DEFAULT_SETTINGS.quotes.types },
+	},
+	mood: {
+		enabled: DEFAULT_SETTINGS.mood.enabled,
+		customEmotions: [...DEFAULT_EMOTIONS],
+	},
+	habitGoals: {
+		enabled: DEFAULT_SETTINGS.habitGoals.enabled,
+		suggestedCategories: [...DEFAULT_HABIT_CATEGORIES],
+		customCategories: [],
+	},
+	todoGoals: {
+		enabled: DEFAULT_SETTINGS.todoGoals.enabled,
+		suggestedCategories: [...DEFAULT_TODO_CATEGORIES],
+		customCategories: [],
+	},
+	prompts: {
+		enabled: DEFAULT_SETTINGS.prompts.enabled,
+		types: { ...DEFAULT_SETTINGS.prompts.types },
+		customPrompts: [...DEFAULT_SETTINGS.prompts.customPrompts],
+	},
+	trivia: {
+		morningCount: DEFAULT_SETTINGS.trivia.morningCount,
+		nightCount: DEFAULT_SETTINGS.trivia.nightCount,
+		types: { ...DEFAULT_SETTINGS.trivia.types },
+	},
+	journalEntry: {
+		setting: DEFAULT_SETTINGS.journalEntry.setting,
+		template: DEFAULT_SETTINGS.journalEntry.template,
+	},
+});
+
+const normalizeStoredCategoryList = (categories: string[] | undefined, fallbackCategories: string[]) => {
+	if (!Array.isArray(categories)) return [...fallbackCategories];
+	return normalizeGoalCategories(categories);
+};
+
+const normalizeCustomCategoryList = (categories: string[] | undefined) => normalizeGoalCategories(categories);
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const normalizeQuestionSettings = (storedSettings?: Partial<QuestionSettings> | null): QuestionSettings => {
+	const defaults = createDefaultSettings();
+	if (!storedSettings) return defaults;
+
+	return {
+		advice: {
+			enabled: storedSettings.advice?.enabled ?? defaults.advice.enabled,
+			types: {
+				...defaults.advice.types,
+				...storedSettings.advice?.types,
+			},
+		},
+		quotes: {
+			enabled: storedSettings.quotes?.enabled ?? defaults.quotes.enabled,
+			types: {
+				...defaults.quotes.types,
+				...storedSettings.quotes?.types,
+			},
+		},
+		mood: {
+			enabled: storedSettings.mood?.enabled ?? defaults.mood.enabled,
+			customEmotions: storedSettings.mood?.customEmotions?.length ? storedSettings.mood.customEmotions : defaults.mood.customEmotions,
+		},
+		habitGoals: {
+			enabled: storedSettings.habitGoals?.enabled ?? defaults.habitGoals.enabled,
+			suggestedCategories: normalizeStoredCategoryList(storedSettings.habitGoals?.suggestedCategories, DEFAULT_HABIT_CATEGORIES),
+			customCategories: normalizeCustomCategoryList(storedSettings.habitGoals?.customCategories ?? defaults.habitGoals.customCategories),
+		},
+		todoGoals: {
+			enabled: storedSettings.todoGoals?.enabled ?? defaults.todoGoals.enabled,
+			suggestedCategories: normalizeStoredCategoryList(storedSettings.todoGoals?.suggestedCategories, DEFAULT_TODO_CATEGORIES),
+			customCategories: normalizeCustomCategoryList(storedSettings.todoGoals?.customCategories ?? defaults.todoGoals.customCategories),
+		},
+		prompts: {
+			enabled: storedSettings.prompts?.enabled ?? defaults.prompts.enabled,
+			types: {
+				...defaults.prompts.types,
+				...storedSettings.prompts?.types,
+			},
+			customPrompts: storedSettings.prompts?.customPrompts?.length ? storedSettings.prompts.customPrompts : defaults.prompts.customPrompts,
+		},
+		trivia: {
+			morningCount: clamp(storedSettings.trivia?.morningCount ?? defaults.trivia.morningCount, 0, 3),
+			nightCount: clamp(storedSettings.trivia?.nightCount ?? defaults.trivia.nightCount, 0, 3),
+			types: {
+				...defaults.trivia.types,
+				...storedSettings.trivia?.types,
+			},
+		},
+		journalEntry: {
+			setting: storedSettings.journalEntry?.setting ?? defaults.journalEntry.setting,
+			template: storedSettings.journalEntry?.template ?? defaults.journalEntry.template,
+		},
+	};
+};
 
 const mapPromptCategoryKey = (category: string): PromptCategoryKey => {
 	switch (category) {
@@ -232,7 +336,9 @@ const mapTriviaCategoryKey = (category: string): TriviaCategoryKey => {
 };
 
 export function QuestionProvider({ children }: { children: ReactNode }) {
-	const [questionSettings, setQuestionSettings] = useState<QuestionSettings>(DEFAULT_SETTINGS);
+	const { state: questionSettings, setState: setQuestionSettings } = usePersistedState(APP_STORAGE_KEYS.questionSettings, createDefaultSettings, {
+		normalize: storedSettings => normalizeQuestionSettings(storedSettings),
+	});
 
 	const updateAdviceSettings = (types: { inspirational: boolean; witty: boolean; philosophical: boolean }) => {
 		setQuestionSettings(prev => ({
@@ -302,35 +408,36 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			...prev,
 			habitGoals: {
 				...prev.habitGoals,
-				suggestedCategories: suggested,
-				customCategories: custom,
+				suggestedCategories: normalizeGoalCategories(suggested),
+				customCategories: normalizeCustomCategoryList(custom),
 			},
 		}));
 	};
 
 	const addHabitCategory = (name: string) => {
-		const trimmed = name.trim();
-		if (!trimmed) return;
+		const normalizedName = normalizeGoalCategory(name);
+		if (!normalizedName) return;
 
 		setQuestionSettings(prev => {
 			const existing = new Set([...prev.habitGoals.suggestedCategories, ...prev.habitGoals.customCategories].map(category => category.toLowerCase()));
-			if (existing.has(trimmed.toLowerCase())) return prev;
+			if (existing.has(normalizedName.toLowerCase())) return prev;
 			return {
 				...prev,
 				habitGoals: {
 					...prev.habitGoals,
-					customCategories: [...prev.habitGoals.customCategories, trimmed],
+					customCategories: [...prev.habitGoals.customCategories, normalizedName],
 				},
 			};
 		});
 	};
 
 	const removeHabitCategory = (name: string) => {
+		const normalizedName = normalizeGoalCategory(name) ?? name;
 		setQuestionSettings(prev => ({
 			...prev,
 			habitGoals: {
 				...prev.habitGoals,
-				customCategories: prev.habitGoals.customCategories.filter(category => category !== name),
+				customCategories: prev.habitGoals.customCategories.filter(category => category !== normalizedName),
 			},
 		}));
 	};
@@ -340,35 +447,36 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 			...prev,
 			todoGoals: {
 				...prev.todoGoals,
-				suggestedCategories: suggested,
-				customCategories: custom,
+				suggestedCategories: normalizeGoalCategories(suggested),
+				customCategories: normalizeCustomCategoryList(custom),
 			},
 		}));
 	};
 
 	const addTodoCategory = (name: string) => {
-		const trimmed = name.trim();
-		if (!trimmed) return;
+		const normalizedName = normalizeGoalCategory(name);
+		if (!normalizedName) return;
 
 		setQuestionSettings(prev => {
 			const existing = new Set([...prev.todoGoals.suggestedCategories, ...prev.todoGoals.customCategories].map(category => category.toLowerCase()));
-			if (existing.has(trimmed.toLowerCase())) return prev;
+			if (existing.has(normalizedName.toLowerCase())) return prev;
 			return {
 				...prev,
 				todoGoals: {
 					...prev.todoGoals,
-					customCategories: [...prev.todoGoals.customCategories, trimmed],
+					customCategories: [...prev.todoGoals.customCategories, normalizedName],
 				},
 			};
 		});
 	};
 
 	const removeTodoCategory = (name: string) => {
+		const normalizedName = normalizeGoalCategory(name) ?? name;
 		setQuestionSettings(prev => ({
 			...prev,
 			todoGoals: {
 				...prev.todoGoals,
-				customCategories: prev.todoGoals.customCategories.filter(category => category !== name),
+				customCategories: prev.todoGoals.customCategories.filter(category => category !== normalizedName),
 			},
 		}));
 	};

@@ -1,14 +1,27 @@
 import ProgressBar from '@/components/ProgressBar';
-import type { HabitGoal, TodoGoal } from '@/context/GoalsProvider';
+import { GOAL_CATEGORY_OPTIONS, GOAL_CHALLENGE_TIERS, GOAL_IMPORTANCE_OPTIONS, GOAL_WEEKDAY_OPTIONS, getGoalCategories, isGoalChallengeActive, type GoalChallengeTier, type GoalImportance } from '@/data/goal-utils';
+import type { HabitGoal, SubGoal, TodoGoal } from '@/context/GoalsProvider';
 import { useGoals } from '@/context/GoalsProvider';
 import { useQuestions } from '@/context/QuestionProvider';
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 
-// ==================== HABIT EDITOR ====================
+const WEEKDAY_OPTIONS = [...GOAL_WEEKDAY_OPTIONS] as const;
 
-export interface HabitEditorProps {
+const buildCategoryOptions = (questionCategories: string[], existingCategories: string[]) => {
+	return Array.from(new Set([...GOAL_CATEGORY_OPTIONS, ...questionCategories, ...existingCategories].filter(Boolean)));
+};
+
+const toggleValue = (values: string[], value: string) => {
+	return values.includes(value) ? values.filter(item => item !== value) : [...values, value];
+};
+
+const formatChallengeText = (tier: GoalChallengeTier) => {
+	return `${tier.days} days | Cost 🪙 ${tier.coinCost} + 💎 ${tier.shardCost} | Reward 🪙 ${tier.rewardCoins} + 💎 ${tier.rewardShards}`;
+};
+
+interface HabitEditorProps {
 	habit: HabitGoal;
 	onClose: () => void;
 }
@@ -16,54 +29,48 @@ export interface HabitEditorProps {
 export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 	const goals = useGoals();
 	const questions = useQuestions();
-	const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-	const CATEGORIES = [...new Set([...questions.questionSettings.habitGoals.suggestedCategories, ...questions.questionSettings.habitGoals.customCategories, habit.category || ''].filter(Boolean))];
+	const categoryOptions = useMemo(
+		() =>
+			buildCategoryOptions(
+				[...questions.questionSettings.habitGoals.suggestedCategories, ...questions.questionSettings.habitGoals.customCategories],
+				getGoalCategories(habit.categories, habit.category),
+			),
+		[habit.categories, habit.category, questions.questionSettings.habitGoals.customCategories, questions.questionSettings.habitGoals.suggestedCategories],
+	);
+	const challengeLocked = isGoalChallengeActive(habit);
 
 	const [form, setForm] = useState({
 		title: habit.title,
 		importance: habit.importance,
-		category: habit.category || '',
-		daysOfWeek: habit.daysOfWeek || [],
-		selectedChallenge: 0,
+		categories: getGoalCategories(habit.categories, habit.category),
+		daysOfWeek: habit.daysOfWeek ?? [...WEEKDAY_OPTIONS],
+		selectedChallengeDays: habit.challengeLength ?? 0,
 	});
 
 	const handleSave = () => {
 		if (!form.title.trim()) {
-			Alert.alert('Error', 'Habit title cannot be empty');
+			Alert.alert('Error', 'Habit title cannot be empty.');
 			return;
 		}
-		// If habit is a locked challenge, disallow edits
-		if (habit.isChallenge) {
-			Alert.alert('Locked', 'This habit is currently in a challenge and cannot be edited.');
+
+		if (challengeLocked) {
+			Alert.alert('Locked', 'This habit is in an active challenge, so it cannot be edited right now.');
 			onClose();
 			return;
 		}
+
 		goals.editHabit(habit.id, {
-			title: form.title,
-			importance: form.importance as any,
-			category: form.category,
-			daysOfWeek: form.daysOfWeek,
+			title: form.title.trim(),
+			importance: form.importance,
+			categories: form.categories,
+			category: form.categories[0],
+			daysOfWeek: form.daysOfWeek.length > 0 ? form.daysOfWeek : [...WEEKDAY_OPTIONS],
 		});
 		onClose();
 	};
 
-	const handleEnableChallenge = () => {
-		const len = form.selectedChallenge;
-		if (![7, 14, 30].includes(len)) {
-			Alert.alert('Select a length', 'Choose 7, 14 or 30 days to enable a challenge');
-			return;
-		}
-		const res = goals.enableChallenge(habit.id, len as number);
-		if (!res.success) {
-			Alert.alert('Unable to enable', res.message || 'Failed to enable challenge');
-		} else {
-			Alert.alert('Challenge enabled', `Challenge started (${len} days)`);
-			onClose();
-		}
-	};
-
 	const handleDelete = () => {
-		Alert.alert('Delete Habit Goal', 'Warning: deleting this habit removes the goal, its streak, and any challenge reward tied to it. Continue?', [
+		Alert.alert('Delete Habit Goal', 'Deleting this habit removes its streak and any challenge tied to it. Continue?', [
 			{ text: 'Cancel', style: 'cancel' },
 			{
 				text: 'Delete',
@@ -76,74 +83,54 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 		]);
 	};
 
+	const handleEnableChallenge = () => {
+		if (![7, 14, 30, 60, 90, 365].includes(form.selectedChallengeDays)) {
+			Alert.alert('Choose a challenge', 'Select a challenge length before enabling it.');
+			return;
+		}
+
+		const result = goals.enableChallenge(habit.id, form.selectedChallengeDays);
+		if (!result.success) {
+			Alert.alert('Unable to enable challenge', result.message ?? 'The challenge could not be started.');
+			return;
+		}
+
+		Alert.alert('Challenge enabled', `${form.selectedChallengeDays}-day challenge mode is now active for this habit.`);
+		onClose();
+	};
+
 	return (
 		<View style={styles.container}>
 			<ScrollView contentContainerStyle={styles.formContent}>
 				<Text style={styles.title}>Edit Habit Goal</Text>
 
 				<Text style={styles.label}>Title</Text>
-				<TextInput editable={!habit.isChallenge} value={form.title} onChangeText={t => setForm({ ...form, title: t })} placeholder="Goal title" style={styles.input} />
+				<TextInput editable={!challengeLocked} value={form.title} onChangeText={title => setForm(prev => ({ ...prev, title }))} placeholder="Habit title" style={styles.input} />
 
 				<Text style={styles.label}>Importance</Text>
-				<View style={styles.buttonGroup}>
-					{(['Default', 'Important', 'Important+'] as const).map(imp => (
-						<Pressable key={imp} style={[styles.segmentButton, form.importance === imp && styles.segmentActive]} onPress={() => setForm({ ...form, importance: imp })}>
-							<Text style={[styles.segmentText, form.importance === imp && styles.segmentTextActive]}>{imp}</Text>
-						</Pressable>
-					))}
-				</View>
+				<ImportanceSelector value={form.importance} onChange={importance => setForm(prev => ({ ...prev, importance }))} />
 
-				<Text style={styles.label}>Category</Text>
-				<View style={styles.buttonGroup}>
-					{CATEGORIES.map(cat => (
-						<Pressable
-							key={cat}
-							style={[styles.tagButton, form.category === cat && styles.tagActive]}
-							onPress={() =>
-								setForm({
-									...form,
-									category: form.category === cat ? '' : cat,
-								})
-							}>
-							<Text style={[styles.tagText, form.category === cat && styles.tagTextActive]}>{cat}</Text>
-						</Pressable>
-					))}
-				</View>
+				<Text style={styles.label}>Categories</Text>
+				<ChipSelector options={categoryOptions} selected={form.categories} onToggle={category => setForm(prev => ({ ...prev, categories: toggleValue(prev.categories, category) }))} />
 
 				<Text style={styles.label}>Days of Week</Text>
-				<View style={styles.buttonGroup}>
-					{DAYS.map(day => (
-						<Pressable
-							key={day}
-							style={[styles.dayButton, form.daysOfWeek.includes(day) && styles.dayActive]}
-							onPress={() => {
-								const updated = form.daysOfWeek.includes(day) ? form.daysOfWeek.filter(d => d !== day) : [...form.daysOfWeek, day];
-								setForm({ ...form, daysOfWeek: updated });
-							}}>
-							<Text style={[styles.dayText, form.daysOfWeek.includes(day) && styles.dayTextActive]}>{day}</Text>
-						</Pressable>
-					))}
-				</View>
+				<ChipSelector options={[...WEEKDAY_OPTIONS]} selected={form.daysOfWeek} onToggle={day => setForm(prev => ({ ...prev, daysOfWeek: toggleValue(prev.daysOfWeek, day) }))} />
 
-				<Text style={styles.label}>Challenge (locked while active)</Text>
-				{habit.isChallenge ? (
-					<Text style={{ color: '#1565C0', marginBottom: 8 }}>
-						Challenge active: {habit.challengeLength} days (started {habit.challengeStartDate})
+				<Text style={styles.label}>Challenge Mode</Text>
+				{challengeLocked ? (
+					<Text style={styles.infoText}>
+						Active {habit.challengeLength}-day challenge since {habit.challengeStartDate}. The editor stays locked until that challenge is completed or failed.
 					</Text>
 				) : (
-					<View style={{ flexDirection: 'row', gap: 8 }}>
-						{[7, 14, 30].map(d => (
-							<Pressable key={d} style={[styles.segmentButton, form.selectedChallenge === d && styles.segmentActive]} onPress={() => setForm({ ...form, selectedChallenge: d })}>
-								<Text style={[styles.segmentText, form.selectedChallenge === d && styles.segmentTextActive]}>{d}d</Text>
-							</Pressable>
-						))}
+					<>
+						<ChallengeSelector value={form.selectedChallengeDays} onChange={selectedChallengeDays => setForm(prev => ({ ...prev, selectedChallengeDays }))} />
 						<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleEnableChallenge}>
-							<Text style={[styles.buttonText, styles.buttonTextLight]}>Enable</Text>
+							<Text style={[styles.buttonText, styles.buttonTextLight]}>Add Challenge</Text>
 						</Pressable>
-					</View>
+					</>
 				)}
 
-				<View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+				<View style={styles.footerButtons}>
 					<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleSave}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Save</Text>
 					</Pressable>
@@ -151,7 +138,7 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Delete</Text>
 					</Pressable>
 					<Pressable style={[styles.button, styles.buttonSecondary]} onPress={onClose}>
-						<Text style={[styles.buttonText, styles.buttonTextLight]}>Cancel</Text>
+						<Text style={[styles.buttonText, styles.buttonTextLight]}>Close</Text>
 					</Pressable>
 				</View>
 			</ScrollView>
@@ -159,9 +146,7 @@ export function HabitEditor({ habit, onClose }: HabitEditorProps) {
 	);
 }
 
-// ==================== TODO EDITOR ====================
-
-export interface TodoEditorProps {
+interface TodoEditorProps {
 	todo: TodoGoal;
 	onClose: () => void;
 }
@@ -169,99 +154,48 @@ export interface TodoEditorProps {
 export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 	const goals = useGoals();
 	const questions = useQuestions();
-	const CATEGORIES = [...new Set([...questions.questionSettings.todoGoals.suggestedCategories, ...questions.questionSettings.todoGoals.customCategories, todo.category || ''].filter(Boolean))];
+	const categoryOptions = useMemo(
+		() =>
+			buildCategoryOptions(
+				[...questions.questionSettings.todoGoals.suggestedCategories, ...questions.questionSettings.todoGoals.customCategories],
+				getGoalCategories(todo.categories, todo.category),
+			),
+		[todo.categories, todo.category, questions.questionSettings.todoGoals.customCategories, questions.questionSettings.todoGoals.suggestedCategories],
+	);
+	const challengeLocked = isGoalChallengeActive(todo);
 
 	const [form, setForm] = useState({
 		title: todo.title,
 		importance: todo.importance,
-		category: todo.category || '',
-		dueDate: todo.dueDate || '',
+		categories: getGoalCategories(todo.categories, todo.category),
+		dueDate: todo.dueDate ?? '',
 	});
-
-	const [subGoals, setSubGoals] = useState(todo.subGoals || []);
+	const [subGoals, setSubGoals] = useState<SubGoal[]>(todo.subGoals ?? []);
 	const [newSubGoal, setNewSubGoal] = useState('');
 	const [editingSubGoalId, setEditingSubGoalId] = useState<string | null>(null);
+
+	const progress = subGoals.length === 0 ? 0 : subGoals.filter(subGoal => subGoal.completed).length / subGoals.length;
 	const todoChallengeDetails = useMemo(() => goals.getTodoChallengeDetails(form.dueDate, todo.createdAt), [form.dueDate, goals, todo.createdAt]);
-
-	const addSubGoal = () => {
-		if (!newSubGoal.trim()) return;
-		const sg = {
-			id: Math.random().toString(36).slice(2),
-			title: newSubGoal.trim(),
-			completed: false,
-		};
-		setSubGoals([...subGoals, sg]);
-		setNewSubGoal('');
-	};
-
-	const deleteSubGoal = (id: string) => {
-		Alert.alert('Delete Sub-Goal', 'Warning: deleting this sub-goal removes it permanently. Continue?', [
-			{ text: 'Cancel', style: 'cancel' },
-			{ text: 'Delete', style: 'destructive', onPress: () => setSubGoals(subGoals.filter(sg => sg.id !== id)) },
-		]);
-	};
-
-	const updateSubGoalTitle = (id: string, title: string) => {
-		setSubGoals(subGoals.map(sg => (sg.id === id ? { ...sg, title } : sg)));
-	};
-
-	const progress = subGoals.length === 0 ? 0 : subGoals.filter(sg => sg.completed).length / subGoals.length;
 
 	const handleSave = () => {
 		if (!form.title.trim()) {
-			Alert.alert('Error', 'To-Do title cannot be empty');
+			Alert.alert('Error', 'To-do title cannot be empty.');
 			return;
 		}
+
 		goals.editTodo(todo.id, {
-			title: form.title,
-			importance: form.importance as any,
-			category: form.category,
-			dueDate: form.dueDate,
+			title: form.title.trim(),
+			importance: form.importance,
+			categories: form.categories,
+			category: form.categories[0],
+			dueDate: form.dueDate.trim() || null,
 			subGoals,
 		});
 		onClose();
 	};
 
-	const handleEnableChallenge = () => {
-		if (!todoChallengeDetails) {
-			Alert.alert('Add a Due Date', 'Set a valid due date before enabling challenge mode.');
-			return;
-		}
-		if (!form.title.trim()) {
-			Alert.alert('Error', 'To-Do title cannot be empty');
-			return;
-		}
-
-		Alert.alert(
-			'Enable To-Do Challenge',
-			`Spend ${todoChallengeDetails.coinCost} coins${todoChallengeDetails.shardCost > 0 ? ` and ${todoChallengeDetails.shardCost} shards` : ''} to lock this title and due date, then earn ${todoChallengeDetails.rewardCoins} coins and ${todoChallengeDetails.rewardShards} shards if completed on time?`,
-			[
-				{ text: 'Cancel', style: 'cancel' },
-				{
-					text: 'Enable',
-					onPress: () => {
-						const draft = {
-							title: form.title,
-							importance: form.importance as any,
-							category: form.category,
-							dueDate: form.dueDate,
-							subGoals,
-						};
-						const result = goals.enableTodoChallenge(todo.id, draft);
-						if (!result.success) {
-							Alert.alert('Unable to enable', result.message || 'Failed to enable to-do challenge.');
-							return;
-						}
-						Alert.alert('Challenge enabled', `${result.details?.length ?? todoChallengeDetails.length}-day challenge mode is active for this to-do.`);
-						onClose();
-					},
-				},
-			],
-		);
-	};
-
 	const handleDelete = () => {
-		Alert.alert('Delete To-Do Goal', 'Warning: deleting this to-do removes its sub-goals, due date, and any pending challenge reward tied to it. Continue?', [
+		Alert.alert('Delete To-Do Goal', 'Deleting this to-do removes its sub-goals and any challenge tied to it. Continue?', [
 			{ text: 'Cancel', style: 'cancel' },
 			{
 				text: 'Delete',
@@ -274,155 +208,137 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 		]);
 	};
 
+	const handleEnableChallenge = () => {
+		if (!todoChallengeDetails) {
+			Alert.alert('Add a Due Date', 'Set a valid due date before enabling challenge mode.');
+			return;
+		}
+
+		Alert.alert(
+			'Enable To-Do Challenge',
+			`Spend ${todoChallengeDetails.coinCost} coins and ${todoChallengeDetails.shardCost} shards to lock this title and due date, then earn ${todoChallengeDetails.rewardCoins} coins and ${todoChallengeDetails.rewardShards} shards if it is finished on time?`,
+			[
+				{ text: 'Cancel', style: 'cancel' },
+				{
+					text: 'Enable',
+					onPress: () => {
+						const result = goals.enableTodoChallenge(todo.id, {
+							title: form.title.trim(),
+							importance: form.importance,
+							categories: form.categories,
+							category: form.categories[0],
+							dueDate: form.dueDate.trim() || null,
+							subGoals,
+						});
+						if (!result.success) {
+							Alert.alert('Unable to enable challenge', result.message ?? 'The challenge could not be started.');
+							return;
+						}
+						Alert.alert('Challenge enabled', `${result.details?.days ?? todoChallengeDetails.days}-day challenge mode is now active for this to-do.`);
+						onClose();
+					},
+				},
+			],
+		);
+	};
+
+	const addSubGoal = () => {
+		const title = newSubGoal.trim();
+		if (!title) return;
+		setSubGoals(prev => [...prev, { id: Math.random().toString(36).slice(2), title, completed: false }]);
+		setNewSubGoal('');
+	};
+
+	const deleteSubGoal = (id: string) => {
+		Alert.alert('Delete Sub-Goal', 'Delete this sub-goal permanently?', [
+			{ text: 'Cancel', style: 'cancel' },
+			{ text: 'Delete', style: 'destructive', onPress: () => setSubGoals(prev => prev.filter(subGoal => subGoal.id !== id)) },
+		]);
+	};
+
+	const updateSubGoalTitle = (id: string, title: string) => {
+		setSubGoals(prev => prev.map(subGoal => (subGoal.id === id ? { ...subGoal, title } : subGoal)));
+	};
+
 	return (
 		<View style={styles.container}>
 			<ScrollView contentContainerStyle={styles.formContent}>
-				<Text style={styles.title}>Edit To-Do</Text>
+				<Text style={styles.title}>Edit To-Do Goal</Text>
 
 				<Text style={styles.label}>Title</Text>
-				<TextInput editable={!todo.isChallenge} value={form.title} onChangeText={t => setForm({ ...form, title: t })} placeholder="To-do title" style={styles.input} />
+				<TextInput editable={!challengeLocked} value={form.title} onChangeText={title => setForm(prev => ({ ...prev, title }))} placeholder="To-do title" style={styles.input} />
 
 				<Text style={styles.label}>Importance</Text>
-				<View style={styles.buttonGroup}>
-					{(['Default', 'Important', 'Important+'] as const).map(imp => (
-						<Pressable key={imp} style={[styles.segmentButton, form.importance === imp && styles.segmentActive]} onPress={() => setForm({ ...form, importance: imp })}>
-							<Text style={[styles.segmentText, form.importance === imp && styles.segmentTextActive]}>{imp}</Text>
-						</Pressable>
-					))}
-				</View>
+				<ImportanceSelector value={form.importance} onChange={importance => setForm(prev => ({ ...prev, importance }))} />
 
-				<Text style={styles.label}>Category</Text>
-				<View style={styles.buttonGroup}>
-					{CATEGORIES.map(cat => (
-						<Pressable
-							key={cat}
-							style={[styles.tagButton, form.category === cat && styles.tagActive]}
-							onPress={() =>
-								setForm({
-									...form,
-									category: form.category === cat ? '' : cat,
-								})
-							}>
-							<Text style={[styles.tagText, form.category === cat && styles.tagTextActive]}>{cat}</Text>
-						</Pressable>
-					))}
-				</View>
+				<Text style={styles.label}>Categories</Text>
+				<ChipSelector options={categoryOptions} selected={form.categories} onToggle={category => setForm(prev => ({ ...prev, categories: toggleValue(prev.categories, category) }))} />
 
-				<Text style={styles.label}>Due Date (optional)</Text>
-				<TextInput editable={!todo.isChallenge} value={form.dueDate} onChangeText={t => setForm({ ...form, dueDate: t })} placeholder="YYYY-MM-DD" style={styles.input} />
+				<Text style={styles.label}>Due Date</Text>
+				<TextInput editable={!challengeLocked} value={form.dueDate} onChangeText={dueDate => setForm(prev => ({ ...prev, dueDate }))} placeholder="YYYY-MM-DD" style={styles.input} />
 
 				<Text style={styles.label}>Challenge Mode</Text>
-				{todo.isChallenge ? (
-					<Text style={{ color: '#1565C0', marginBottom: 8 }}>
-						Challenge active: tier {todo.challengeLength} days | reward {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
+				{challengeLocked ? (
+					<Text style={styles.infoText}>
+						Active {todo.challengeLength}-day challenge | reward {todo.rewardCoins ?? 0} coins + {todo.rewardShards ?? 0} shards.
 					</Text>
 				) : todoChallengeDetails ? (
-					<View style={{ marginBottom: 12 }}>
-						<Text style={{ color: '#4B5563', marginBottom: 8 }}>
-							This due date maps to a {todoChallengeDetails.length}-day challenge tier. Cost: {todoChallengeDetails.coinCost} coins
-							{todoChallengeDetails.shardCost > 0 ? ` | ${todoChallengeDetails.shardCost} shards` : ''}. Reward: {todoChallengeDetails.rewardCoins} coins | {todoChallengeDetails.rewardShards} shards.
-						</Text>
+					<>
+						<Text style={styles.infoText}>{formatChallengeText(todoChallengeDetails)}</Text>
 						<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleEnableChallenge}>
-							<Text style={[styles.buttonText, styles.buttonTextLight]}>Enable Challenge Mode</Text>
+							<Text style={[styles.buttonText, styles.buttonTextLight]}>Add Challenge</Text>
 						</Pressable>
-					</View>
+					</>
 				) : (
-					<Text style={{ color: '#6B7280', marginBottom: 8 }}>Add a valid due date to unlock challenge mode for this to-do.</Text>
+					<Text style={styles.infoText}>Add a valid due date to unlock challenge mode for this to-do.</Text>
 				)}
 
-				{/* SUB-GOALS SECTION */}
 				<Text style={styles.label}>Sub-Goals</Text>
-
 				<ProgressBar progress={progress} />
 
-				{/* Add new sub-goal */}
-				<View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-					<TextInput value={newSubGoal} onChangeText={setNewSubGoal} placeholder="Add a sub-goal" style={[styles.input, { flex: 1 }]} />
-					<Pressable style={[styles.button, styles.buttonSuccess, { paddingHorizontal: 16 }]} onPress={addSubGoal}>
+				<View style={styles.inlineRow}>
+					<TextInput value={newSubGoal} onChangeText={setNewSubGoal} placeholder="Add a sub-goal" style={[styles.input, styles.flexInput]} />
+					<Pressable style={[styles.button, styles.buttonSuccess, styles.inlineButton]} onPress={addSubGoal}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Add</Text>
 					</Pressable>
 				</View>
 
-				{/* Draggable list */}
 				<DraggableFlatList
 					data={subGoals}
 					keyExtractor={item => item.id}
 					onDragEnd={({ data }) => setSubGoals(data)}
-					nestedScrollEnabled={true}
+					nestedScrollEnabled
 					renderItem={({ item, drag, isActive }) => (
-						<View
-							style={{
-								paddingVertical: 10,
-								opacity: isActive ? 0.6 : 1,
-								borderBottomWidth: 1,
-								borderColor: '#eee',
-							}}>
-							<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-								<Pressable
-									onPress={() => deleteSubGoal(item.id)}
-									style={{
-										marginRight: 12,
-									}}>
-									<Text
-										style={{
-											color: '#f44336',
-											fontWeight: '700',
-										}}>
-										Delete
-									</Text>
+						<View style={[styles.subGoalCard, isActive ? styles.subGoalCardDragging : null]}>
+							<View style={styles.subGoalActions}>
+								<Pressable onPress={() => deleteSubGoal(item.id)}>
+									<Text style={styles.deleteText}>Delete</Text>
 								</Pressable>
-								<Pressable
-									onPress={() => setEditingSubGoalId(item.id)}
-									style={{
-										marginRight: 12,
-									}}>
-									<Text
-										style={{
-											color: '#1565C0',
-											fontWeight: '700',
-										}}>
-										Edit
-									</Text>
+								<Pressable onPress={() => setEditingSubGoalId(item.id)}>
+									<Text style={styles.editText}>Edit</Text>
 								</Pressable>
 								<Pressable onLongPress={drag} delayLongPress={120}>
-									<Text
-										style={{
-											color: '#6B7280',
-											fontWeight: '700',
-										}}>
-										Move
-									</Text>
+									<Text style={styles.moveText}>Move</Text>
 								</Pressable>
 							</View>
 
-							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-								<Text style={{ width: 22, marginRight: 12, color: '#6B7280', fontWeight: '700' }}>-</Text>
-
-								<TextInput
-									value={item.title}
-									onChangeText={text => updateSubGoalTitle(item.id, text)}
-									onFocus={() => setEditingSubGoalId(item.id)}
-									onBlur={() => setEditingSubGoalId(current => (current === item.id ? null : current))}
-									editable={true}
-									placeholder="Sub-goal title"
-									style={{
-										flex: 1,
-										fontSize: 15,
-										paddingVertical: 6,
-										paddingHorizontal: 8,
-										borderWidth: editingSubGoalId === item.id ? 1 : 0,
-										borderColor: '#D1D5DB',
-										borderRadius: 8,
-										textDecorationLine: item.completed ? 'line-through' : 'none',
-										color: item.completed ? '#777' : '#000',
-									}}
-								/>
-							</View>
+							<TextInput
+								value={item.title}
+								onChangeText={text => updateSubGoalTitle(item.id, text)}
+								onFocus={() => setEditingSubGoalId(item.id)}
+								onBlur={() => setEditingSubGoalId(current => (current === item.id ? null : current))}
+								placeholder="Sub-goal title"
+								style={[
+									styles.subGoalInput,
+									editingSubGoalId === item.id ? styles.subGoalInputActive : null,
+									item.completed ? styles.subGoalInputCompleted : null,
+								]}
+							/>
 						</View>
 					)}
 				/>
 
-				<View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+				<View style={styles.footerButtons}>
 					<Pressable style={[styles.button, styles.buttonSuccess]} onPress={handleSave}>
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Save</Text>
 					</Pressable>
@@ -430,7 +346,7 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 						<Text style={[styles.buttonText, styles.buttonTextLight]}>Delete</Text>
 					</Pressable>
 					<Pressable style={[styles.button, styles.buttonSecondary]} onPress={onClose}>
-						<Text style={[styles.buttonText, styles.buttonTextLight]}>Cancel</Text>
+						<Text style={[styles.buttonText, styles.buttonTextLight]}>Close</Text>
 					</Pressable>
 				</View>
 			</ScrollView>
@@ -438,7 +354,58 @@ export function TodoEditor({ todo, onClose }: TodoEditorProps) {
 	);
 }
 
-// ==================== STYLES ====================
+function ImportanceSelector({ value, onChange }: { value: GoalImportance; onChange: (value: GoalImportance) => void }) {
+	return (
+		<View style={styles.buttonGroup}>
+			{GOAL_IMPORTANCE_OPTIONS.map(option => (
+				<Pressable
+					key={option.value}
+					style={[styles.segmentButton, value === option.value && styles.segmentActive]}
+					onPress={() => onChange(option.value)}>
+					<Text style={[styles.segmentText, value === option.value && styles.segmentTextActive, { color: value === option.value ? option.color : '#666' }]}>{option.shortLabel}</Text>
+				</Pressable>
+			))}
+		</View>
+	);
+}
+
+function ChipSelector({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (value: string) => void }) {
+	return (
+		<View style={styles.buttonGroup}>
+			{options.map(option => (
+				<Pressable key={option} style={[styles.tagButton, selected.includes(option) && styles.tagActive]} onPress={() => onToggle(option)}>
+					<Text style={[styles.tagText, selected.includes(option) && styles.tagTextActive]}>{option}</Text>
+				</Pressable>
+			))}
+		</View>
+	);
+}
+
+function ChallengeSelector({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+	const [showExtended, setShowExtended] = useState(false);
+	const visibleTiers = showExtended ? GOAL_CHALLENGE_TIERS : GOAL_CHALLENGE_TIERS.filter(tier => tier.days <= 30);
+
+	return (
+		<View style={styles.challengeGrid}>
+			<View style={styles.challengeHeaderRow}>
+				<Text style={styles.infoText}>Challenges lock the goal and pay extra rewards when finished on time.</Text>
+				<Pressable style={styles.infoButton} onPress={() => Alert.alert('Challenges', 'Challenge goals lock important fields, cost coins and shards to start, and pay larger coin/shard rewards when completed successfully.')}>
+					<Text style={styles.infoButtonText}>i</Text>
+				</Pressable>
+			</View>
+			{visibleTiers.map(tier => (
+				<Pressable key={tier.days} style={[styles.challengeButton, value === tier.days && styles.challengeButtonActive]} onPress={() => onChange(tier.days)}>
+					<Text style={[styles.challengeTitle, value === tier.days && styles.challengeTitleActive]}>{tier.days} days</Text>
+					<Text style={[styles.challengeMeta, value === tier.days && styles.challengeMetaActive]}>Cost 🪙 {tier.coinCost} + 💎 {tier.shardCost}</Text>
+					<Text style={[styles.challengeMeta, value === tier.days && styles.challengeMetaActive]}>Reward 🪙 {tier.rewardCoins} + 💎 {tier.rewardShards}</Text>
+				</Pressable>
+			))}
+			<Pressable style={styles.seeMoreButton} onPress={() => setShowExtended(prev => !prev)}>
+				<Text style={styles.seeMoreText}>{showExtended ? 'Hide 60/90/365 Day Challenges' : 'See More Challenges'}</Text>
+			</Pressable>
+		</View>
+	);
+}
 
 const styles = StyleSheet.create({
 	container: {
@@ -459,95 +426,200 @@ const styles = StyleSheet.create({
 		marginTop: 16,
 		marginBottom: 8,
 	},
+	infoText: {
+		fontSize: 13,
+		lineHeight: 20,
+		color: '#4B5563',
+		marginBottom: 10,
+	},
 	input: {
 		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 8,
+		borderColor: '#D1D5DB',
+		borderRadius: 10,
 		padding: 12,
 		fontSize: 16,
+		backgroundColor: '#fff',
+	},
+	flexInput: {
+		flex: 1,
 	},
 	buttonGroup: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		gap: 8,
-		marginBottom: 8,
 	},
 	segmentButton: {
 		paddingVertical: 8,
 		paddingHorizontal: 12,
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#ddd',
+		borderColor: '#D1D5DB',
+		backgroundColor: '#fff',
 	},
 	segmentActive: {
-		borderColor: '#4CAF50',
-		backgroundColor: '#E8F5E9',
+		borderColor: '#111827',
+		backgroundColor: '#F9FAFB',
 	},
 	segmentText: {
 		fontSize: 14,
 		color: '#666',
 	},
 	segmentTextActive: {
-		color: '#2E7D32',
-		fontWeight: '600',
+		fontWeight: '700',
 	},
 	tagButton: {
-		paddingVertical: 6,
+		paddingVertical: 7,
 		paddingHorizontal: 10,
-		borderRadius: 6,
+		borderRadius: 999,
 		borderWidth: 1,
-		borderColor: '#ddd',
+		borderColor: '#D1D5DB',
+		backgroundColor: '#fff',
 	},
 	tagActive: {
-		borderColor: '#2196F3',
-		backgroundColor: '#E3F2FD',
+		borderColor: '#2563EB',
+		backgroundColor: '#E0F2FE',
 	},
 	tagText: {
 		fontSize: 13,
-		color: '#666',
+		color: '#4B5563',
 	},
 	tagTextActive: {
-		color: '#1565C0',
-		fontWeight: '600',
+		color: '#1D4ED8',
+		fontWeight: '700',
 	},
-	dayButton: {
-		width: '13%',
-		paddingVertical: 8,
-		borderRadius: 6,
-		borderWidth: 1,
-		borderColor: '#ddd',
+	challengeGrid: {
+		gap: 8,
+	},
+	challengeHeaderRow: {
+		flexDirection: 'row',
+		gap: 8,
 		alignItems: 'center',
 	},
-	dayActive: {
-		borderColor: '#4CAF50',
-		backgroundColor: '#C8E6C9',
+	infoButton: {
+		width: 28,
+		height: 28,
+		borderRadius: 14,
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#111827',
 	},
-	dayText: {
+	infoButtonText: {
+		color: '#fff',
+		fontWeight: '800',
+	},
+	challengeButton: {
+		borderWidth: 1,
+		borderColor: '#D1D5DB',
+		borderRadius: 12,
+		padding: 12,
+		backgroundColor: '#fff',
+	},
+	challengeButtonActive: {
+		borderColor: '#2563EB',
+		backgroundColor: '#EFF6FF',
+	},
+	challengeTitle: {
+		fontSize: 14,
+		fontWeight: '800',
+		color: '#111827',
+	},
+	challengeTitleActive: {
+		color: '#1D4ED8',
+	},
+	challengeMeta: {
 		fontSize: 12,
-		color: '#666',
+		color: '#6B7280',
+		marginTop: 4,
 	},
-	dayTextActive: {
-		color: '#2E7D32',
-		fontWeight: '600',
+	challengeMetaActive: {
+		color: '#1E40AF',
+	},
+	seeMoreButton: {
+		alignSelf: 'flex-start',
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+		borderRadius: 10,
+		backgroundColor: '#F3F4F6',
+	},
+	seeMoreText: {
+		color: '#374151',
+		fontWeight: '800',
+	},
+	inlineRow: {
+		flexDirection: 'row',
+		gap: 8,
+		marginTop: 8,
+		marginBottom: 12,
+	},
+	inlineButton: {
+		flex: 0,
+		paddingHorizontal: 16,
+	},
+	subGoalCard: {
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+		borderBottomColor: '#E5E7EB',
+	},
+	subGoalCardDragging: {
+		opacity: 0.65,
+	},
+	subGoalActions: {
+		flexDirection: 'row',
+		gap: 16,
+		marginBottom: 8,
+	},
+	subGoalInput: {
+		borderWidth: 1,
+		borderColor: 'transparent',
+		borderRadius: 8,
+		paddingVertical: 8,
+		paddingHorizontal: 10,
+		fontSize: 15,
+		color: '#111827',
+		backgroundColor: '#fff',
+	},
+	subGoalInputActive: {
+		borderColor: '#CBD5E1',
+	},
+	subGoalInputCompleted: {
+		textDecorationLine: 'line-through',
+		color: '#6B7280',
+	},
+	deleteText: {
+		color: '#DC2626',
+		fontWeight: '700',
+	},
+	editText: {
+		color: '#2563EB',
+		fontWeight: '700',
+	},
+	moveText: {
+		color: '#6B7280',
+		fontWeight: '700',
+	},
+	footerButtons: {
+		flexDirection: 'row',
+		gap: 12,
+		marginTop: 20,
 	},
 	button: {
 		flex: 1,
 		paddingVertical: 12,
-		borderRadius: 8,
+		borderRadius: 10,
 		alignItems: 'center',
 	},
 	buttonSuccess: {
-		backgroundColor: '#4CAF50',
+		backgroundColor: '#15803D',
 	},
 	buttonDanger: {
-		backgroundColor: '#f44336',
+		backgroundColor: '#DC2626',
 	},
 	buttonSecondary: {
-		backgroundColor: '#999',
+		backgroundColor: '#6B7280',
 	},
 	buttonText: {
 		fontSize: 14,
-		fontWeight: '600',
+		fontWeight: '700',
 	},
 	buttonTextLight: {
 		color: '#fff',

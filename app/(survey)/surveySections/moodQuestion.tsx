@@ -23,6 +23,8 @@ export interface UseMoodQuestionParams {
 	enableMood?: boolean;
 	initialIndex?: number | null;
 	onSelect?: (index: number, option: MoodOption) => void;
+	readOnly?: boolean;
+	lockedMessage?: string;
 }
 
 const DEFAULT_MOOD_OPTIONS: MoodOption[] = [
@@ -40,7 +42,14 @@ const DEFAULT_MOOD_OPTIONS: MoodOption[] = [
 	{ emoji: '>:[', label: 'Angry', fury: +9 },
 ];
 
-export function useMoodQuestionSection({ questionSettings, enableMood, initialIndex = null, onSelect }: UseMoodQuestionParams = {}): SectionHookResult<MoodSectionState> & { moodOptions: MoodOption[] } {
+export function useMoodQuestionSection({
+	questionSettings,
+	enableMood,
+	initialIndex = null,
+	onSelect,
+	readOnly = false,
+	lockedMessage,
+}: UseMoodQuestionParams = {}): SectionHookResult<MoodSectionState> & { moodOptions: MoodOption[] } {
 	const { questionSettings: contextSettings } = useQuestions();
 	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
@@ -60,12 +69,15 @@ export function useMoodQuestionSection({ questionSettings, enableMood, initialIn
 		return (
 			<View>
 				<Text style={sectionStyles.question}>How are you feeling?</Text>
+				{readOnly ? <Text style={[sectionStyles.subtleText, { marginBottom: 12 }]}>{lockedMessage ?? 'This mood answer is locked on refill surveys.'}</Text> : null}
 				<View style={sectionStyles.moodGrid}>
 					{moodOptions.map((m, idx) => (
 						<Pressable
 							key={`${m.label}-${idx}`}
-							style={[sectionStyles.moodButton, state.selectedIndex === idx && sectionStyles.moodSelected]}
+							disabled={readOnly}
+							style={[sectionStyles.moodButton, state.selectedIndex === idx && sectionStyles.moodSelected, readOnly ? { opacity: 0.7 } : null]}
 							onPress={() => {
+								if (readOnly) return;
 								setState(prev => ({ ...prev, selectedIndex: idx }));
 								onSelect?.(idx, m);
 							}}>

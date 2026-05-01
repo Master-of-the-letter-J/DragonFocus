@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
 
 interface DragonShardsContextType {
 	shards: number;
@@ -11,7 +12,7 @@ interface DragonShardsContextType {
 const DragonShardsContext = createContext<DragonShardsContextType | undefined>(undefined);
 
 export function DragonShardsProvider({ children }: { children: ReactNode }) {
-	const [shards, setShards] = useState(0);
+	const { state: shards, setState: setShards } = usePersistedState(APP_STORAGE_KEYS.dragonShards, 0);
 
 	const addShards = (amount: number) => {
 		setShards(prev => Math.max(0, prev + amount));

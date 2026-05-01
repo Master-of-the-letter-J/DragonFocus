@@ -197,19 +197,20 @@ export default function SurveySettings() {
 					<Text style={styles.addButtonText}>Add Custom Emotion</Text>
 				</Pressable>
 
-				{questions.questionSettings.mood.customEmotions.map(emotion => (
-					<View key={emotion.id} style={styles.listCard}>
-						<Text style={styles.listTitle}>
-							{emotion.emoji} {emotion.description}
-						</Text>
-						<Text style={styles.listMeta}>Fury {emotion.furyChange >= 0 ? '+' : ''}{emotion.furyChange}</Text>
-						{emotion.custom && (
-							<Pressable style={styles.removeButton} onPress={() => questions.removeCustomEmotion(emotion.id)}>
-								<Text style={styles.removeButtonText}>Remove</Text>
-							</Pressable>
-						)}
-					</View>
-				))}
+				<View style={styles.moodOptionGrid}>
+					{questions.questionSettings.mood.customEmotions.map(emotion => (
+						<View key={emotion.id} style={styles.moodOptionBox}>
+							<Text style={styles.moodEmoji}>{emotion.emoji}</Text>
+							<Text style={styles.moodName}>{emotion.description}</Text>
+							<Text style={styles.listMeta}>Fury {emotion.furyChange >= 0 ? '+' : ''}{emotion.furyChange}</Text>
+							{emotion.custom && (
+								<Pressable style={styles.removeButton} onPress={() => questions.removeCustomEmotion(emotion.id)}>
+									<Text style={styles.removeButtonText}>Remove</Text>
+								</Pressable>
+							)}
+						</View>
+					))}
+				</View>
 			</View>
 
 			<View style={styles.card}>
@@ -347,6 +348,10 @@ const styles = StyleSheet.create({
 	tagText: { color: '#374151', fontWeight: '700' },
 	removeText: { color: '#DC2626', fontWeight: '800' },
 	listCard: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, marginBottom: 10, backgroundColor: '#FAFAFA' },
+	moodOptionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+	moodOptionBox: { width: '23%', minWidth: 88, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 10, backgroundColor: '#FAFAFA', alignItems: 'center' },
+	moodEmoji: { fontSize: 22, marginBottom: 4 },
+	moodName: { fontSize: 11, fontWeight: '800', color: '#111827', textAlign: 'center', marginBottom: 4 },
 	listTitle: { fontWeight: '700', color: '#111827', marginBottom: 4 },
 	listMeta: { color: '#6B7280', marginBottom: 8, textTransform: 'capitalize' },
 	removeButton: { alignSelf: 'flex-start', backgroundColor: '#FEE2E2', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },

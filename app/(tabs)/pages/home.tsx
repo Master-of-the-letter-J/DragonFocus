@@ -1,6 +1,7 @@
 import ProgressBar from '@/components/ProgressBar';
 import { Text, View } from '@/components/Themed';
 import TopHeader from '@/components/TopHeader';
+import { formatAbbreviatedNumber, formatDecimalNumber, formatPopulationNumber } from '@/constants/number-abbreviation';
 import { images } from '@/constants';
 import { useDragonClicking } from '@/context/DragonClickingProvider';
 import { useDragon } from '@/context/DragonProvider';
@@ -10,8 +11,8 @@ import { usePopulation } from '@/context/PopulationProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import { useToast } from '@/context/ToastProvider';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 
 const formatDuration = (seconds: number) => {
 	if (seconds <= 0) return '0s';
@@ -38,6 +39,7 @@ export default function HomePage() {
 	const [snackModalOpen, setSnackModalOpen] = useState(false);
 	const [idleModalOpen, setIdleModalOpen] = useState(false);
 	const [eventModal, setEventModal] = useState<{ title: string; message: string } | null>(null);
+	const dragonPressScale = useRef(new Animated.Value(1)).current;
 
 	const today = new Date().toISOString().split('T')[0];
 	const savedMorning = survey.loadProgress('morning');
@@ -69,6 +71,14 @@ export default function HomePage() {
 	useEffect(() => {
 		if (itemEconomy.pendingIdleSummary) setIdleModalOpen(true);
 	}, [itemEconomy.pendingIdleSummary]);
+
+	useEffect(() => {
+		if (dragon.dragonState !== 'unspawned') return;
+		setEventModal({
+			title: 'Summon Your Dragon',
+			message: 'Your lair is ready, but no dragon has been summoned yet. Tap the egg or use Spawn Dragon to begin.',
+		});
+	}, [dragon.dragonState]);
 
 	useEffect(() => {
 		if (!dragon.lastLifecycleEvent) return;
@@ -118,19 +128,43 @@ export default function HomePage() {
 	const canUseSurveys = dragon.dragonState === 'alive';
 	const stageImage = dragon.dragonState === 'dead' ? images.grave : images.stages[dragon.currentStage.name];
 
+	const animateDragonPress = (toValue: number) => {
+		Animated.spring(dragonPressScale, {
+			toValue,
+			speed: 32,
+			bounciness: 7,
+			useNativeDriver: true,
+		}).start();
+	};
+
+	const handleDragonPress = () => {
+		if (dragon.dragonState === 'unspawned') {
+			dragon.spawnDragon();
+			return;
+		}
+
+		if (dragon.dragonState !== 'alive') return;
+
+		dragonClicking.addClick();
+		const reward = itemEconomy.processDragonClick();
+		if (reward > 0) {
+			showToast({ title: 'Dragon Click', message: `+${reward.toFixed(2)} coins`, shadowColor: '#F59E0B', backgroundColor: '#FFFBEB' }, { durationMs: 900 });
+		}
+	};
+
 	return (
 		<View style={styles.container}>
 			<TopHeader isHomePage={true} />
 
 			<ScrollView contentContainerStyle={styles.scrollContent}>
 				<View style={styles.statsHeader}>
-					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'World Population', message: `${(population.population / 1_000_000_000).toFixed(2)}B dragonside estimate`, shadowColor: '#16A34A', backgroundColor: '#ECFDF5' })}>
+					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'World Population', message: `${formatPopulationNumber(population.population)} dragonside estimate`, shadowColor: '#16A34A', backgroundColor: '#ECFDF5' })}>
 						<Text style={styles.statLabel}>World Population</Text>
-						<Text style={styles.statValue}>{(population.population / 1_000_000_000).toFixed(2)}B</Text>
+						<Text style={styles.statValue}>{formatPopulationNumber(population.population)}</Text>
 					</Pressable>
-					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'Death Count', message: `${(population.deathCount || 0).toLocaleString()} recorded losses`, shadowColor: '#DC2626', backgroundColor: '#FEF2F2' })}>
+					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'Death Count', message: `${formatPopulationNumber(population.deathCount || 0)} recorded losses`, shadowColor: '#DC2626', backgroundColor: '#FEF2F2' })}>
 						<Text style={styles.statLabel}>Death Count</Text>
-						<Text style={styles.statValue}>{(population.deathCount || 0).toLocaleString()}</Text>
+						<Text style={styles.statValue}>{formatPopulationNumber(population.deathCount || 0)}</Text>
 					</Pressable>
 				</View>
 
@@ -157,28 +191,20 @@ export default function HomePage() {
 
 				<View style={styles.dragonArea}>
 					<Text style={styles.dragonName}>{dragon.dragonName}</Text>
-					<Text style={styles.dragonStats}>
-						Stage: {dragon.currentStage.name} • Age: {dragon.age} days • HP {dragon.hp}/{dragon.maxHP}
-					</Text>
+					<Text style={styles.dragonStats}>Stage: {dragon.currentStage.name} | Age: {formatAbbreviatedNumber(dragon.age)} days | HP {formatDecimalNumber(dragon.hp)}/{formatDecimalNumber(dragon.maxHP)}</Text>
 
 					<View style={styles.dragonArtShell}>
-						<Image source={stageImage} style={[styles.dragonImage, dragon.dragonState === 'dead' && styles.deadDragonImage, dragon.dragonState === 'unspawned' && styles.eggImage]} />
-					</View>
-
-					{dragon.dragonState === 'alive' && (
 						<Pressable
-							style={styles.tapDragonButton}
+							disabled={dragon.dragonState === 'dead'}
 							hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-							onPress={() => {
-								dragonClicking.addClick();
-								const reward = itemEconomy.processDragonClick();
-								if (reward > 0) {
-									showToast({ title: 'Dragon Click', message: `+${reward.toFixed(2)} coins`, shadowColor: '#F59E0B', backgroundColor: '#FFFBEB' }, { durationMs: 900 });
-								}
-							}}>
-							<Text style={styles.tapDragonText}>Tap Dragon</Text>
+							onPress={handleDragonPress}
+							onPressIn={() => animateDragonPress(0.92)}
+							onPressOut={() => animateDragonPress(1)}>
+							<Animated.View style={{ transform: [{ scale: dragonPressScale }] }}>
+								<Image source={stageImage} style={[styles.dragonImage, dragon.dragonState === 'dead' && styles.deadDragonImage, dragon.dragonState === 'unspawned' && styles.eggImage]} />
+							</Animated.View>
 						</Pressable>
-					)}
+					</View>
 
 					{dragon.dragonState === 'unspawned' && (
 						<Pressable style={styles.lifecycleButton} onPress={() => dragon.spawnDragon()}>
@@ -255,10 +281,10 @@ export default function HomePage() {
 								<Text style={styles.modalText}>Coins earned: +{itemEconomy.pendingIdleSummary.coins.toFixed(2)}</Text>
 								<Text style={styles.modalText}>Fire XP earned: +{itemEconomy.pendingIdleSummary.fireXp.toFixed(2)}</Text>
 								<Text style={styles.modalText}>Shards earned: +{itemEconomy.pendingIdleSummary.shards}</Text>
-								<Text style={styles.modalText}>Fury earned: +{itemEconomy.pendingIdleSummary.furyEarned.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Fury lost: -{itemEconomy.pendingIdleSummary.furyLost.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Health earned: +{itemEconomy.pendingIdleSummary.healthEarned.toFixed(2)}</Text>
-								<Text style={styles.modalText}>Health lost: -{itemEconomy.pendingIdleSummary.healthLost.toFixed(2)}</Text>
+								<Text style={styles.modalText}>Fury: +{formatDecimalNumber(itemEconomy.pendingIdleSummary.furyEarned)}</Text>
+								<Text style={styles.modalText}>Fury lost: -{formatDecimalNumber(itemEconomy.pendingIdleSummary.furyLost)}</Text>
+								<Text style={styles.modalText}>Health: +{formatDecimalNumber(itemEconomy.pendingIdleSummary.healthEarned)}</Text>
+								<Text style={styles.modalText}>Health lost: -{formatDecimalNumber(itemEconomy.pendingIdleSummary.healthLost)}</Text>
 							</View>
 						)}
 						<Pressable style={styles.closeModalBtn} onPress={() => {

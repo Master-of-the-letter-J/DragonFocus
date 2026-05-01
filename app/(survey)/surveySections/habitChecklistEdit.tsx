@@ -1,5 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import { GOAL_HABIT_ADVICE } from '@/data/advice-data';
+import { GOAL_CHALLENGE_TIERS, getGoalCategories, getImportanceMeta, isGoalChallengeActive } from '@/data/goal-utils';
 import { HabitEditor } from '@/components/goalEditor';
 import { useGoals, type HabitGoal } from '@/context/GoalsProvider';
 import { usePremium } from '@/context/PremiumProvider';
@@ -10,12 +11,6 @@ import { Alert, Modal, Pressable, ScrollView, TouchableOpacity } from 'react-nat
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
-
-const CHALLENGE_OPTIONS = [
-	{ days: 7, cost: 50, rewardCoins: 100, rewardShards: 10, costShards: 1 },
-	{ days: 14, cost: 100, rewardCoins: 250, rewardShards: 25, costShards: 2 },
-	{ days: 30, cost: 250, rewardCoins: 750, rewardShards: 75, costShards: 5 },
-];
 
 export interface HabitChecklistEditState {
 	localHabits: HabitGoal[];
@@ -36,16 +31,11 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 		editingHabit: null,
 		selectedChallengeDays: {},
 	});
+	const [showExtendedChallenges, setShowExtendedChallenges] = useState(false);
 
 	useEffect(() => {
 		setState(prev => ({ ...prev, localHabits: goals.habits }));
 	}, [goals.habits]);
-
-	useEffect(() => {
-		if ((goals.habits ?? []).length > 0) return;
-		const defaults = ['Make Bed', 'Brush Teeth', 'Drink 8 Cups of Water', 'Meditate 10 Minutes', 'Exercise 30 Minutes', 'Sleep with Good Bedtime'];
-		defaults.forEach(title => goals.addHabit?.({ title }));
-	}, [goals]);
 
 	const habitLimit = useMemo(() => goals.getMaxHabits?.(scarLevel.currentScarLevel ?? 0, premium.isPremium ?? false) ?? Infinity, [goals, premium.isPremium, scarLevel.currentScarLevel]);
 	const canAddMoreHabits = state.localHabits.length < habitLimit;
@@ -98,9 +88,11 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 	const renderHabitItem = useCallback(
 		({ item, drag, isActive }: RenderItemParams<HabitGoal>) => {
 			const habit = item;
-			const activeChallenge = !!habit.isChallenge;
+			const activeChallenge = isGoalChallengeActive(habit);
 			const currentProgress = habit.streak ?? 0;
 			const required = habit.challengeLength ?? 0;
+			const importanceMeta = getImportanceMeta(habit.importance);
+			const categories = getGoalCategories(habit.categories, habit.category);
 
 			return (
 				<ScaleDecorator>
@@ -109,7 +101,6 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 						disabled={isActive}
 						style={[
 							sectionStyles.habitRow,
-							habit.importance === 'Important+' ? sectionStyles.habitImportantPlus : habit.importance === 'Important' ? sectionStyles.habitImportant : null,
 							activeChallenge ? { backgroundColor: '#E8F4FF' } : null,
 							isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null,
 						]}>
@@ -118,8 +109,20 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 								<Text selectable={false} style={sectionStyles.habitTitle}>
 									{habit.title}
 								</Text>
+								<View style={sectionStyles.metaRow}>
+									<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>
+										{importanceMeta.label}
+									</Text>
+									{categories.map(category => (
+										<View key={`${habit.id}-${category}`} style={sectionStyles.categoryChip}>
+											<Text selectable={false} style={sectionStyles.categoryChipText}>
+												{category}
+											</Text>
+										</View>
+									))}
+								</View>
 								<Text selectable={false} style={sectionStyles.habitMeta}>
-									{[habit.category, habit.importance].filter(Boolean).join(' - ')} - Goal Streak {habit.streak ?? 0}
+									Goal Streak {habit.streak ?? 0}
 								</Text>
 								{activeChallenge ? (
 									<Text style={{ fontSize: 12, color: '#1976D2', marginTop: 6 }}>
@@ -146,7 +149,7 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 
 						{!activeChallenge ? (
 							<View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
-								{CHALLENGE_OPTIONS.map(option => (
+								{GOAL_CHALLENGE_TIERS.filter(option => showExtendedChallenges || option.days <= 30).map(option => (
 									<Pressable
 										key={option.days}
 										style={[sectionStyles.challengeButton, state.selectedChallengeDays[habit.id] === option.days ? sectionStyles.challengeSelected : null]}
@@ -161,7 +164,7 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 										}>
 										<Text style={{ fontWeight: '600' }}>{option.days}d</Text>
 										<Text style={{ fontSize: 11, color: '#666' }}>
-											{option.cost}c{option.costShards ? ` - ${option.costShards}sh` : ''}
+											🪙 {option.coinCost}{option.shardCost ? ` / 💎 ${option.shardCost}` : ''}
 										</Text>
 									</Pressable>
 								))}
@@ -176,20 +179,25 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 										enableChallenge(habit, days);
 									}}>
 									<Text selectable={false} style={sectionStyles.smallButtonText}>
-										Enable
+										Add Challenge
+									</Text>
+								</Pressable>
+								<Pressable style={[sectionStyles.smallButton, { marginLeft: 8 }]} onPress={() => setShowExtendedChallenges(prev => !prev)}>
+									<Text selectable={false} style={sectionStyles.smallButtonText}>
+										{showExtendedChallenges ? 'Hide 60/90/365' : 'See More Challenges'}
 									</Text>
 								</Pressable>
 							</View>
 						) : (
 							<View style={{ marginTop: 8 }}>
-								<Text style={{ fontSize: 12, color: '#555' }}>Challenge active - rewards are granted on successful completion during the night survey.</Text>
+								<Text style={{ fontSize: 12, color: '#555' }}>Challenge active. Rewards are granted after a successful submission in the night survey or lair.</Text>
 							</View>
 						)}
 					</TouchableOpacity>
 				</ScaleDecorator>
 			);
 		},
-		[cancelHabit, enableChallenge, state.selectedChallengeDays],
+		[cancelHabit, enableChallenge, showExtendedChallenges, state.selectedChallengeDays],
 	);
 
 	const render = useCallback(() => {
@@ -244,17 +252,17 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 												key={suggestion.title}
 												style={sectionStyles.suggestedItem}
 												onPress={() => {
-													const importance = suggestion.importance === 'Important+' ? 'Important+' : suggestion.importance === 'Important' ? 'Important' : 'Default';
 													goals.addHabit?.({
 														title: suggestion.title,
-														daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+														daysOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+														categories: [suggestion.category],
 														category: suggestion.category,
-														importance,
+														importance: suggestion.importance ?? 'default',
 													});
 													goals.rerollSuggestedHabits?.(premium.isPremium);
 												}}>
 												<Text selectable={false}>
-													+ {suggestion.title} - {suggestion.category} - {suggestion.importance}
+													+ {suggestion.title} - {suggestion.category}
 												</Text>
 											</Pressable>
 										))}

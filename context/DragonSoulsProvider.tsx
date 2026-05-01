@@ -1,32 +1,77 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
+
+interface DragonSoulState {
+	souls: number;
+	totalSoulsEarned: number;
+}
 
 interface DragonSoulsContextType {
 	souls: number;
+	totalSoulsEarned: number;
 	addSouls: (amount: number) => void;
 	spendSouls: (amount: number) => boolean;
+	awardAscensionSouls: (amount: number) => void;
 	getSouls: () => number;
+	getTotalSoulsEarned: () => number;
 	resetSouls: () => void;
 }
 
 const DragonSoulsContext = createContext<DragonSoulsContextType | undefined>(undefined);
 
+const INITIAL_DRAGON_SOUL_STATE: DragonSoulState = {
+	souls: 0,
+	totalSoulsEarned: 0,
+};
+
 export function DragonSoulsProvider({ children }: { children: ReactNode }) {
-	const [souls, setSouls] = useState(0);
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.dragonSouls, INITIAL_DRAGON_SOUL_STATE);
 
 	const addSouls = (amount: number) => {
-		setSouls(prev => Math.max(0, prev + amount));
+		if (amount <= 0) return;
+		setState(current => ({
+			...current,
+			souls: Math.max(0, current.souls + amount),
+		}));
 	};
 
 	const spendSouls = (amount: number) => {
-		if (souls < amount) return false;
-		setSouls(prev => Math.max(0, prev - amount));
+		if (amount <= 0) return true;
+		if (state.souls < amount) return false;
+		setState(current => ({
+			...current,
+			souls: Math.max(0, current.souls - amount),
+		}));
 		return true;
 	};
 
-	const getSouls = () => souls;
-	const resetSouls = () => setSouls(0);
+	const awardAscensionSouls = (amount: number) => {
+		const safeAmount = Math.max(0, Math.floor(amount));
+		setState(current => ({
+			souls: safeAmount,
+			totalSoulsEarned: Math.max(0, current.totalSoulsEarned + safeAmount),
+		}));
+	};
 
-	return <DragonSoulsContext.Provider value={{ souls, addSouls, spendSouls, getSouls, resetSouls }}>{children}</DragonSoulsContext.Provider>;
+	const getSouls = () => state.souls;
+	const getTotalSoulsEarned = () => state.totalSoulsEarned;
+	const resetSouls = () => setState(INITIAL_DRAGON_SOUL_STATE);
+
+	return (
+		<DragonSoulsContext.Provider
+			value={{
+				souls: state.souls,
+				totalSoulsEarned: state.totalSoulsEarned,
+				addSouls,
+				spendSouls,
+				awardAscensionSouls,
+				getSouls,
+				getTotalSoulsEarned,
+				resetSouls,
+			}}>
+			{children}
+		</DragonSoulsContext.Provider>
+	);
 }
 
 export function useDragonSouls() {

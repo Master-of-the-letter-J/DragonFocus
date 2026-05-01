@@ -1,3 +1,4 @@
+import { roundToDecimalPlaces } from '@/constants/number-abbreviation';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 import { useGraveyard } from '../context/GraveyardProvider';
 
@@ -104,7 +105,7 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 
 	const damageHp = (amount: number) => {
 		setHp(prev => {
-			const nextHp = Math.max(0, prev - amount);
+			const nextHp = roundToDecimalPlaces(Math.max(0, prev - amount), 3);
 			if (nextHp <= 0 && dragonState === 'alive' && !invincible) {
 				markDead();
 			}
@@ -113,11 +114,11 @@ export function DragonProvider({ children }: { children: ReactNode }) {
 	};
 
 	const healHp = (amount: number) => {
-		setHp(prev => Math.min(maxHP, prev + amount));
+		setHp(prev => roundToDecimalPlaces(Math.min(maxHP, prev + amount), 3));
 	};
 
 	const setHpValue = (amount: number) => {
-		const nextHp = Math.max(0, Math.min(maxHP, amount));
+		const nextHp = roundToDecimalPlaces(Math.max(0, Math.min(maxHP, amount)), 3);
 		setHp(nextHp);
 		if (nextHp <= 0 && dragonState === 'alive' && !invincible) {
 			markDead();

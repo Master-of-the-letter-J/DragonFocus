@@ -35,8 +35,8 @@ export default function TutorialPage() {
 				<Text style={styles.bullet}>- Deleting a challenge reward removes that challenge without claiming the reward.</Text>
 
 				<Text style={styles.h2}>Challenge Rewards</Text>
-				<Text style={styles.bullet}>- Habit challenges reward 100 / 250 / 750 coins and 10 / 25 / 75 shards for 7 / 14 / 30 days.</Text>
-				<Text style={styles.bullet}>- Timed to-do challenges reward 125 / 300 / 1000 coins and 5 / 15 / 50 shards for 7 / 14 / 30 day tiers.</Text>
+				<Text style={styles.bullet}>- Habit and to-do challenges include 7, 14, 30, 60, 90, and 365 day tiers.</Text>
+				<Text style={styles.bullet}>- Longer challenge tiers stay behind See More Challenges so the editor remains readable.</Text>
 
 				<Text style={styles.h1}>Dragon Lifecycle</Text>
 				<Text style={styles.p}>
@@ -48,11 +48,12 @@ export default function TutorialPage() {
 				<Text style={styles.bullet}>- The graveyard stores prior dragons and revival history.</Text>
 
 				<Text style={styles.h1}>Currencies</Text>
-				<Text style={styles.p}>Dragon Focus currently uses coins, shards, fire XP, and dragon souls.</Text>
+				<Text style={styles.p}>Dragon Focus currently uses coins, shards, fire XP, dragon souls, and dragon embers.</Text>
 				<Text style={styles.bullet}>- Coins come from surveys, goals, clickers, and generators.</Text>
 				<Text style={styles.bullet}>- Shards come from stronger rewards like challenges and prestige systems.</Text>
 				<Text style={styles.bullet}>- Fire XP is earned at 10 times the coins gained from reward actions.</Text>
 				<Text style={styles.bullet}>- Dragon souls come from ascension and power late-game conversion tools.</Text>
+				<Text style={styles.bullet}>- Dragon embers come from transcension and permanently increase max fury through late-game systems.</Text>
 
 				<Text style={styles.h1}>Market and Status Effects</Text>
 				<Text style={styles.p}>
@@ -71,13 +72,21 @@ export default function TutorialPage() {
 
 				<Text style={styles.h1}>Ascension</Text>
 				<Text style={styles.p}>
-					Ascension requires a Juvenile dragon that is at least 30 days old, Scar Level 4 or higher, and a 7-day wait between ascensions. It converts progress into dragon souls and
-					shards while resetting major coin-production progress.
+					Ascension requires a Dragonet dragon that is at least 20 days old, Scar Level 4 or higher, an alive dragon, the one-time lair unlock, and no active Ascension Sickness.
+					It converts progress into dragon souls and shards while resetting major coin-production progress.
 				</Text>
 				<Text style={styles.bullet}>- Coins, generators, and clickers are reset after ascension.</Text>
-				<Text style={styles.bullet}>- Ascension sickness removes 15 HP per day for 7 days, plus 1 extra day per ascension.</Text>
+				<Text style={styles.bullet}>- Ascension sickness removes 15 HP per day for 7 days, plus 1 extra day per ascension unless transcension tools reduce it.</Text>
 				<Text style={styles.bullet}>- The Soul Converter turns souls into shards with a permanently scaling cost.</Text>
 				<Text style={styles.bullet}>- The Snack Price Reset resets snack prices once per ascension.</Text>
+
+				<Text style={styles.h1}>Transcension</Text>
+				<Text style={styles.p}>
+					Transcension unlocks at Scar Level 8. It requires a Juvenile dragon at least 30 days old, enough deaths since the last transcension, and at least 1 Dragon Ember in the preview.
+				</Text>
+				<Text style={styles.bullet}>- Transcension grants Dragon Embers from lifetime Dragon Souls.</Text>
+				<Text style={styles.bullet}>- It applies Transcension Fury X and Transcension Fury I effects.</Text>
+				<Text style={styles.bullet}>- Bottom tools can reset ascension sickness back to 7 days or respec all draconian multipliers.</Text>
 
 				<Text style={styles.h1}>Journal and Logs</Text>
 				<Text style={styles.p}>

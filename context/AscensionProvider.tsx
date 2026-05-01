@@ -1,3 +1,4 @@
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
@@ -6,7 +7,8 @@ import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { usePopulation } from '@/context/PopulationProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useShards } from '@/context/DragonShardsProvider';
-import React, { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { useTranscension } from '@/context/TranscensionProvider';
+import React, { ReactNode, createContext, useContext, useMemo } from 'react';
 
 export interface AscensionRequirement {
 	label: string;
@@ -21,10 +23,22 @@ export interface AscensionRewards {
 	clickersSacrificed: number;
 }
 
+interface AscensionState {
+	ascensionCount: number;
+	lastAscensionDate: string | null;
+	soulConversions: number;
+	snackResetCount: number;
+	snackResetUsedThisAscension: boolean;
+	ascensionUnlocked: boolean;
+}
+
 interface AscensionContextType {
 	ascensionCount: number;
 	lastAscensionDate: string | null;
 	snackResetUsedThisAscension: boolean;
+	ascensionUnlocked: boolean;
+	getAscensionUnlockCost: () => number;
+	unlockAscension: () => { success: boolean; message?: string };
 	getAscensionRequirements: () => AscensionRequirement[];
 	canAscend: () => boolean;
 	getAscensionRewards: () => AscensionRewards;
@@ -37,9 +51,18 @@ interface AscensionContextType {
 	resetSnackMarket: () => { success: boolean; message?: string };
 }
 
-const AscensionContext = createContext<AscensionContextType | undefined>(undefined);
+const INITIAL_ASCENSION_STATE: AscensionState = {
+	ascensionCount: 0,
+	lastAscensionDate: null,
+	soulConversions: 0,
+	snackResetCount: 0,
+	snackResetUsedThisAscension: false,
+	ascensionUnlocked: false,
+};
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const AscensionContext = createContext<AscensionContextType | undefined>(undefined);
+const ASCENSION_UNLOCK_COST = 50;
+const DEFAULT_ASCENSION_SICKNESS_DAYS = 7;
 
 export function AscensionProvider({ children }: { children: ReactNode }) {
 	const dragon = useDragon();
@@ -50,20 +73,26 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 	const souls = useDragonSouls();
 	const itemEconomy = useItemEconomy();
 	const itemSnacks = useItemSnacks();
-
-	const [ascensionCount, setAscensionCount] = useState(0);
-	const [lastAscensionDate, setLastAscensionDate] = useState<string | null>(null);
-	const [soulConversions, setSoulConversions] = useState(0);
-	const [snackResetCount, setSnackResetCount] = useState(0);
-	const [snackResetUsedThisAscension, setSnackResetUsedThisAscension] = useState(false);
+	const transcension = useTranscension();
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.ascension, INITIAL_ASCENSION_STATE);
 
 	const getTodayKey = useMemo(() => () => new Date().toISOString().split('T')[0], []);
 
-	const getDaysSinceAscension = () => {
-		if (!lastAscensionDate) return Number.POSITIVE_INFINITY;
-		const then = new Date(lastAscensionDate).getTime();
-		const now = new Date(getTodayKey()).getTime();
-		return Math.floor((now - then) / DAY_MS);
+	const hasAscensionSickness = () => itemSnacks.activeEffects.some(effect => effect.effectTag === 'ascension_sickness' && effect.endsAtMs > Date.now());
+	const getAscensionUnlockCost = () => ASCENSION_UNLOCK_COST;
+
+	const unlockAscension = () => {
+		if (state.ascensionUnlocked) return { success: true };
+		if (scarLevel.currentScarLevel < 4) return { success: false, message: 'Reach Scar Level 4 to unlock ascension.' };
+		if (!coins.spendCoins(ASCENSION_UNLOCK_COST)) {
+			return { success: false, message: `Need ${ASCENSION_UNLOCK_COST} coins to unlock ascension.` };
+		}
+
+		setState(current => ({
+			...current,
+			ascensionUnlocked: true,
+		}));
+		return { success: true };
 	};
 
 	const getAscensionRewards = (): AscensionRewards => {
@@ -71,7 +100,9 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 		const clickersSacrificed = itemEconomy.getOwnedTotalByType?.('clicker') ?? 0;
 		const coinsBanked = Math.max(0, Math.floor(coins.getCoinsSinceLastAscension?.() ?? coins.getCoins?.() ?? 0));
 		const soulReward = Math.max(0, Math.floor(Math.pow(coinsBanked, 0.75)));
-		const shardReward = Math.max(0, Math.floor(Math.sqrt(coinsBanked) / 25) + generatorsSacrificed + clickersSacrificed);
+		const baseShardReward = Math.max(0, Math.floor(Math.sqrt(coinsBanked) / 25) + generatorsSacrificed + clickersSacrificed);
+		const shardReward = Math.max(0, Math.floor(baseShardReward * transcension.getAscensionShardMultiplier()));
+
 		return {
 			souls: soulReward,
 			shards: shardReward,
@@ -82,16 +113,17 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 	};
 
 	const getAscensionRequirements = (): AscensionRequirement[] => [
-		{ label: `Dragon is Juvenile or older (${dragon.age}/30 days)`, met: dragon.age >= 30 },
+		{ label: `Ascension is unlocked (${state.ascensionUnlocked ? 'yes' : `unlock for ${ASCENSION_UNLOCK_COST} coins`})`, met: state.ascensionUnlocked },
+		{ label: `Dragon is Dragonet or older (${dragon.age}/20 days)`, met: dragon.age >= 20 },
 		{ label: `Scar Level 4 or higher (current: ${scarLevel.currentScarLevel})`, met: scarLevel.currentScarLevel >= 4 },
-		{ label: `Dragon is alive`, met: dragon.dragonState === 'alive' },
-		{ label: `Ascension cooldown complete (${Math.min(7, getDaysSinceAscension())}/7 days)`, met: getDaysSinceAscension() >= 7 },
+		{ label: 'Dragon is alive', met: dragon.dragonState === 'alive' },
+		{ label: 'Ascension sickness is not active', met: !hasAscensionSickness() },
 	];
 
 	const canAscend = () => getAscensionRequirements().every(requirement => requirement.met);
 
 	const getSoulConverterCost = () => {
-		return Math.max(1, Math.floor(Math.pow(1.02, soulConversions)));
+		return Math.max(1, Math.floor(Math.pow(1.02, state.soulConversions)));
 	};
 
 	const convertSoulToShard = () => {
@@ -99,8 +131,12 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 		if (!souls.spendSouls(cost)) {
 			return { success: false, message: `Need ${cost} Dragon Souls.`, cost };
 		}
+
 		shards.addShards(1);
-		setSoulConversions(prev => prev + 1);
+		setState(current => ({
+			...current,
+			soulConversions: current.soulConversions + 1,
+		}));
 		return { success: true, cost };
 	};
 
@@ -118,19 +154,21 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 		if (!shards.spendShards(cost)) {
 			return { success: false, message: `Need ${cost} Dragon Shards.`, refundedSouls: 0, cost };
 		}
+
 		const refundedSouls = Math.floor(itemEconomy.resetSoulMultipliers?.() ?? 0);
 		return { success: true, refundedSouls, cost };
 	};
 
 	const getSnackResetCost = () => ({
-		souls: Math.max(1000, Math.floor(1000 * Math.pow(1000, snackResetCount))),
+		souls: Math.max(1000, Math.floor(1000 * Math.pow(1000, state.snackResetCount))),
 		shards: 100,
 	});
 
 	const resetSnackMarket = () => {
-		if (snackResetUsedThisAscension) {
+		if (state.snackResetUsedThisAscension) {
 			return { success: false, message: 'The snack market has already been reset this ascension.' };
 		}
+
 		const cost = getSnackResetCost();
 		if (souls.getSouls() < cost.souls || shards.getShards() < cost.shards) {
 			return { success: false, message: `Need ${cost.souls} Dragon Souls and ${cost.shards} Dragon Shards.` };
@@ -142,9 +180,13 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 			souls.addSouls(cost.souls);
 			return { success: false, message: `Need ${cost.souls} Dragon Souls and ${cost.shards} Dragon Shards.` };
 		}
+
 		itemSnacks.resetSnackPrices?.();
-		setSnackResetCount(prev => prev + 1);
-		setSnackResetUsedThisAscension(true);
+		setState(current => ({
+			...current,
+			snackResetCount: current.snackResetCount + 1,
+			snackResetUsedThisAscension: true,
+		}));
 		return { success: true };
 	};
 
@@ -155,23 +197,30 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 		}
 
 		const rewards = getAscensionRewards();
-		souls.addSouls(rewards.souls);
+		const usedSicknessReset = transcension.consumeAscensionSicknessReset();
+		const baseSicknessDays = usedSicknessReset ? DEFAULT_ASCENSION_SICKNESS_DAYS : DEFAULT_ASCENSION_SICKNESS_DAYS + state.ascensionCount;
+		const sicknessDivisor = transcension.getAscensionSicknessDivisor();
+
+		souls.awardAscensionSouls(rewards.souls);
 		shards.addShards(rewards.shards);
 		coins.resetCoins?.();
 		coins.markAscended?.();
 		itemEconomy.resetAfterAscension?.();
 		itemSnacks.addCustomEffect?.({
 			sourceItemId: 'status_ascension_sickness',
-			name: `Ascension Sickness ${ascensionCount + 1}`,
+			name: `Ascension Sickness ${state.ascensionCount + 1}`,
 			healthPerDay: -15,
-			days: 7 + ascensionCount,
+			days: Math.max(1, Math.ceil(baseSicknessDays / sicknessDivisor)),
 			effectTag: 'ascension_sickness',
 			protectedEffect: true,
 		});
 		population.addPopulation(1_000_000);
-		setAscensionCount(prev => prev + 1);
-		setLastAscensionDate(getTodayKey());
-		setSnackResetUsedThisAscension(false);
+		setState(current => ({
+			...current,
+			ascensionCount: current.ascensionCount + 1,
+			lastAscensionDate: getTodayKey(),
+			snackResetUsedThisAscension: false,
+		}));
 
 		return { success: true, rewards };
 	};
@@ -179,9 +228,12 @@ export function AscensionProvider({ children }: { children: ReactNode }) {
 	return (
 		<AscensionContext.Provider
 			value={{
-				ascensionCount,
-				lastAscensionDate,
-				snackResetUsedThisAscension,
+				ascensionCount: state.ascensionCount,
+				lastAscensionDate: state.lastAscensionDate,
+				snackResetUsedThisAscension: state.snackResetUsedThisAscension,
+				ascensionUnlocked: state.ascensionUnlocked,
+				getAscensionUnlockCost,
+				unlockAscension,
 				getAscensionRequirements,
 				canAscend,
 				getAscensionRewards,

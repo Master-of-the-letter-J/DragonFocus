@@ -1,4 +1,5 @@
-﻿import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/components/Themed';
+import { formatAbbreviatedNumber, formatDecimalNumber } from '@/constants/number-abbreviation';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
@@ -10,6 +11,10 @@ export interface SurveyResultsData {
 	xpEarned: number;
 	furyDelta: number;
 	goalsCompleted?: number;
+	groups?: Array<{
+		title: string;
+		entries: string[];
+	}>;
 }
 
 export interface ResultsSectionState {
@@ -36,17 +41,27 @@ export function useResultsSection({ title, results, onFinish }: UseResultsSectio
 			<View style={sectionStyles.content}>
 				<Text style={sectionStyles.title}>{state.title}</Text>
 				<View style={sectionStyles.resultsCard}>
-					<Text style={sectionStyles.resultText}>Coins Earned: +{state.results.coinsEarned}</Text>
-					<Text style={sectionStyles.resultText}>Shards Earned: +{state.results.shardsEarned}</Text>
-					<Text style={sectionStyles.resultText}>Fire XP Earned: +{state.results.xpEarned}</Text>
+					<Text style={sectionStyles.resultText}>Coins Earned: +{formatAbbreviatedNumber(state.results.coinsEarned)}</Text>
+					<Text style={sectionStyles.resultText}>Shards Earned: +{formatAbbreviatedNumber(state.results.shardsEarned)}</Text>
+					<Text style={sectionStyles.resultText}>Fire XP Earned: +{formatAbbreviatedNumber(state.results.xpEarned)}</Text>
 					<Text style={sectionStyles.resultText}>
 						Fury: {state.results.furyDelta > 0 ? '+' : ''}
-						{state.results.furyDelta}
+						{formatDecimalNumber(state.results.furyDelta)}
 					</Text>
-					{typeof state.results.goalsCompleted === 'number' && <Text style={sectionStyles.resultText}>Goals Completed Today: {state.results.goalsCompleted}</Text>}
+					{typeof state.results.goalsCompleted === 'number' ? <Text style={sectionStyles.resultText}>Goals Completed Today: {formatAbbreviatedNumber(state.results.goalsCompleted, 0)}</Text> : null}
+					{(state.results.groups ?? []).map(group => (
+						<View key={group.title} style={sectionStyles.resultsSection}>
+							<Text style={sectionStyles.resultsSectionTitle}>{group.title}</Text>
+							{group.entries.map(entry => (
+								<Text key={`${group.title}-${entry}`} style={sectionStyles.resultListItem}>
+									- {entry}
+								</Text>
+							))}
+						</View>
+					))}
 				</View>
 				<Pressable style={sectionStyles.finishButton} onPress={onFinish}>
-					<Text style={sectionStyles.finishButtonText}>Return to Home</Text>
+					<Text style={sectionStyles.finishButtonText}>Return</Text>
 				</Pressable>
 			</View>
 		);
@@ -74,4 +89,3 @@ export function useResultsSection({ title, results, onFinish }: UseResultsSectio
 		},
 	};
 }
-

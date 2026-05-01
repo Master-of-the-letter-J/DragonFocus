@@ -1,4 +1,11 @@
-import React, { createContext, ReactNode, useCallback, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useCallback, useContext } from 'react';
+
+interface PopulationState {
+	population: number;
+	deathCount: number;
+	externalGrowthBonus: number;
+}
 
 interface PopulationContextType {
 	population: number;
@@ -7,38 +14,50 @@ interface PopulationContextType {
 	setPopulation: (amount: number) => void;
 	dailyPopulationUpdate: (yang: number, dragonAge: number) => void;
 	onDragonRevival: () => void; // Add 1M when dragon revived
+	setExternalGrowthBonus: (amount: number) => void;
 }
 
 const PopulationContext = createContext<PopulationContextType | undefined>(undefined);
 
 const STARTING_POPULATION = 8_000_000_000; // 8 billion
 
+const INITIAL_POPULATION_STATE: PopulationState = {
+	population: STARTING_POPULATION,
+	deathCount: 0,
+	externalGrowthBonus: 0,
+};
+
 export function PopulationProvider({ children }: { children: ReactNode }) {
-	const [population, setPopulationState] = useState(STARTING_POPULATION);
-	const [deathCount, setDeathCount] = useState(0);
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.population, INITIAL_POPULATION_STATE);
 
 	const addPopulation = useCallback((amount: number) => {
-		setPopulationState(prev => Math.max(0, prev + amount));
-	}, []);
+		setState(current => ({
+			...current,
+			population: Math.max(0, current.population + amount),
+		}));
+	}, [setState]);
 
 	const setPopulation = useCallback((amount: number) => {
-		setPopulationState(Math.max(0, amount));
-	}, []);
+		setState(current => ({
+			...current,
+			population: Math.max(0, amount),
+		}));
+	}, [setState]);
 
 	const dailyPopulationUpdate = useCallback((yang: number, dragonAge: number) => {
-		setPopulationState(prev => {
-			let newPop = prev;
+		setState(current => {
+			let newPop = current.population;
 			let deaths = 0;
 
-			// +1% growth daily
-			newPop += prev * 0.01;
+			// +1% growth daily, plus transcension growth bonuses.
+			newPop += current.population * (0.01 + Math.max(0, current.externalGrowthBonus));
 
 			// Decrease scales linearly once Yang exceeds 50.
 			if (yang > 50) {
 				const overYangRatio = Math.max(0, Math.min(1, (yang - 50) / 50));
 				const maxDecreasePercent = 5 + Math.min(20, dragonAge / 73);
 				const decreasePercent = (maxDecreasePercent / 100) * overYangRatio;
-				const popDecrease = Math.floor(prev * decreasePercent);
+				const popDecrease = Math.floor(current.population * decreasePercent);
 				newPop -= popDecrease;
 				deaths += popDecrease;
 				const flatLoss = Math.floor(50_000 * overYangRatio);
@@ -46,12 +65,13 @@ export function PopulationProvider({ children }: { children: ReactNode }) {
 				deaths += flatLoss;
 			}
 
-			// Update death count
-			setDeathCount(prev => prev + deaths);
-
-			return Math.max(0, newPop);
+			return {
+				...current,
+				population: Math.max(0, newPop),
+				deathCount: current.deathCount + deaths,
+			};
 		});
-	}, []);
+	}, [setState]);
 
 	const onDragonRevival = useCallback(() => {
 		addPopulation(1_000_000); // +1 million on revival
@@ -60,12 +80,17 @@ export function PopulationProvider({ children }: { children: ReactNode }) {
 	return (
 		<PopulationContext.Provider
 			value={{
-				population,
-				deathCount,
+				population: state.population,
+				deathCount: state.deathCount,
 				addPopulation,
 				setPopulation,
 				dailyPopulationUpdate,
 				onDragonRevival,
+				setExternalGrowthBonus: amount =>
+					setState(current => ({
+						...current,
+						externalGrowthBonus: Math.max(0, amount),
+					})),
 			}}>
 			{children}
 		</PopulationContext.Provider>

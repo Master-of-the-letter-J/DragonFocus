@@ -74,7 +74,8 @@ Going through all the scripts, do the following tasks (go through every detail, 
       5. Then, B, T, q, Q, s, S, N, D,
       6. After this, use scientific notation.
 10. Check All of Part 3 Again to Make Sure Everything Was Added
-11. Check The Rest of the Dragon Focus App.txt to Make Sure Everything is updated and inline.
+11. Check All of Parts 2 and 1 Again to Make Sure Everything Was Added Through These.
+12. Check The Rest of the Dragon Focus App.txt to Make Sure Everything is updated and inline.
 
 
 ________________
@@ -1326,8 +1327,9 @@ Layout
 The Market: The Market contains Snacks, Cosmetics, Idlers, Among Other Items
 
 
-SECTIONS (Above): Market, Black Market. Black Market Has Purchases That Cost Dragon Shards, or To Buy Dragon Shards.
-SECTIONS: Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Soul Multipliers, Background & Themes, All Items
+SECTIONS (Above): Market, Hade’s Market, Black Market. Black Market Has Purchases That Cost Dragon Shards, or To Buy Dragon Shards.
+MARKET SECTIONS: Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Background & Themes, All Items
+HADE’S MARKET SECTIONS: Soul Prophets & Relics, Ember Multipliers, All Items
 COMPACT MODE: 2 Columns or 3-4 Columns (make the boxes smaller on compact mode)
 SORTING: Scar Level Unlock (Default) | Cost (Expensive, Coins + Souls) | Cost (Least Expensive, Coins + Souls)
 BOXES: Each Section of the Dragon Market will have Boxes into Columns (2 or 3). Boxes are Stacked Left-To-Right, then go down.:

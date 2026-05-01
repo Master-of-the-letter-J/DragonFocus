@@ -11,6 +11,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@lostelk/nearest-color": "^1.0.4",
+    "@react-native-async-storage/async-storage": "^3.0.2",
     "@react-native-community/slider": "5.0.1",
     "@react-navigation/native": "^7.1.8",
     "expo": "~54.0.33",

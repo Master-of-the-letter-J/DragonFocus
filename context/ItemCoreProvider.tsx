@@ -471,9 +471,9 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 		const reward = getClickReward();
 		if (reward <= 0) return 0;
 		coins.addCoins(reward);
-		scarLevel.addXP(coins.calculateFireXP(reward));
+		scarLevel.addIdleXP(reward, premium.isPremium);
 		return reward;
-	}, [coins, getClickReward, scarLevel]);
+	}, [coins, getClickReward, premium.isPremium, scarLevel]);
 
 	const addItemToInventory = useCallback((id: string, qty = 1) => {
 		if (qty <= 0) return;
@@ -580,8 +580,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			let fireXp = 0;
 			if (coinsDelta > 0) {
 				coins.addCoins(coinsDelta);
-				fireXp = round2(coins.calculateFireXP(coinsDelta));
-				scarLevel.addXP(fireXp);
+				fireXp = round2(scarLevel.addIdleXP(coinsDelta, premium.isPremium));
 			}
 
 			if (furyDelta !== 0) fury.addFury(furyDelta);
@@ -591,7 +590,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			setActiveEffects(prev => prev.filter(effect => effect.endsAtMs > toMs));
 			return { coins: coinsDelta, fireXp, shards: 0, furyDelta, healthDelta };
 		},
-		[coins, dragon, fury, getEffectSnapshotAt, getGeneratorProductionPerDayAt, scarLevel],
+		[coins, dragon, fury, getEffectSnapshotAt, getGeneratorProductionPerDayAt, premium.isPremium, scarLevel],
 	);
 
 	const processDailyPayouts = useCallback(() => {

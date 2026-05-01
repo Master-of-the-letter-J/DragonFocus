@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { ReactNode, createContext, useContext, useMemo } from 'react';
 
 export type SurveyType = 'morning' | 'night';
 
@@ -42,6 +43,11 @@ export interface JournalDay {
 	evening?: JournalEntry;
 }
 
+interface JournalStoreState {
+	entries: JournalEntry[];
+	lairName: string;
+}
+
 interface JournalContextType {
 	entries: JournalEntry[];
 	lairName: string;
@@ -51,25 +57,47 @@ interface JournalContextType {
 	getEntriesByDay: () => JournalDay[];
 }
 
+const INITIAL_JOURNAL_STATE: JournalStoreState = {
+	entries: [],
+	lairName: "Dragon's Lair",
+};
+
 const JournalContext = createContext<JournalContextType | undefined>(undefined);
 
+const normalizeJournalState = (storedState: JournalStoreState | null, initialState: JournalStoreState): JournalStoreState => {
+	if (!storedState) return initialState;
+
+	return {
+		entries: Array.isArray(storedState.entries) ? storedState.entries : initialState.entries,
+		lairName: typeof storedState.lairName === 'string' && storedState.lairName.trim().length > 0 ? storedState.lairName.trim() : initialState.lairName,
+	};
+};
+
 export function JournalProvider({ children }: { children: ReactNode }) {
-	const [entries, setEntries] = useState<JournalEntry[]>([]);
-	const [lairName, setLairNameState] = useState("Dragon's Lair");
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.journal, INITIAL_JOURNAL_STATE, { normalize: normalizeJournalState });
 
 	const setLairName = (name: string) => {
 		const trimmed = name.trim();
 		if (!trimmed) return;
-		setLairNameState(trimmed);
+
+		setState(current => ({
+			...current,
+			lairName: trimmed,
+		}));
 	};
 
 	// Upsert by (date + surveyType) so retakes update the same row instead of duplicating.
 	const addEntry = (entry: JournalEntry) => {
-		setEntries(prev => {
-			const existingIndex = prev.findIndex(e => e.date === entry.date && e.surveyType === entry.surveyType);
-			if (existingIndex < 0) return [entry, ...prev];
+		setState(current => {
+			const existingIndex = current.entries.findIndex(item => item.date === entry.date && item.surveyType === entry.surveyType);
+			if (existingIndex < 0) {
+				return {
+					...current,
+					entries: [entry, ...current.entries],
+				};
+			}
 
-			const existing = prev[existingIndex];
+			const existing = current.entries[existingIndex];
 			const merged: JournalEntry = {
 				...existing,
 				...entry,
@@ -77,42 +105,46 @@ export function JournalProvider({ children }: { children: ReactNode }) {
 					...existing.rewards,
 					...entry.rewards,
 				},
-				// Retake rule: if a field is omitted in the new payload, preserve previous value.
 				text: entry.text && entry.text.trim().length > 0 ? entry.text : existing.text,
 				promptText: entry.promptText && entry.promptText.trim().length > 0 ? entry.promptText : existing.promptText,
 				triviaQuestion: entry.triviaQuestion && entry.triviaQuestion.trim().length > 0 ? entry.triviaQuestion : existing.triviaQuestion,
 				triviaResult: entry.triviaResult && entry.triviaResult.trim().length > 0 ? entry.triviaResult : existing.triviaResult,
 			};
 
-			const next = [...prev];
-			next[existingIndex] = merged;
-			return next.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.surveyType === 'night' ? -1 : 1));
+			const entries = [...current.entries];
+			entries[existingIndex] = merged;
+			entries.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.surveyType === 'night' ? -1 : 1));
+
+			return {
+				...current,
+				entries,
+			};
 		});
 	};
 
-	const getEntriesByDate = (date: string) => entries.filter(e => e.date === date);
+	const getEntriesByDate = (date: string) => state.entries.filter(entry => entry.date === date);
 
 	const getEntriesByDay = () => {
 		const grouped = new Map<string, JournalDay>();
-		for (const entry of entries) {
-			const current = grouped.get(entry.date) ?? { date: entry.date };
-			if (entry.surveyType === 'morning') current.morning = entry;
-			if (entry.surveyType === 'night') current.evening = entry;
-			grouped.set(entry.date, current);
+		for (const entry of state.entries) {
+			const currentDay = grouped.get(entry.date) ?? { date: entry.date };
+			if (entry.surveyType === 'morning') currentDay.morning = entry;
+			if (entry.surveyType === 'night') currentDay.evening = entry;
+			grouped.set(entry.date, currentDay);
 		}
 		return Array.from(grouped.values()).sort((a, b) => (a.date < b.date ? 1 : -1));
 	};
 
 	const value = useMemo(
 		() => ({
-			entries,
-			lairName,
+			entries: state.entries,
+			lairName: state.lairName,
 			setLairName,
 			addEntry,
 			getEntriesByDate,
 			getEntriesByDay,
 		}),
-		[entries, lairName],
+		[state.entries, state.lairName],
 	);
 
 	return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;
