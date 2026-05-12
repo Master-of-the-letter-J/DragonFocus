@@ -1,12 +1,5 @@
-/**
- * Learn more about Light and Dark modes:
- * https://docs.expo.io/guides/color-schemes/
- */
-
+import { useTheme } from '@/context/ThemeProvider';
 import { Text as DefaultText, View as DefaultView } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from './useColorScheme';
 
 type ThemeProps = {
 	lightColor?: string;
@@ -16,30 +9,22 @@ type ThemeProps = {
 export type TextProps = ThemeProps & DefaultText['props'];
 export type ViewProps = ThemeProps & DefaultView['props'];
 
-export function useThemeColor(props: { light?: string; dark?: string }, colorName: keyof typeof Colors.light & keyof typeof Colors.dark) {
-	const theme = useColorScheme() ?? 'light';
-	const colorFromProps = props[theme];
-
-	if (colorFromProps) {
-		return colorFromProps;
-	} else {
-		return Colors[theme][colorName];
-	}
+export function useThemeColor(props: { light?: string; dark?: string }, colorName: 'text' | 'background') {
+	const theme = useTheme();
+	const colorFromProps = theme.mode === 'light' ? props.light : props.dark;
+	if (colorFromProps) return colorFromProps;
+	return colorName === 'text' ? theme.colors.text : theme.colors.background;
 }
 
 export function Text(props: TextProps) {
 	const { style, lightColor, darkColor, ...otherProps } = props;
 	const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
-
-	// Default to non-selectable text across the app to prevent highlighting on main pages
-	const selectable = typeof (otherProps as any).selectable === 'boolean' ? (otherProps as any).selectable : false;
-
+	const selectable = typeof (otherProps as { selectable?: boolean }).selectable === 'boolean' ? (otherProps as { selectable?: boolean }).selectable : false;
 	return <DefaultText selectable={selectable} style={[{ color }, style]} {...otherProps} />;
 }
 
 export function View(props: ViewProps) {
 	const { style, lightColor, darkColor, ...otherProps } = props;
 	const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
-
 	return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />;
 }

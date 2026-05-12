@@ -11,6 +11,8 @@ export interface MarketItemBase {
 	icon?: string;
 	coinCost?: number;
 	coinGrowth?: number;
+	orbCost?: number;
+	orbGrowth?: number;
 	shardCost?: number;
 	shardGrowth?: number;
 	soulCost?: number;
@@ -27,6 +29,8 @@ export type GeneratorFormula =
 	| 'age'
 	| 'destroyedPopulation'
 	| 'population'
+	| 'sqrtDestroyedPopulation'
+	| 'sqrtPopulation'
 	| 'totalGeneratorCount'
 	| 'bigStick';
 
@@ -36,7 +40,7 @@ export interface GeneratorItem extends MarketItemBase {
 	baseOutput: number;
 }
 
-export type ClickerFormula = 'dragonClicks' | 'ageMultiplier' | 'demonicClicks' | 'megaClicks' | 'impossibleClicks';
+export type ClickerFormula = 'dragonClicks' | 'ageMultiplier' | 'demonicClicks' | 'megaClicks' | 'gigaClicks' | 'impossibleClicks' | 'dragonicClicks';
 
 export interface ClickerItem extends MarketItemBase {
 	type: 'clicker';
@@ -50,15 +54,23 @@ export interface SnackItem extends MarketItemBase {
 
 export type SoulEffect =
 	| { kind: 'universalMultiplier'; factor: number }
+	| { kind: 'additiveUniversalMultiplier'; factor: number }
 	| { kind: 'universalCrucible'; factorPerHundred: number }
 	| { kind: 'clickMultiplier'; factor: number }
 	| { kind: 'ritualMultiplier'; factor: number }
+	| { kind: 'dragonicClickMultiplier'; factor: number }
 	| { kind: 'impossibleEffects'; factor: number }
 	| { kind: 'eternalShards'; factor: number }
+	| { kind: 'orbMultiplier'; factor: number }
+	| { kind: 'populationGrowthPower'; factor: number }
+	| { kind: 'maxFuryDivisor'; factor: number }
+	| { kind: 'maxFuryMultiplier'; factor: number }
+	| { kind: 'furyDeltaMultiplier'; factor: number }
 	| { kind: 'surveyExploitationI'; factor: number }
 	| { kind: 'surveyExploitationII'; factor: number }
 	| { kind: 'surveyExploitationIII'; factor: number }
 	| { kind: 'surveyDuplicationGlitch'; factor: number }
+	| { kind: 'generatorFamilyCrucible'; factor: number; family: string }
 	| { kind: 'generatorSpecificMultiplier'; factor: number; relatedGeneratorId: string }
 	| { kind: 'generatorSpecificCrucible'; power: number; relatedGeneratorId: string };
 
@@ -95,4 +107,3 @@ export interface ValueRange {
 	min: number;
 	max: number;
 }
-

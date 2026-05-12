@@ -1,6 +1,5 @@
 import { Text, View } from '@/components/Themed';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
-import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
@@ -51,9 +50,8 @@ export function useMoodQuestionSection({
 	lockedMessage,
 }: UseMoodQuestionParams = {}): SectionHookResult<MoodSectionState> & { moodOptions: MoodOption[] } {
 	const { questionSettings: contextSettings } = useQuestions();
-	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const resolvedEnable = enableMood ?? survey.options.enableMoodQuestion ?? true;
+	const resolvedEnable = enableMood ?? true;
 
 	const moodOptions = useMemo<MoodOption[]>(() => {
 		if (resolvedSettings.mood.customEmotions && resolvedSettings.mood.customEmotions.length > 0) {

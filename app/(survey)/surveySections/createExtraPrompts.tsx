@@ -44,7 +44,7 @@ export function useExtraPromptsSection({
 	const survey = useSurvey();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const resolvedEnable = enablePrompts ?? survey.options.enableProjectQuestion ?? true;
+	const resolvedEnable = enablePrompts ?? true;
 	const promptsEnabled = resolvedEnable && resolvedSettings.prompts.enabled;
 
 	const storedPrompts = useMemo(() => survey.getEveningPrompts?.(today) ?? [], [survey, today]);

@@ -1,4 +1,5 @@
 import React, { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { useShards } from './DragonShardsProvider';
 
 export type ScarLevelName = string;
 
@@ -139,6 +140,7 @@ const buildScarLevels = (): ScarLevelInfo[] => {
 const SCAR_LEVELS: ScarLevelInfo[] = buildScarLevels();
 
 export function ScarLevelProvider({ children }: { children: ReactNode }) {
+	const shards = useShards();
 	const [currentScarLevel, setCurrentScarLevel] = useState(0);
 	const [currentXP, setCurrentXP] = useState(0);
 	const [totalSurveyCoinsTracked, setTotalSurveyCoinsTracked] = useState(0);
@@ -167,6 +169,8 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 			nextLevel += 1;
 		}
 
+		const levelsGained = nextLevel - currentScarLevel;
+		if (levelsGained > 0) shards.addShards(levelsGained);
 		setCurrentScarLevel(nextLevel);
 		setCurrentXP(nextLevel >= maxScarLevel ? 0 : nextXP);
 	};
@@ -191,6 +195,7 @@ export function ScarLevelProvider({ children }: { children: ReactNode }) {
 
 	const levelUp = () => {
 		if (currentScarLevel >= maxScarLevel) return;
+		shards.addShards(1);
 		setCurrentScarLevel(prev => Math.min(maxScarLevel, prev + 1));
 		setCurrentXP(0);
 	};

@@ -18,7 +18,7 @@ import { useTodoChecklistEditSection } from '../(survey)/surveySections/todoChec
 import { useTodoChecklistFillSection } from '../(survey)/surveySections/todoChecklistFill';
 
 export default function TodoGoalsPage() {
-	const [mode, setMode] = useState<'edit' | 'complete'>('edit');
+  const [mode, setMode] = useState<'edit' | 'complete'>('complete');
 	const [results, setResults] = useState<SurveyResultsData | null>(null);
 	const goals = useGoals();
 	const survey = useSurvey();
@@ -105,8 +105,8 @@ export default function TodoGoalsPage() {
 	return (
 		<View style={{ flex: 1 }}>
 			<View style={styles.modeRow}>
-				<ModeButton label="Edit" selected={mode === 'edit'} onPress={() => setMode('edit')} />
-				<ModeButton label="Complete" selected={mode === 'complete'} onPress={() => setMode('complete')} />
+          <ModeButton label="Check" selected={mode === 'complete'} onPress={() => setMode('complete')} />
+          <ModeButton label="Edit" selected={mode === 'edit'} onPress={() => setMode('edit')} />
 			</View>
 
 			{mode === 'edit' ? editSection.section.render() : fillSection.section.render()}

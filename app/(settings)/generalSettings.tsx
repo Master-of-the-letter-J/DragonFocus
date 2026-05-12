@@ -27,6 +27,7 @@ export default function GeneralSettings() {
 	const itemSnacks = useItemSnacks();
 	const survey = useSurvey();
 	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	const weather = useWeather();
 	const scarLevel = useScarLevel();
 	const fury = useFury();
@@ -246,6 +247,8 @@ export default function GeneralSettings() {
 }
 
 function SliderRow({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<View style={{ marginBottom: 12 }}>
 			<View style={styles.sliderLabelRow}>
@@ -258,6 +261,8 @@ function SliderRow({ label, value, onChange }: { label: string; value: number; o
 }
 
 function SettingRow({ label, value, onValueChange }: { label: string; value: boolean; onValueChange: (value: boolean) => void }) {
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<View style={styles.settingRow}>
 			<Text style={styles.settingLabel}>{label}</Text>
@@ -267,6 +272,8 @@ function SettingRow({ label, value, onValueChange }: { label: string; value: boo
 }
 
 function ActionButton({ label, onPress, variant = 'default' }: { label: string; onPress: () => void; variant?: 'default' | 'ghost' }) {
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<Pressable style={[styles.cheatButton, variant === 'ghost' && styles.ghostButton]} onPress={onPress}>
 			<Text style={[styles.cheatButtonText, variant === 'ghost' && styles.ghostButtonText]}>{label}</Text>
@@ -274,24 +281,24 @@ function ActionButton({ label, onPress, variant = 'default' }: { label: string; 
 	);
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
 	container: { padding: 16, paddingBottom: 40 },
-	title: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 12 },
-	card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, marginBottom: 14 },
-	cardTitle: { fontSize: 18, fontWeight: '800', marginBottom: 10, color: '#111827' },
-	infoText: { color: '#4B5563', marginBottom: 6 },
-	helperText: { color: '#6B7280', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+	title: { fontSize: 24, fontWeight: '800', color: colors.titleText, marginBottom: 12 },
+	card: { backgroundColor: colors.secondaryBackground, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 14 },
+	cardTitle: { fontSize: 18, fontWeight: '800', marginBottom: 10, color: colors.titleText },
+	infoText: { color: colors.text, marginBottom: 6 },
+	helperText: { color: colors.secondaryText, fontSize: 12, lineHeight: 18, marginBottom: 10 },
 	sliderLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-	sliderLabel: { color: '#374151', fontWeight: '700' },
-	sliderValue: { color: '#6B7280', fontWeight: '700' },
+	sliderLabel: { color: colors.headerText, fontWeight: '700' },
+	sliderValue: { color: colors.secondaryText, fontWeight: '700' },
 	buttonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-	ghostButton: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB' },
-	ghostButtonText: { color: '#374151' },
-	primaryButton: { backgroundColor: '#111827', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' },
-	primaryButtonText: { color: '#fff', fontWeight: '800', textAlign: 'center' },
-	cheatButton: { backgroundColor: '#F3F4F6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-	cheatButtonText: { color: '#111827', fontWeight: '800' },
-	sectionLabel: { fontSize: 13, fontWeight: '800', color: '#111827', marginTop: 8 },
-	settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-	settingLabel: { flex: 1, paddingRight: 12, color: '#374151', fontWeight: '600' },
+	ghostButton: { backgroundColor: colors.primaryBackground, borderWidth: 1, borderColor: colors.border },
+	ghostButtonText: { color: colors.headerText },
+	primaryButton: { backgroundColor: colors.buttonBackground, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' },
+	primaryButtonText: { color: colors.buttonText, fontWeight: '800', textAlign: 'center' },
+	cheatButton: { backgroundColor: colors.tertiaryBackground, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+	cheatButtonText: { color: colors.titleText, fontWeight: '800' },
+	sectionLabel: { fontSize: 13, fontWeight: '800', color: colors.titleText, marginTop: 8 },
+	settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+	settingLabel: { flex: 1, paddingRight: 12, color: colors.headerText, fontWeight: '600' },
 });

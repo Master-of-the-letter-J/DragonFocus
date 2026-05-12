@@ -29,10 +29,15 @@ export const formatDecimalNumber = (value: number, maximumFractionDigits = 3) =>
 	}).format(value);
 };
 
-export const formatCoinNumber = (value: number) => {
+export const formatCoinNumber = (value: number, fixedCentsBelowThreshold = false) => {
 	if (!Number.isFinite(value)) return '0';
 	const absoluteValue = Math.abs(value);
-	if (absoluteValue < 100_000) return formatDecimalNumber(value, 2);
+	if (absoluteValue < 100_000) {
+		return new Intl.NumberFormat('en-US', {
+			minimumFractionDigits: fixedCentsBelowThreshold ? 2 : 0,
+			maximumFractionDigits: 2,
+		}).format(value);
+	}
 	return formatAbbreviatedNumber(value);
 };
 
@@ -59,5 +64,9 @@ export const formatAbbreviatedNumber = (value: number, minimumThreshold = 100_00
 };
 
 export const formatPopulationNumber = (value: number) => {
+	if (!Number.isFinite(value)) return '0';
+	if (Math.abs(value) >= 1_000_000_000_000) {
+		return value.toExponential(2).replace('+', '');
+	}
 	return formatAbbreviatedNumber(value, 100_000_000_000_000);
 };

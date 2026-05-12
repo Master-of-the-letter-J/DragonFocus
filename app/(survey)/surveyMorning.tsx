@@ -8,6 +8,7 @@ import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey, type SurveyProgressState } from '@/context/SurveyProvider';
@@ -17,6 +18,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useExtraPromptsSection } from './surveySections/createExtraPrompts';
+import { useFunFactSection } from './surveySections/funFactSection';
 import { useHabitChecklistEditSection } from './surveySections/habitChecklistEdit';
 import { useJournalEntrySection } from './surveySections/journalEntry';
 import { useMoodQuestionSection } from './surveySections/moodQuestion';
@@ -25,6 +27,7 @@ import { useQuoteSection } from './surveySections/quoteSection';
 import { useResultsSection, type SurveyResultsData } from './surveySections/results';
 import { useSurveyAdviceSection } from './surveySections/surveyAdvice';
 import { sectionStyles } from './surveySections/sectionStyles';
+import { orderSurveySections } from './surveySections/orderSections';
 import { useTodoChecklistEditSection } from './surveySections/todoChecklistEdit';
 import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
 
@@ -45,6 +48,7 @@ export default function SurveyMorningPage() {
 	const itemEconomy = useItemEconomy();
 	const itemSnacks = useItemSnacks();
 	const premium = usePremium();
+	const questions = useQuestions();
 	const journal = useJournal();
 	const transcension = useTranscension();
 	const router = useRouter();
@@ -72,6 +76,7 @@ export default function SurveyMorningPage() {
 		lockedMessage: 'Short answers are locked on morning refills and keep your original responses for today.',
 	});
 	const trivia = useTriviaQuestionsSection({ surveyType: 'morning' });
+	const funFacts = useFunFactSection({ surveyType: 'morning' });
 	const journalEntry = useJournalEntrySection({ surveyType: 'morning' });
 	const extraPrompts = useExtraPromptsSection({
 		mode: 'create',
@@ -95,12 +100,13 @@ export default function SurveyMorningPage() {
 			shortAnswers.section,
 			extraPrompts.section,
 			trivia.section,
+			funFacts.section,
 			journalEntry.section,
 			quote.section,
 		];
 
-		return surveySections.filter((section): section is typeof advice.section => !!section && section.isEnabled);
-	}, [advice.section, extraPrompts.section, habitEdit.section, journalEntry.section, mood.section, quote.section, shortAnswers.section, todoEdit.section, trivia.section]);
+		return orderSurveySections(surveySections.filter((section): section is typeof advice.section => !!section && section.isEnabled), questions.questionSettings.morningOrder);
+	}, [advice.section, extraPrompts.section, funFacts.section, habitEdit.section, journalEntry.section, mood.section, questions.questionSettings.morningOrder, quote.section, shortAnswers.section, todoEdit.section, trivia.section]);
 
 	const totalSections = sections.length;
 	const section = sections[currentSection];
@@ -138,6 +144,7 @@ export default function SurveyMorningPage() {
 			todoEdit.restoreState(data.todoEdit);
 			shortAnswers.restoreState(data.shortAnswers);
 			trivia.restoreState(data.trivia);
+			funFacts.restoreState(data.funFacts);
 			journalEntry.restoreState(data.journal);
 			extraPrompts.restoreState(data.extraPrompts);
 			quote.restoreState(data.quote);
@@ -156,6 +163,7 @@ export default function SurveyMorningPage() {
 			todoEdit: todoEdit.saveState(),
 			shortAnswers: shortAnswers.saveState(),
 			trivia: trivia.saveState(),
+			funFacts: funFacts.saveState(),
 			journal: journalEntry.saveState(),
 			extraPrompts: extraPrompts.saveState(),
 			quote: quote.saveState(),

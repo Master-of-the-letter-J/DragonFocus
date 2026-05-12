@@ -12,6 +12,7 @@ import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { useJournal } from '@/context/JournalProvider';
 import { usePremium } from '@/context/PremiumProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey, type SurveyProgressState } from '@/context/SurveyProvider';
@@ -20,6 +21,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView } from 'react-native';
 import { useExtraPromptsSection } from './surveySections/createExtraPrompts';
+import { useFunFactSection } from './surveySections/funFactSection';
 import { useHabitChecklistFillSection } from './surveySections/habitChecklistFill';
 import { useJournalEntrySection } from './surveySections/journalEntry';
 import { useMoodQuestionSection } from './surveySections/moodQuestion';
@@ -28,6 +30,7 @@ import { useQuoteSection } from './surveySections/quoteSection';
 import { useResultsSection, type SurveyResultsData } from './surveySections/results';
 import { useSurveyAdviceSection } from './surveySections/surveyAdvice';
 import { sectionStyles } from './surveySections/sectionStyles';
+import { orderSurveySections } from './surveySections/orderSections';
 import { useTodoChecklistFillSection } from './surveySections/todoChecklistFill';
 import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
 
@@ -48,6 +51,7 @@ export default function SurveyNightPage() {
 	const itemEconomy = useItemEconomy();
 	const itemSnacks = useItemSnacks();
 	const premium = usePremium();
+	const questions = useQuestions();
 	const journal = useJournal();
 	const goals = useGoals();
 	const transcension = useTranscension();
@@ -75,6 +79,7 @@ export default function SurveyNightPage() {
 		lockedMessage: 'Short answers are locked on night refills and keep your original responses for today.',
 	});
 	const trivia = useTriviaQuestionsSection({ surveyType: 'night' });
+	const funFacts = useFunFactSection({ surveyType: 'night' });
 	const journalEntry = useJournalEntrySection({ surveyType: 'night' });
 	const extraPrompts = useExtraPromptsSection({
 		mode: 'answer',
@@ -98,12 +103,13 @@ export default function SurveyNightPage() {
 			shortAnswers.section,
 			extraPrompts.section,
 			trivia.section,
+			funFacts.section,
 			journalEntry.section,
 			quote.section,
 		];
 
-		return fullSurveySections.filter(section => section.isEnabled);
-	}, [advice.section, extraPrompts.section, habitFill.section, journalEntry.section, mood.section, quote.section, shortAnswers.section, todoFill.section, trivia.section]);
+		return orderSurveySections(fullSurveySections.filter(section => section.isEnabled), questions.questionSettings.nightOrder);
+	}, [advice.section, extraPrompts.section, funFacts.section, habitFill.section, journalEntry.section, mood.section, questions.questionSettings.nightOrder, quote.section, shortAnswers.section, todoFill.section, trivia.section]);
 
 	const totalSections = sections.length;
 	const section = sections[currentSection];
@@ -136,6 +142,7 @@ export default function SurveyNightPage() {
 			todoFill.restoreState(data.todoFill);
 			shortAnswers.restoreState(data.shortAnswers);
 			trivia.restoreState(data.trivia);
+			funFacts.restoreState(data.funFacts);
 			journalEntry.restoreState(data.journal);
 			extraPrompts.restoreState(data.extraPrompts);
 			quote.restoreState(data.quote);
@@ -153,6 +160,7 @@ export default function SurveyNightPage() {
 			todoFill: todoFill.saveState(),
 			shortAnswers: shortAnswers.saveState(),
 			trivia: trivia.saveState(),
+			funFacts: funFacts.saveState(),
 			journal: journalEntry.saveState(),
 			extraPrompts: extraPrompts.saveState(),
 			quote: quote.saveState(),

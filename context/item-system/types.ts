@@ -81,7 +81,9 @@ export interface ItemsContextType {
 	getClickReward: () => number;
 	getItemCoinCost: (id: string) => number;
 	getItemShardCost: (id: string) => number;
+	getItemOrbCost: (id: string) => number;
 	getItemSoulCost: (id: string) => number;
+	isSoulMultiplierSummoned: (id: string) => boolean;
 	getGeneratorProductionPerDay: (id: string) => number;
 	getTotalGeneratorProductionPerDay: () => number;
 	activeEffects: ActiveEffect[];
@@ -106,4 +108,3 @@ export interface ItemsContextType {
 	resetSoulMultipliers: () => number;
 	resetInventory: () => void;
 }
-

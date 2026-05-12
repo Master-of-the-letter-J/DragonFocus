@@ -104,15 +104,15 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 							activeChallenge ? { backgroundColor: '#E8F4FF' } : null,
 							isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null,
 						]}>
-						<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-							<View style={{ flex: 1 }}>
+						<View style={sectionStyles.goalMainRow}>
+							<View style={sectionStyles.goalTextColumn}>
 								<Text selectable={false} style={sectionStyles.habitTitle}>
 									{habit.title}
 								</Text>
 								<View style={sectionStyles.metaRow}>
-									<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>
-										{importanceMeta.label}
-									</Text>
+									<View style={[sectionStyles.importanceChip, { borderColor: importanceMeta.color }]}>
+										<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>{importanceMeta.shortLabel}</Text>
+									</View>
 									{categories.map(category => (
 										<View key={`${habit.id}-${category}`} style={sectionStyles.categoryChip}>
 											<Text selectable={false} style={sectionStyles.categoryChipText}>
@@ -130,9 +130,9 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 									</Text>
 								) : null}
 							</View>
-							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-								<Pressable style={{ marginRight: 8 }} onPress={() => cancelHabit(habit.id)}>
-									<Text style={{ fontSize: 12, fontWeight: '700', color: '#E53935' }}>Delete</Text>
+							<View style={sectionStyles.goalActionRow}>
+								<Pressable onPress={() => cancelHabit(habit.id)}>
+									<Text style={[sectionStyles.goalActionText, { color: '#E53935' }]}>Delete</Text>
 								</Pressable>
 								{!activeChallenge ? (
 									<Pressable style={[sectionStyles.miniButton, sectionStyles.miniEditButton]} onPress={() => setState(prev => ({ ...prev, editingHabit: habit }))}>
@@ -141,14 +141,14 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 										</Text>
 									</Pressable>
 								) : null}
-								<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 6, marginLeft: 8 }}>
-									<Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280' }}>Move</Text>
+								<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 4 }}>
+									<Text style={[sectionStyles.goalActionText, { color: '#6B7280' }]}>Move</Text>
 								</Pressable>
 							</View>
 						</View>
 
 						{!activeChallenge ? (
-							<View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
+							<View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
 								{GOAL_CHALLENGE_TIERS.filter(option => showExtendedChallenges || option.days <= 30).map(option => (
 									<Pressable
 										key={option.days}
@@ -169,7 +169,7 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 									</Pressable>
 								))}
 								<Pressable
-									style={[sectionStyles.smallButton, { marginLeft: 12 }]}
+									style={[sectionStyles.smallButton, { marginLeft: 4 }]}
 									onPress={() => {
 										const days = state.selectedChallengeDays[habit.id];
 										if (!days) {
@@ -182,7 +182,7 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 										Add Challenge
 									</Text>
 								</Pressable>
-								<Pressable style={[sectionStyles.smallButton, { marginLeft: 8 }]} onPress={() => setShowExtendedChallenges(prev => !prev)}>
+								<Pressable style={[sectionStyles.smallButton, { marginLeft: 4 }]} onPress={() => setShowExtendedChallenges(prev => !prev)}>
 									<Text selectable={false} style={sectionStyles.smallButtonText}>
 										{showExtendedChallenges ? 'Hide 60/90/365' : 'See More Challenges'}
 									</Text>
@@ -288,7 +288,7 @@ export function useHabitChecklistEditSection(): SectionHookResult<HabitChecklist
 		section: {
 			key: 'habitEdit',
 			label: 'Day Goals',
-			isEnabled: true,
+			isEnabled: questions.questionSettings.habitGoals.enabled,
 			isNextEnabled: true,
 			enableNext: null,
 			render,

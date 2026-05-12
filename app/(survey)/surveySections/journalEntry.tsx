@@ -1,6 +1,5 @@
 import { Text, View } from '@/components/Themed';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
-import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TextInput } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
@@ -22,14 +21,12 @@ export interface UseJournalEntryParams {
 
 export function useJournalEntrySection({ surveyType, questionSettings, initialText = '', enableJournal }: UseJournalEntryParams): SectionHookResult<JournalEntryState> {
 	const { questionSettings: contextSettings } = useQuestions();
-	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const defaultEnable = surveyType === 'morning' ? survey.options.enableJournalMorning : survey.options.enableJournalNight;
-	const resolvedEnable = enableJournal ?? defaultEnable ?? true;
+	const resolvedEnable = enableJournal ?? true;
 
 	const normalizedType = surveyType === 'night' ? 'night' : 'morning';
 	const isEnabled = useMemo(() => {
-		if (!resolvedEnable) return false;
+		if (!resolvedEnable || !resolvedSettings.journalEntry.enabled) return false;
 		const setting = resolvedSettings.journalEntry.setting;
 		if (setting === 'none') return false;
 		if (setting === 'both') return true;

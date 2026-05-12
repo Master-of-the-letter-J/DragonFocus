@@ -3,6 +3,7 @@ import { getSnackEffectConfig } from '@/data/effect-data';
 import { MARKET_ITEMS } from '@/data/market-item-data';
 import { type ItemType, type MarketItem, type RuntimeMarketStats, type SnackItem, type SoulMultiplierItem } from '@/data/market-types';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
+import { useDragonOrbs } from '@/context/DragonOrbsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
 import { useShards } from '@/context/DragonShardsProvider';
@@ -33,6 +34,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 	const dragon = useDragon();
 	const fury = useFury();
 	const coins = useDragonCoins();
+	const orbs = useDragonOrbs();
 	const shards = useShards();
 	const souls = useDragonSouls();
 	const scarLevel = useScarLevel();
@@ -42,12 +44,14 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 
 	const marketItems = useMemo(() => MARKET_ITEMS, []);
 	const [ownedItems, setOwnedItems] = useState<Record<string, number>>({});
+	const [summonedSoulItems, setSummonedSoulItems] = useState<Record<string, boolean>>({});
 	const [snackPurchaseCounts, setSnackPurchaseCounts] = useState<Record<string, number>>({});
 	const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
 	const [pendingIdleSummary, setPendingIdleSummary] = useState<IdleSummary | null>(null);
 	const [snackToast, setSnackToast] = useState<SnackUseToast | null>(null);
 
 	const ownedItemsRef = useRef(ownedItems);
+	const summonedSoulItemsRef = useRef(summonedSoulItems);
 	const snackPurchaseCountsRef = useRef(snackPurchaseCounts);
 	const activeEffectsRef = useRef(activeEffects);
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -57,6 +61,10 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 	useEffect(() => {
 		ownedItemsRef.current = ownedItems;
 	}, [ownedItems]);
+
+	useEffect(() => {
+		summonedSoulItemsRef.current = summonedSoulItems;
+	}, [summonedSoulItems]);
 
 	useEffect(() => {
 		snackPurchaseCountsRef.current = snackPurchaseCounts;
@@ -74,7 +82,10 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 	);
 
 	const getOwnedCount = useCallback((id: string) => ownedItemsRef.current[id] ?? 0, []);
+	const isSoulSummoned = useCallback((id: string) => !!summonedSoulItemsRef.current[id], []);
+	const getSummonedSoulCount = useCallback(() => Object.values(summonedSoulItemsRef.current).filter(Boolean).length, []);
 	const getSnackPurchaseCount = useCallback((id: string) => snackPurchaseCountsRef.current[id] ?? 0, []);
+	const getSoulSummonCost = useCallback(() => Math.pow(2, Math.min(0.5 * getSummonedSoulCount(), 30)), [getSummonedSoulCount]);
 
 	const getRuntimeStats = useCallback((): RuntimeMarketStats => {
 		const antiTreasuryCount = getOwnedCount('gen_anti_treasury');
@@ -102,22 +113,78 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 	}, [getOwnedCount, marketItems]);
 
 	const getUniversalPassiveFactor = useCallback(() => {
-		const universalOwned = getSoulMultiplierCount('soul_infernal_universal_multiplier');
-		const universalCrucibleOwned = getSoulMultiplierCount('soul_infernal_universal_crucible');
+		const universalOwned = getSoulMultiplierCount('soul_infernon');
+		const miniInfernonOwned = getSoulMultiplierCount('soul_mini_infernon');
+		const universalCrucibleOwned = getSoulMultiplierCount('soul_aurora');
 		const totalSoulOwned = getTotalSoulMultiplierCount();
-		return Math.pow(1.5, universalOwned) * Math.pow(1 + totalSoulOwned / 100, universalCrucibleOwned);
+		return Math.pow(1.5, universalOwned) * (1 + 0.5 * miniInfernonOwned) * Math.pow(1 + (4 * totalSoulOwned) / 100, universalCrucibleOwned);
 	}, [getSoulMultiplierCount, getTotalSoulMultiplierCount]);
 
 	const getPassiveSoulMultiplier = useCallback(
 		(kind: 'survey' | 'generator' | 'clicker') => {
 			let factor = getUniversalPassiveFactor();
-			if (kind === 'clicker') factor *= Math.pow(2, getSoulMultiplierCount('soul_infernal_click_multiplier'));
+			if (kind === 'clicker') factor *= Math.pow(2, getSoulMultiplierCount('soul_vulcan'));
 			return Math.max(1, factor);
 		},
 		[getSoulMultiplierCount, getUniversalPassiveFactor],
 	);
 
 	const getStatusEffectAmplifier = useCallback(() => Math.pow(2, getSoulMultiplierCount('soul_impossible_effects')), [getSoulMultiplierCount]);
+
+	const generatorMatchesFamily = useCallback((generatorId: string, family: string) => {
+		const generator = COIN_GENERATOR_DATA.find(item => item.id === generatorId);
+		const haystack = `${generatorId} ${generator?.name ?? ''}`.toLowerCase();
+		switch (family) {
+			case 'treasury':
+				return haystack.includes('treasury');
+			case 'steam':
+				return generatorId === 'gen_forge' || generatorId === 'gen_freezer';
+			case 'assets':
+				return generatorId === 'gen_dragon_nft';
+			case 'sacrifice':
+				return generatorId === 'gen_dragon_ritual';
+			case 'adventure':
+				return generatorId === 'gen_golden_saddle';
+			case 'scales':
+				return generatorId.includes('scales');
+			case 'drip':
+				return generatorId === 'gen_ultimate_dragon_drip';
+			case 'stick':
+				return generatorId === 'gen_big_stick';
+			case 'glitches':
+				return generatorId.includes('glitch');
+			case 'universes':
+				return haystack.includes('coin') && !haystack.includes('treasury');
+			case 'midas':
+				return haystack.includes('treasury');
+			default:
+				return false;
+		}
+	}, []);
+
+	const getGeneratorFamilyCrucibleFactor = useCallback(
+		(generatorId: string) => {
+			const familyBonuses = [
+				{ id: 'soul_crucible_treasure', family: 'treasury', factor: 1 },
+				{ id: 'soul_crucible_steam', family: 'steam', factor: 1 },
+				{ id: 'soul_crucible_assets', family: 'assets', factor: 1 },
+				{ id: 'soul_crucible_sacrifice', family: 'sacrifice', factor: 1 },
+				{ id: 'soul_crucible_adventure', family: 'adventure', factor: 1 },
+				{ id: 'soul_crucible_scales', family: 'scales', factor: 1 },
+				{ id: 'soul_crucible_drip', family: 'drip', factor: 1 },
+				{ id: 'soul_crucible_stick', family: 'stick', factor: 1 },
+				{ id: 'soul_crucible_glitches', family: 'glitches', factor: 10 },
+				{ id: 'soul_crucible_universes', family: 'universes', factor: 1 },
+			];
+			let additive = 1;
+			for (const bonus of familyBonuses) {
+				if (generatorMatchesFamily(generatorId, bonus.family)) additive += getSoulMultiplierCount(bonus.id) * bonus.factor;
+			}
+			if (generatorMatchesFamily(generatorId, 'midas')) additive *= Math.pow(2, getSoulMultiplierCount('soul_midas'));
+			return Math.max(1, additive);
+		},
+		[generatorMatchesFamily, getSoulMultiplierCount],
+	);
 
 	const baseGeneratorPerUnit = useCallback((generator: (typeof COIN_GENERATOR_DATA)[number], stats: RuntimeMarketStats) => {
 		switch (generator.formula) {
@@ -128,17 +195,21 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			case 'yin':
 				return generator.baseOutput + stats.yin / 50;
 			case 'streak':
-				return generator.baseOutput + stats.streak / 30;
+				return generator.baseOutput + stats.streak;
 			case 'antiTreasury':
 				return generator.baseOutput + stats.antiTreasuryCount;
 			case 'scarLevel':
 				return generator.baseOutput + stats.scarLevel;
 			case 'age':
-				return generator.baseOutput + stats.age / 10;
+				return generator.baseOutput + stats.age / 6;
 			case 'destroyedPopulation':
 				return generator.baseOutput + Math.log10(Math.max(1, stats.destroyedPopulation));
 			case 'population':
 				return generator.baseOutput + Math.log10(Math.max(1, stats.population));
+			case 'sqrtDestroyedPopulation':
+				return generator.baseOutput + Math.sqrt(Math.max(0, stats.destroyedPopulation) / 1_000_000_000);
+			case 'sqrtPopulation':
+				return generator.baseOutput + Math.sqrt(Math.max(0, stats.population) / 1_000_000_000);
 			case 'totalGeneratorCount':
 				return generator.baseOutput + stats.totalGeneratorCount;
 			case 'bigStick':
@@ -148,13 +219,23 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 		}
 	}, []);
 
+	const getGeneratorPurchaseMilestoneFactor = useCallback((count: number) => {
+		const safeCount = Math.max(0, count);
+		const doubleMilestones = safeCount > 100 ? Math.floor((safeCount - 100) / 25) : 0;
+		const thousandMilestones = safeCount >= 500 ? Math.floor(safeCount / 500) : 0;
+		return Math.pow(2, doubleMilestones) * Math.pow(1000, thousandMilestones);
+	}, []);
+
 	const getGeneratorSpecificFactor = useCallback(
 		(generatorId: string, baseTotalOutputPerDay: number) => {
 			const multiplierOwned = getSoulMultiplierCount(`soul_${generatorId}_multiplier`);
 			const crucibleOwned = getSoulMultiplierCount(`soul_${generatorId}_crucible`);
-			return Math.pow(2, multiplierOwned) * Math.pow(Math.max(1, baseTotalOutputPerDay), 0.1 * crucibleOwned);
+			const generatorOwned = getOwnedCount(generatorId);
+			const directMultiplier = Math.pow(1 + generatorOwned / 100, multiplierOwned);
+			const crucibleMultiplier = Math.pow(Math.max(1, baseTotalOutputPerDay), 0.1 * crucibleOwned);
+			return directMultiplier * getGeneratorFamilyCrucibleFactor(generatorId) * Math.max(1, crucibleMultiplier);
 		},
-		[getSoulMultiplierCount],
+		[getGeneratorFamilyCrucibleFactor, getOwnedCount, getSoulMultiplierCount],
 	);
 
 	const getEffectSnapshotAt = useCallback(
@@ -372,6 +453,19 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 		[getMarketItemById],
 	);
 
+	const getItemOrbCost = useCallback(
+		(id: string) => {
+			const item = getMarketItemById(id);
+			if (!item) return 0;
+			const baseCost = item.orbCost ?? 0;
+			if (baseCost <= 0) return 0;
+			if (item.type === 'snack') return round2(baseCost * Math.pow(item.orbGrowth ?? 1, getSnackPurchaseCount(id)));
+			if (item.type === 'generator' || item.type === 'clicker') return round2(baseCost * Math.pow(item.orbGrowth ?? 1, getOwnedCount(id)));
+			return round2(baseCost);
+		},
+		[getMarketItemById, getOwnedCount, getSnackPurchaseCount],
+	);
+
 	const getItemSoulCost = useCallback(
 		(id: string) => {
 			const item = getMarketItemById(id);
@@ -379,9 +473,10 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			const baseCost = item.soulCost ?? 0;
 			if (baseCost <= 0) return 0;
 			if (item.type !== 'soulMultiplier') return round2(baseCost);
+			if (!isSoulSummoned(id)) return round2(getSoulSummonCost());
 			return round2(baseCost * Math.pow(item.soulGrowth ?? 1, getOwnedCount(id)));
 		},
-		[getMarketItemById, getOwnedCount],
+		[getMarketItemById, getOwnedCount, getSoulSummonCost, isSoulSummoned],
 	);
 
 	const getBaseTotalGeneratorOutput = useCallback(() => {
@@ -408,8 +503,9 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 
 				const perUnitBase = baseGeneratorPerUnit(generator, stats);
 				const specificFactor = getGeneratorSpecificFactor(generator.id, baseTotalOutput);
-				const multiplierBoost = generator.formula === 'bigStick' ? baseMultiplier * baseMultiplier : baseMultiplier;
-				const totalOutput = perUnitBase * count * multiplierBoost * specificFactor;
+				const milestoneFactor = getGeneratorPurchaseMilestoneFactor(count);
+				const multiplierBoost = generator.formula === 'bigStick' ? Math.pow(baseMultiplier, 1.5) : baseMultiplier;
+				const totalOutput = perUnitBase * count * multiplierBoost * specificFactor * milestoneFactor;
 
 				if (generator.id === 'gen_anti_treasury') antiTreasuryOutput += totalOutput;
 				else otherOutput += totalOutput;
@@ -417,7 +513,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 
 			return Math.max(0, otherOutput * reductionFactor) + antiTreasuryOutput;
 		},
-		[baseGeneratorPerUnit, coins, getBaseTotalGeneratorOutput, getEffectSnapshotAt, getGeneratorSpecificFactor, getOwnedCount, getPassiveSoulMultiplier, getRuntimeStats],
+		[baseGeneratorPerUnit, coins, getBaseTotalGeneratorOutput, getEffectSnapshotAt, getGeneratorPurchaseMilestoneFactor, getGeneratorSpecificFactor, getOwnedCount, getPassiveSoulMultiplier, getRuntimeStats],
 	);
 
 	const getGeneratorProductionPerDay = useCallback(
@@ -430,10 +526,12 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			const baseMultiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.generatorMultiplier * generatorSoulMultiplier, stats.premium);
 			const baseTotalOutput = Math.max(1, getBaseTotalGeneratorOutput() * baseMultiplier);
 			const specificFactor = getGeneratorSpecificFactor(generator.id, baseTotalOutput);
-			const multiplierBoost = generator.formula === 'bigStick' ? baseMultiplier * baseMultiplier : baseMultiplier;
-			return round2(baseGeneratorPerUnit(generator, stats) * multiplierBoost * specificFactor);
+			const count = getOwnedCount(generator.id);
+			const milestoneFactor = getGeneratorPurchaseMilestoneFactor(count);
+			const multiplierBoost = generator.formula === 'bigStick' ? Math.pow(baseMultiplier, 1.5) : baseMultiplier;
+			return round2(baseGeneratorPerUnit(generator, stats) * multiplierBoost * specificFactor * milestoneFactor);
 		},
-		[baseGeneratorPerUnit, coins, getBaseTotalGeneratorOutput, getEffectSnapshotAt, getGeneratorSpecificFactor, getPassiveSoulMultiplier, getRuntimeStats],
+		[baseGeneratorPerUnit, coins, getBaseTotalGeneratorOutput, getEffectSnapshotAt, getGeneratorPurchaseMilestoneFactor, getGeneratorSpecificFactor, getOwnedCount, getPassiveSoulMultiplier, getRuntimeStats],
 	);
 
 	const getTotalGeneratorProductionPerDay = useCallback(() => {
@@ -453,14 +551,20 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 		const ageMultiplierOwned = getOwnedCount('click_age_multiplier');
 		const demonicOwned = getOwnedCount('click_demonic_clicks');
 		const megaOwned = getOwnedCount('click_mega_clicks');
+		const gigaOwned = getOwnedCount('click_giga_clicks');
 		const impossibleOwned = getOwnedCount('click_impossible_clicks');
-		const ritualMultiplier = Math.pow(10, getSoulMultiplierCount('soul_infernal_ritual_multiplier'));
+		const dragonicOwned = getOwnedCount('click_dragonic_clicks');
+		const ritualMultiplier = Math.pow(10, getSoulMultiplierCount('soul_cacus'));
+		const dragonicMultiplier = Math.pow(100, getSoulMultiplierCount('soul_caeculus'));
 
-		const dragonClicksBase = dragonClicksOwned * 0.01 * (1 + ageMultiplierOwned * 0.01 * stats.age);
+		const dragonClicksBase = 0.01 + dragonClicksOwned * 0.01 * (1 + ageMultiplierOwned * 0.01 * stats.age);
 		const megaClicksBase = megaOwned * 0.1;
-		const impossibleClicksBase = impossibleOwned * 1;
-		const demonicBase = demonicOwned * getGeneratorProductionPerDayAt(Date.now()) * 0.00001;
-		const raw = dragonClicksBase * ritualMultiplier + megaClicksBase * ritualMultiplier + impossibleClicksBase * ritualMultiplier + demonicBase;
+		const gigaClicksBase = gigaOwned * 1;
+		const impossibleClicksBase = impossibleOwned * 10;
+		const dragonicClicksBase = dragonicOwned * 1000 * dragonicMultiplier;
+		const baseClicks = dragonClicksBase + megaClicksBase + gigaClicksBase + impossibleClicksBase + dragonicClicksBase;
+		const demonicBase = demonicOwned * getGeneratorProductionPerDayAt(Date.now()) * 0.00001 * Math.max(1, baseClicks);
+		const raw = baseClicks * ritualMultiplier + demonicBase;
 		if (raw <= 0) return 0;
 
 		const clickMultiplier = coins.calculateCoinMultiplier(stats.yang, stats.shards, stats.scarLevel, effects.clickerMultiplier * getPassiveSoulMultiplier('clicker'), stats.premium);
@@ -489,17 +593,29 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 
 			const coinCost = getItemCoinCost(id);
 			const shardCost = getItemShardCost(id);
+			const orbCost = getItemOrbCost(id);
 			const soulCost = getItemSoulCost(id);
 
 			if (!coins.spendCoins(coinCost)) return false;
+			if (orbCost > 0 && !orbs.spendOrbs(orbCost)) {
+				coins.addCoins(coinCost);
+				return false;
+			}
 			if (shardCost > 0 && !shards.spendShards(shardCost)) {
+				if (orbCost > 0) orbs.restoreOrbs(orbCost);
 				coins.addCoins(coinCost);
 				return false;
 			}
 			if (soulCost > 0 && !souls.spendSouls(soulCost)) {
-				if (shardCost > 0) shards.addShards(shardCost);
+				if (orbCost > 0) orbs.restoreOrbs(orbCost);
+				if (shardCost > 0) shards.addShards(shardCost, { grantOrbs: false });
 				coins.addCoins(coinCost);
 				return false;
+			}
+
+			if (item.type === 'soulMultiplier' && !isSoulSummoned(id)) {
+				setSummonedSoulItems(prev => ({ ...prev, [id]: true }));
+				return true;
 			}
 
 			addItemToInventory(id, 1);
@@ -508,7 +624,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			}
 			return true;
 		},
-		[addItemToInventory, coins, getItemCoinCost, getItemShardCost, getItemSoulCost, getMarketItemById, getOwnedCount, scarLevel.currentScarLevel, shards, souls],
+		[addItemToInventory, coins, getItemCoinCost, getItemOrbCost, getItemShardCost, getItemSoulCost, getMarketItemById, getOwnedCount, isSoulSummoned, orbs, scarLevel.currentScarLevel, shards, souls],
 	);
 
 	const sellItem = useCallback(
@@ -531,11 +647,12 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 
 			const lastCoinCost = round2((item.coinCost ?? 0) * Math.pow(item.coinGrowth ?? 1, Math.max(0, owned - 1)));
 			const coinRefund = Math.max(0, round2(lastCoinCost * 0.75));
-			if ((item.shardCost ?? 0) > 0) shards.addShards(item.shardCost ?? 0);
+			if ((item.orbCost ?? 0) > 0) orbs.restoreOrbs(item.orbCost ?? 0);
+			if ((item.shardCost ?? 0) > 0) shards.addShards(item.shardCost ?? 0, { grantOrbs: false });
 			if (coinRefund > 0) coins.addCoins(coinRefund);
 			return true;
 		},
-		[coins, getMarketItemById, shards, souls],
+		[coins, getMarketItemById, orbs, shards, souls],
 	);
 
 	const simulateElapsedSeconds = useCallback(
@@ -733,7 +850,9 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 	);
 
 	const getSoulMultiplierRefundTotal = useCallback(() => {
-		return marketItems
+		const summonedIds = marketItems.filter(item => item.type === 'soulMultiplier' && isSoulSummoned(item.id)).map(item => item.id);
+		const summonRefund = summonedIds.reduce((sum, _id, index) => sum + Math.pow(2, Math.min(0.5 * index, 30)), 0);
+		return summonRefund + marketItems
 			.filter(item => item.type === 'soulMultiplier')
 			.reduce((sum, item) => {
 				const owned = getOwnedCount(item.id);
@@ -745,7 +864,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 				}
 				return sum + total;
 			}, 0);
-	}, [getOwnedCount, marketItems]);
+	}, [getOwnedCount, isSoulSummoned, marketItems]);
 
 	const resetSoulMultipliers = useCallback(() => {
 		const refund = Math.floor(getSoulMultiplierRefundTotal());
@@ -757,6 +876,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 			});
 			return next;
 		});
+		setSummonedSoulItems({});
 		if (refund > 0) souls.addSouls(refund);
 		return refund;
 	}, [getSoulMultiplierRefundTotal, marketItems, souls]);
@@ -856,6 +976,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 
 	const resetInventory = useCallback(() => {
 		setOwnedItems({});
+		setSummonedSoulItems({});
 		setSnackPurchaseCounts({});
 		setActiveEffects([]);
 		setPendingIdleSummary(null);
@@ -876,7 +997,9 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 				getClickReward,
 				getItemCoinCost,
 				getItemShardCost,
+				getItemOrbCost,
 				getItemSoulCost,
+				isSoulMultiplierSummoned: isSoulSummoned,
 				getGeneratorProductionPerDay,
 				getTotalGeneratorProductionPerDay,
 				activeEffects,

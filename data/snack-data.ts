@@ -1,51 +1,51 @@
 import type { SnackItem } from './market-types';
 
-const standardSnackGrowth = 1.02;
-const lateSnackGrowth = 1.1;
+const standardSnackGrowth = 1.01396;
+const lateSnackGrowth = 1.096479;
 
 export const SNACK_DATA: SnackItem[] = [
 	{
 		id: 'snack_survey_duplication_i_basic',
-		name: 'Survey Duplication I Basic',
+		name: 'Survey Duplication Elixir I Basic',
 		type: 'snack',
 		effectId: 'survey_duplication_i_basic',
 		scarLevelRequired: 1,
 		coinCost: 20,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 1,
+		orbCost: 1,
 		description: 'Survey rewards x2 for 1 day.',
 	},
 	{
 		id: 'snack_survey_duplication_i',
-		name: 'Survey Duplication I',
+		name: 'Survey Duplication Elixir I',
 		type: 'snack',
 		effectId: 'survey_duplication_i',
 		scarLevelRequired: 1,
 		coinCost: 100,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 5,
+		orbCost: 5,
 		description: 'Survey rewards x2 for 7 days.',
 	},
 	{
 		id: 'snack_survey_duplication_ii',
-		name: 'Survey Duplication II',
+		name: 'Survey Duplication Elixir II',
 		type: 'snack',
 		effectId: 'survey_duplication_ii',
 		scarLevelRequired: 1,
 		coinCost: 100,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 5,
+		orbCost: 5,
 		description: 'Survey rewards x4 for 3 days.',
 	},
 	{
 		id: 'snack_survey_duplication_iii',
-		name: 'Survey Duplication III',
+		name: 'Survey Duplication Elixir III',
 		type: 'snack',
 		effectId: 'survey_duplication_iii',
 		scarLevelRequired: 1,
 		coinCost: 100,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 5,
+		orbCost: 5,
 		description: 'Survey rewards x8 for 1 day.',
 	},
 	{
@@ -66,7 +66,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 2,
 		coinCost: 50,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 1,
+		orbCost: 1,
 		description: 'Random Fury between -15 and -10.',
 	},
 	{
@@ -87,7 +87,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 2,
 		coinCost: 500,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 5,
+		orbCost: 5,
 		description: 'Base Fury -10/day with up to +/-5 oscillation for 10 days.',
 	},
 	{
@@ -98,7 +98,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 20,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 1,
+		orbCost: 1,
 		description: 'Health +10 instantly.',
 	},
 	{
@@ -109,7 +109,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 40,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 1,
+		orbCost: 1,
 		description: 'Health +15 to +25 instantly.',
 	},
 	{
@@ -120,7 +120,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 20,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 1,
+		orbCost: 1,
 		description: 'Health -10 or +20 instantly.',
 	},
 	{
@@ -131,7 +131,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 20,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 1,
+		orbCost: 1,
 		description: 'Health -10 to +20 instantly.',
 	},
 	{
@@ -142,7 +142,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 40,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 2,
+		orbCost: 2,
 		description: 'Health +10/day for 10 days.',
 	},
 	{
@@ -153,7 +153,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 100,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 3,
+		orbCost: 3,
 		description: 'Health +20/day for 10 days.',
 	},
 	{
@@ -164,7 +164,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 250,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 4,
+		orbCost: 4,
 		description: 'Health +50/day for 10 days.',
 	},
 	{
@@ -175,7 +175,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 3,
 		coinCost: 600,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 5,
+		orbCost: 5,
 		description: 'Health +100/day for 10 days.',
 	},
 	{
@@ -186,7 +186,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 4,
 		coinCost: 200,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 2,
+		orbCost: 2,
 		description: 'Random Fury/day between -20 and +10 for 10 days.',
 	},
 	{
@@ -197,7 +197,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 4,
 		coinCost: 50,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 3,
+		orbCost: 3,
 		description: 'Trivia rewards and losses x4 for 7 days.',
 	},
 	{
@@ -208,7 +208,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 4,
 		coinCost: 50,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 3,
+		orbCost: 3,
 		description: 'Trivia rewards and losses x16 for 3 days.',
 	},
 	{
@@ -219,7 +219,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 4,
 		coinCost: 50,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 3,
+		orbCost: 3,
 		description: 'Trivia rewards and losses x64 for 1 day.',
 	},
 	{
@@ -230,7 +230,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 400,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 4,
+		orbCost: 4,
 		description: 'Generator rewards x2 for 1 day.',
 	},
 	{
@@ -241,7 +241,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 400,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 4,
+		orbCost: 4,
 		description: 'Click rewards x2 for 1 day.',
 	},
 	{
@@ -252,7 +252,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 200,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 2,
+		orbCost: 2,
 		description: 'Survey rewards x4 while generator rewards are halved for 1 day.',
 	},
 	{
@@ -263,7 +263,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 2000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 16,
+		orbCost: 16,
 		description: 'Generator rewards x2 for 7 days.',
 	},
 	{
@@ -274,7 +274,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 2000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 16,
+		orbCost: 16,
 		description: 'Generator rewards x4 for 3 days.',
 	},
 	{
@@ -285,7 +285,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 2000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 16,
+		orbCost: 16,
 		description: 'Generator rewards x8 for 1 day.',
 	},
 	{
@@ -296,7 +296,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 2000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 16,
+		orbCost: 16,
 		description: 'Click rewards x2 for 7 days.',
 	},
 	{
@@ -307,7 +307,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 2000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 16,
+		orbCost: 16,
 		description: 'Click rewards x4 for 3 days.',
 	},
 	{
@@ -318,7 +318,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 2000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 16,
+		orbCost: 16,
 		description: 'Click rewards x8 for 1 day.',
 	},
 	{
@@ -329,7 +329,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 1000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 8,
+		orbCost: 8,
 		description: 'Survey rewards x4 while generator rewards are halved for 7 days.',
 	},
 	{
@@ -340,7 +340,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 1000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 8,
+		orbCost: 8,
 		description: 'Survey rewards x16 while generator rewards are quartered for 3 days.',
 	},
 	{
@@ -351,7 +351,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 6,
 		coinCost: 1000,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 8,
+		orbCost: 8,
 		description: 'Survey rewards x64 while generator rewards are heavily suppressed for 1 day.',
 	},
 	{
@@ -382,7 +382,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 8,
 		coinCost: 800,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 2,
+		orbCost: 2,
 		description: 'Fury -100 and Health -5/day for 5 days.',
 	},
 	{
@@ -393,7 +393,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 8,
 		coinCost: 800,
 		coinGrowth: standardSnackGrowth,
-		shardCost: 2,
+		orbCost: 2,
 		description: 'Health +100 and Fury +20/day for 5 days.',
 	},
 	{
@@ -404,7 +404,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 10,
 		coinCost: 5000,
 		coinGrowth: lateSnackGrowth,
-		shardCost: 50,
+		orbCost: 50,
 		description: 'Clears every removable effect.',
 	},
 	{
@@ -415,7 +415,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 10,
 		coinCost: 5_000_000,
 		coinGrowth: lateSnackGrowth,
-		shardCost: 500,
+		orbCost: 500,
 		description: 'Clears every effect, including Ascension Sickness.',
 	},
 	{
@@ -426,7 +426,7 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 10,
 		coinCost: 10_000,
 		coinGrowth: lateSnackGrowth,
-		shardCost: 100,
+		orbCost: 100,
 		description: 'Fury -10, Health +10, and survey/generator/click rewards x2 for 10 days.',
 	},
 	{
@@ -437,7 +437,8 @@ export const SNACK_DATA: SnackItem[] = [
 		scarLevelRequired: 10,
 		coinCost: 1_000_000,
 		coinGrowth: lateSnackGrowth,
-		shardCost: 100,
+		orbCost: 100,
 		description: 'Dragon Age +1 instantly.',
 	},
 ];
+

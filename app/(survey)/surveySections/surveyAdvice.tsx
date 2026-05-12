@@ -28,7 +28,7 @@ export function useSurveyAdviceSection({ questionSettings, enableAdvice, minScar
 	const survey = useSurvey();
 	const scarLevel = useScarLevel();
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const resolvedEnable = enableAdvice ?? survey.options.enableAdvice ?? true;
+	const resolvedEnable = enableAdvice ?? true;
 	const resolvedMinScar = minScarLevel ?? survey.options.adviceScarLevel ?? 0;
 	const resolvedScar = currentScarLevel ?? scarLevel.currentScarLevel ?? 0;
 

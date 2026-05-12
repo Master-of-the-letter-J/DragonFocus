@@ -1,7 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import { TRIVIA, type TriviaQuestion } from '@/data/prompts-data';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
-import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
@@ -60,14 +59,13 @@ const shuffleAnswers = (question: TriviaQuestion) => {
 
 export function useTriviaQuestionsSection({ surveyType, questionSettings, enableTrivia }: UseTriviaQuestionsParams): SectionHookResult<TriviaQuestionsState> & { correctCount: () => number } {
 	const { questionSettings: contextSettings } = useQuestions();
-	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const resolvedEnable = enableTrivia ?? survey.options.enableRandomMC ?? true;
+	const resolvedEnable = enableTrivia ?? true;
 
 	const count = clamp(surveyType === 'morning' ? resolvedSettings.trivia.morningCount : resolvedSettings.trivia.nightCount, 0, 3);
 
 	const pool = useMemo(() => TRIVIA.filter(t => isCategoryEnabled(resolvedSettings.trivia.types, t.category)), [resolvedSettings.trivia.types]);
-	const isEnabled = resolvedEnable && count > 0 && pool.length > 0;
+	const isEnabled = resolvedEnable && resolvedSettings.trivia.enabled && count > 0 && pool.length > 0;
 
 	const [state, setState] = useState<TriviaQuestionsState>({
 		items: [],

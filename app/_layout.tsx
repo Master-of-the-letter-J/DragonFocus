@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import ParentProvider from '@/context/ParentProvider';
+import { useTheme } from '@/context/ThemeProvider';
 
 export {
 	// Catch any errors thrown by the Layout component.
@@ -47,17 +48,37 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-	const colorScheme = useColorScheme();
-
 	return (
 		<ParentProvider>
-			<ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-				<Stack>
-					<Stack.Screen name="landing" options={{ headerShown: false }} />
-					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-					<Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-				</Stack>
-			</ThemeProvider>
+			<NavigationThemeBridge />
 		</ParentProvider>
+	);
+}
+
+function NavigationThemeBridge() {
+	const colorScheme = useColorScheme();
+	const dragonTheme = useTheme();
+	const fallbackTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+	const navigationTheme = {
+		...fallbackTheme,
+		colors: {
+			...fallbackTheme.colors,
+			background: dragonTheme.colors.background,
+			card: dragonTheme.colors.secondaryBackground,
+			text: dragonTheme.colors.text,
+			border: dragonTheme.colors.border,
+			primary: dragonTheme.colors.tint,
+			notification: dragonTheme.colors.warning,
+		},
+	};
+
+	return (
+		<ThemeProvider value={navigationTheme}>
+			<Stack>
+				<Stack.Screen name="landing" options={{ headerShown: false }} />
+				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+				<Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+			</Stack>
+		</ThemeProvider>
 	);
 }

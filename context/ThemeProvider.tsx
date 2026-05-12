@@ -1,30 +1,32 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import { DRAGON_THEME_PRESETS, type DragonThemePreset, type DragonThemeTokenSet } from '@/data/theme-data';
+import React, { createContext, type ReactNode, useContext, useMemo } from 'react';
 
 export type ThemeMode = 'light' | 'dark';
 export type BackgroundTheme = 'dungeon' | 'castlePlains' | 'space' | 'volcano' | 'forest' | 'sky' | 'custom';
+export type ThemeBrightness = 'bright' | 'slight_bright' | 'normal' | 'slight_dimmer' | 'dimmer';
 
 export interface ThemeColors {
-	// Basic
-	text: string;
 	background: string;
-	tint: string;
-
-	// UI Elements
+	primaryBackground: string;
+	secondaryBackground: string;
+	tertiaryBackground: string;
+	fourthBackground: string;
 	card: string;
 	border: string;
 	inputBackground: string;
-
-	// Status Colors
+	text: string;
+	titleText: string;
+	headerText: string;
+	subheaderText: string;
+	secondaryText: string;
+	tint: string;
 	success: string;
 	warning: string;
 	danger: string;
 	info: string;
-
-	// Tab Navigation
 	tabIconDefault: string;
 	tabIconSelected: string;
-
-	// Buttons
 	buttonBackground: string;
 	buttonText: string;
 	secondaryButton: string;
@@ -36,113 +38,58 @@ export interface ThemePalette {
 	dark: ThemeColors;
 }
 
+interface StoredThemeState {
+	mode: ThemeMode;
+	backgroundTheme: BackgroundTheme;
+	customBackgroundColor?: string;
+	brightness: ThemeBrightness;
+}
+
 export interface ThemeContextType {
 	mode: ThemeMode;
 	backgroundTheme: BackgroundTheme;
 	customBackgroundColor?: string;
-	brightness: 'bright' | 'slight_bright' | 'normal' | 'slight_dimmer' | 'dimmer';
+	brightness: ThemeBrightness;
 	colors: ThemeColors;
+	activePreset: DragonThemePreset;
 	setPalette: (palette: ThemePalette) => void;
 	setMode: (mode: ThemeMode) => void;
 	setBackgroundTheme: (theme: BackgroundTheme) => void;
 	setCustomBackground: (color: string) => void;
-	setBrightness: (level: 'bright' | 'slight_bright' | 'normal' | 'slight_dimmer' | 'dimmer') => void;
+	setBrightness: (level: ThemeBrightness) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const defaultDarkTheme: ThemeColors = {
-	text: '#f5f5f5',
-	background: '#1a1a1a',
-	tint: '#81c784',
-	card: '#2a2a2a',
-	border: '#404040',
-	inputBackground: '#2a2a2a',
-	success: '#81c784',
-	warning: '#ffb74d',
-	danger: '#ef5350',
-	info: '#64b5f6',
-	tabIconDefault: '#666',
-	tabIconSelected: '#81c784',
-	buttonBackground: '#2a7a2a',
-	buttonText: '#fff',
-	secondaryButton: '#404040',
-	secondaryButtonText: '#f5f5f5',
+const THEME_FALLBACK_ID: BackgroundTheme = 'dungeon';
+
+const DEFAULT_THEME_STATE: StoredThemeState = {
+	mode: 'dark',
+	backgroundTheme: THEME_FALLBACK_ID,
+	customBackgroundColor: undefined,
+	brightness: 'normal',
 };
 
-const defaultLightTheme: ThemeColors = {
-	text: '#333333',
-	background: '#ffffff',
-	tint: '#2f95dc',
-	card: '#f5f5f5',
-	border: '#e0e0e0',
-	inputBackground: '#f9f9f9',
-	success: '#4caf50',
-	warning: '#ff9800',
-	danger: '#f44336',
-	info: '#2196f3',
-	tabIconDefault: '#ccc',
-	tabIconSelected: '#2f95dc',
-	buttonBackground: '#4caf50',
-	buttonText: '#fff',
-	secondaryButton: '#f0f0f0',
-	secondaryButtonText: '#333',
-};
-
-const defaultPalette: ThemePalette = {
-	light: defaultLightTheme,
-	dark: defaultDarkTheme,
-};
-
-export function DragonThemeProvider({ children }: { children: ReactNode }) {
-	const [mode, setModeState] = useState<ThemeMode>('dark');
-	const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>('dungeon');
-	const [customBackgroundColor, setCustomBackgroundColor] = useState<string | undefined>(undefined);
-	const [brightness, setBrightnessState] = useState<'bright' | 'slight_bright' | 'normal' | 'slight_dimmer' | 'dimmer'>('normal');
-	const [palette, setPaletteState] = useState<ThemePalette>(defaultPalette);
-
-	const colors = mode === 'light' ? palette.light : palette.dark;
-
-	// Apply brightness modifier to colors
-	const adjustedColors: ThemeColors = {
-		...colors,
-		background: adjustBrightness(colors.background, brightness),
-		card: adjustBrightness(colors.card, brightness),
-		text: adjustBrightness(colors.text, brightness),
+const normalizeStoredTheme = (storedState: StoredThemeState | null, initialState: StoredThemeState): StoredThemeState => {
+	if (!storedState) return initialState;
+	const backgroundTheme =
+		storedState.backgroundTheme === 'custom'
+			? 'custom'
+			: storedState.backgroundTheme in DRAGON_THEME_PRESETS
+				? storedState.backgroundTheme
+				: THEME_FALLBACK_ID;
+	return {
+		mode: storedState.mode === 'light' ? 'light' : 'dark',
+		backgroundTheme,
+		customBackgroundColor: storedState.customBackgroundColor || undefined,
+		brightness: storedState.brightness ?? 'normal',
 	};
+};
 
-	return (
-		<ThemeContext.Provider
-			value={{
-				mode,
-				backgroundTheme,
-				customBackgroundColor,
-				brightness,
-				colors: adjustedColors,
-				setPalette: setPaletteState,
-				setMode: setModeState,
-				setBackgroundTheme: setBackgroundThemeState,
-				setCustomBackground: setCustomBackgroundColor,
-				setBrightness: setBrightnessState,
-			}}>
-			{children}
-		</ThemeContext.Provider>
-	);
-}
+const clampChannel = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
 
-export function useTheme(): ThemeContextType {
-	const context = useContext(ThemeContext);
-	if (!context) {
-		throw new Error('useTheme must be used within a DragonThemeProvider');
-	}
-	return context;
-}
-
-/**
- * Adjusts brightness of a hex color string
- */
-function adjustBrightness(color: string, level: 'bright' | 'slight_bright' | 'normal' | 'slight_dimmer' | 'dimmer'): string {
-	if (level === 'normal') return color;
+const adjustBrightness = (color: string, level: ThemeBrightness) => {
+	if (level === 'normal' || !color.startsWith('#') || (color.length !== 7 && color.length !== 4)) return color;
 
 	let ratio = 1;
 	switch (level) {
@@ -162,10 +109,82 @@ function adjustBrightness(color: string, level: 'bright' | 'slight_bright' | 'no
 			ratio = 1;
 	}
 
-	const hex = color.replace('#', '');
-	const r = Math.round(Math.min(255, parseInt(hex.substring(0, 2), 16) * ratio));
-	const g = Math.round(Math.min(255, parseInt(hex.substring(2, 4), 16) * ratio));
-	const b = Math.round(Math.min(255, parseInt(hex.substring(4, 6), 16) * ratio));
+	const normalizedHex =
+		color.length === 4
+			? `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`
+			: color;
+	const hex = normalizedHex.replace('#', '');
+	const r = clampChannel(parseInt(hex.slice(0, 2), 16) * ratio);
+	const g = clampChannel(parseInt(hex.slice(2, 4), 16) * ratio);
+	const b = clampChannel(parseInt(hex.slice(4, 6), 16) * ratio);
 
 	return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
+const createThemeColors = (tokens: DragonThemeTokenSet, brightness: ThemeBrightness, customBackgroundColor?: string): ThemeColors => ({
+	background: customBackgroundColor || adjustBrightness(tokens.primaryBackground, brightness),
+	primaryBackground: customBackgroundColor || adjustBrightness(tokens.primaryBackground, brightness),
+	secondaryBackground: adjustBrightness(tokens.secondaryBackground, brightness),
+	tertiaryBackground: adjustBrightness(tokens.tertiaryBackground, brightness),
+	fourthBackground: adjustBrightness(tokens.fourthBackground, brightness),
+	card: adjustBrightness(tokens.secondaryBackground, brightness),
+	border: adjustBrightness(tokens.border, brightness),
+	inputBackground: adjustBrightness(tokens.inputBackground, brightness),
+	text: adjustBrightness(tokens.bodyText, brightness),
+	titleText: adjustBrightness(tokens.titleText, brightness),
+	headerText: adjustBrightness(tokens.headerText, brightness),
+	subheaderText: adjustBrightness(tokens.subheaderText, brightness),
+	secondaryText: adjustBrightness(tokens.secondaryText, brightness),
+	tint: adjustBrightness(tokens.tint, brightness),
+	success: adjustBrightness(tokens.success, brightness),
+	warning: adjustBrightness(tokens.warning, brightness),
+	danger: adjustBrightness(tokens.danger, brightness),
+	info: adjustBrightness(tokens.info, brightness),
+	tabIconDefault: adjustBrightness(tokens.tabIconDefault, brightness),
+	tabIconSelected: adjustBrightness(tokens.tabIconSelected, brightness),
+	buttonBackground: adjustBrightness(tokens.buttonBackground, brightness),
+	buttonText: adjustBrightness(tokens.buttonText, brightness),
+	secondaryButton: adjustBrightness(tokens.secondaryButton, brightness),
+	secondaryButtonText: adjustBrightness(tokens.secondaryButtonText, brightness),
+});
+
+export function DragonThemeProvider({ children }: { children: ReactNode }) {
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.theme, DEFAULT_THEME_STATE, { normalize: normalizeStoredTheme });
+
+	const activePreset = DRAGON_THEME_PRESETS[state.backgroundTheme === 'custom' ? THEME_FALLBACK_ID : state.backgroundTheme] ?? DRAGON_THEME_PRESETS[THEME_FALLBACK_ID];
+	const [customPalette, setCustomPaletteState] = React.useState<ThemePalette | null>(null);
+
+	const colors = useMemo(() => {
+		if (customPalette) {
+			return state.mode === 'light' ? customPalette.light : customPalette.dark;
+		}
+		return createThemeColors(activePreset[state.mode], state.brightness, state.customBackgroundColor);
+	}, [activePreset, customPalette, state.brightness, state.customBackgroundColor, state.mode]);
+
+	const value = useMemo<ThemeContextType>(
+		() => ({
+			mode: state.mode,
+			backgroundTheme: state.backgroundTheme,
+			customBackgroundColor: state.customBackgroundColor,
+			brightness: state.brightness,
+			colors,
+			activePreset,
+			setPalette: setCustomPaletteState,
+			setMode: mode => setState(current => ({ ...current, mode })),
+			setBackgroundTheme: backgroundTheme => setState(current => ({ ...current, backgroundTheme, customBackgroundColor: backgroundTheme === 'custom' ? current.customBackgroundColor : undefined })),
+			setCustomBackground: color => setState(current => ({ ...current, backgroundTheme: 'custom', customBackgroundColor: color })),
+			setBrightness: brightness => setState(current => ({ ...current, brightness })),
+		}),
+		[activePreset, colors, setState, state.backgroundTheme, state.brightness, state.customBackgroundColor, state.mode],
+	);
+
+	return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+export function useTheme(): ThemeContextType {
+	const context = useContext(ThemeContext);
+	if (!context) {
+		throw new Error('useTheme must be used within a DragonThemeProvider');
+	}
+	return context;
 }

@@ -1,5 +1,7 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { useDragonAttacks } from './DragonAttacksProvider';
 import { useDragonCoins } from './DragonCoinsProvider';
+import { useDragonOrbs } from './DragonOrbsProvider';
 import { useDragon } from './DragonProvider';
 import { useShards } from './DragonShardsProvider';
 import { useFury } from './FuryProvider';
@@ -58,6 +60,11 @@ const DEFAULT_ACHIEVEMENTS: Achievement[] = [
 	{ id: 'population_1b', emoji: '\uD83C\uDF0D', title: 'Global Icon', description: 'Reach 1 billion population' },
 
 	{ id: 'shards_50', emoji: '\u2728', title: 'Crystal Collector', description: 'Earn 50 shards' },
+	{ id: 'orbs_100', emoji: 'O100', title: 'Orb Forged', description: 'Earn 100 Dragon Orbs' },
+	{ id: 'damage_100', emoji: 'DMG', title: 'Sharpened Wrath', description: 'Reach 100 dragon damage' },
+	{ id: 'legion_1k', emoji: 'OL', title: 'Legion Breaker', description: 'Destroy 1,000 Obsidian Legions' },
+	{ id: 'tanks_100', emoji: 'TK', title: 'Tank Breaker', description: 'Destroy 100 Obsidian tanks' },
+	{ id: 'aircraft_10', emoji: 'AIR', title: 'Sky Denial', description: 'Destroy 10 Obsidian aircraft' },
 
 	{ id: 'perfect_health', emoji: '\u2764\uFE0F', title: 'Full Vitality', description: 'Have your dragon at full health' },
 
@@ -77,6 +84,8 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 	const fury = useFury();
 	const population = usePopulation();
 	const shards = useShards();
+	const orbs = useDragonOrbs();
+	const attacks = useDragonAttacks();
 
 	const [achievements, setAchievements] = useState<Achievement[]>(DEFAULT_ACHIEVEMENTS);
 
@@ -120,12 +129,17 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 		if (population.population >= 1_000_000_000) unlockIfMissing('population_1b');
 
 		if (shards.shards >= 50) unlockIfMissing('shards_50');
+		if (orbs.totalOrbsEarned >= 100) unlockIfMissing('orbs_100');
+		if (attacks.rates.damage >= 100) unlockIfMissing('damage_100');
+		if (attacks.world.totalLegionsDestroyed >= 1_000) unlockIfMissing('legion_1k');
+		if (attacks.world.totalTanksDestroyed >= 100) unlockIfMissing('tanks_100');
+		if (attacks.world.totalAircraftDestroyed >= 10) unlockIfMissing('aircraft_10');
 
 		if (dragon.hp === dragon.maxHP) unlockIfMissing('perfect_health');
 
 		if (fury.furyMeter <= 10) unlockIfMissing('fury_chill');
 		if (fury.furyMeter >= 90) unlockIfMissing('fury_raging');
-	}, [dragon.age, dragon.hp, dragon.maxHP, coins.coins, goals.habits.length, goals.todos.length, streak.streak, scarLevel.currentScarLevel, fury.furyMeter, population.population, shards.shards]);
+	}, [attacks.rates.damage, attacks.world.totalAircraftDestroyed, attacks.world.totalLegionsDestroyed, attacks.world.totalTanksDestroyed, dragon.age, dragon.hp, dragon.maxHP, coins.coins, goals.habits.length, goals.todos.length, streak.streak, scarLevel.currentScarLevel, fury.furyMeter, population.population, shards.shards, orbs.totalOrbsEarned]);
 
 	const unlockedCount = achievements.filter(item => item.unlockedAt).length;
 	const totalCount = achievements.length;

@@ -4,11 +4,13 @@ import TopHeader from '@/components/TopHeader';
 import { formatAbbreviatedNumber, formatDecimalNumber, formatPopulationNumber } from '@/constants/number-abbreviation';
 import { images } from '@/constants';
 import { useDragonClicking } from '@/context/DragonClickingProvider';
+import { useDragonAttacks } from '@/context/DragonAttacksProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { usePopulation } from '@/context/PopulationProvider';
 import { useSurvey } from '@/context/SurveyProvider';
+import { useTheme } from '@/context/ThemeProvider';
 import { useToast } from '@/context/ToastProvider';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -28,12 +30,15 @@ const formatDuration = (seconds: number) => {
 
 export default function HomePage() {
 	const dragon = useDragon();
+	const attacks = useDragonAttacks();
 	const itemEconomy = useItemEconomy();
 	const itemSnacks = useItemSnacks();
 	const dragonClicking = useDragonClicking();
 	const router = useRouter();
 	const survey = useSurvey();
 	const population = usePopulation();
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	const { showToast } = useToast();
 
 	const [snackModalOpen, setSnackModalOpen] = useState(false);
@@ -146,6 +151,7 @@ export default function HomePage() {
 		if (dragon.dragonState !== 'alive') return;
 
 		dragonClicking.addClick();
+		population.addPopulation(1);
 		const reward = itemEconomy.processDragonClick();
 		if (reward > 0) {
 			showToast({ title: 'Dragon Click', message: `+${reward.toFixed(2)} coins`, shadowColor: '#F59E0B', backgroundColor: '#FFFBEB' }, { durationMs: 900 });
@@ -165,6 +171,33 @@ export default function HomePage() {
 					<Pressable style={styles.statBox} onPress={() => showToast({ title: 'Death Count', message: `${formatPopulationNumber(population.deathCount || 0)} recorded losses`, shadowColor: '#DC2626', backgroundColor: '#FEF2F2' })}>
 						<Text style={styles.statLabel}>Death Count</Text>
 						<Text style={styles.statValue}>{formatPopulationNumber(population.deathCount || 0)}</Text>
+					</Pressable>
+				</View>
+
+				<View style={styles.worldConflictGrid}>
+					<Pressable style={styles.conflictBox} onPress={() => showToast({ title: 'Obsidian Legion', message: `${formatPopulationNumber(attacks.world.obsidianLegions)} legions | +${formatAbbreviatedNumber(attacks.rates.legionsAddedPerDay, 1000)}/day`, shadowColor: '#111827', backgroundColor: '#F3F4F6' })}>
+						<Text style={styles.statLabel}>Obsidian Legion</Text>
+						<Text style={styles.conflictValue}>{attacks.world.obsidianLegions > 0 ? formatPopulationNumber(attacks.world.obsidianLegions) : 'None'}</Text>
+					</Pressable>
+					<Pressable style={styles.conflictBox} onPress={() => showToast({ title: 'Obsidian Tanks', message: `${formatPopulationNumber(attacks.world.obsidianTanks)} tanks | destroyed ${formatAbbreviatedNumber(attacks.rates.tanksDestroyedPerDay, 1000)}/day`, shadowColor: '#374151', backgroundColor: '#F9FAFB' })}>
+						<Text style={styles.statLabel}>Tanks</Text>
+						<Text style={styles.conflictValue}>{formatPopulationNumber(attacks.world.obsidianTanks)}</Text>
+					</Pressable>
+					<Pressable style={styles.conflictBox} onPress={() => showToast({ title: 'Obsidian Aircraft', message: `${formatPopulationNumber(attacks.world.obsidianAircraft)} aircraft | destroyed ${formatAbbreviatedNumber(attacks.rates.aircraftDestroyedPerDay, 1000)}/day`, shadowColor: '#1D4ED8', backgroundColor: '#EFF6FF' })}>
+						<Text style={styles.statLabel}>Aircraft</Text>
+						<Text style={styles.conflictValue}>{formatPopulationNumber(attacks.world.obsidianAircraft)}</Text>
+					</Pressable>
+					<Pressable style={styles.conflictBox} onPress={() => showToast({ title: 'Dragon Guards', message: `${formatPopulationNumber(attacks.world.dragonGuards)} guards protecting the dragon`, shadowColor: '#16A34A', backgroundColor: '#ECFDF5' })}>
+						<Text style={styles.statLabel}>Dragon Guards</Text>
+						<Text style={styles.conflictValue}>{formatPopulationNumber(attacks.world.dragonGuards)}</Text>
+					</Pressable>
+					<Pressable style={styles.conflictBox} onPress={() => showToast({ title: 'Dragon Damage', message: `${formatAbbreviatedNumber(attacks.rates.damage, 1000)} damage | ${formatAbbreviatedNumber(attacks.rates.populationDestroyedPerDay, 1000)} population/day`, shadowColor: '#DC2626', backgroundColor: '#FEF2F2' })}>
+						<Text style={styles.statLabel}>Dragon Damage</Text>
+						<Text style={styles.conflictValue}>{formatAbbreviatedNumber(attacks.rates.damage, 1000)}</Text>
+					</Pressable>
+					<Pressable style={styles.conflictBox} onPress={() => showToast({ title: 'World Pressure', message: `${formatAbbreviatedNumber(attacks.rates.healthDeclinePerDay, 1000)} HP loss/day from the Obsidian Legion`, shadowColor: '#EA580C', backgroundColor: '#FFF7ED' })}>
+						<Text style={styles.statLabel}>HP Loss/Day</Text>
+						<Text style={styles.conflictValue}>{formatAbbreviatedNumber(attacks.rates.healthDeclinePerDay, 1000)}</Text>
 					</Pressable>
 				</View>
 
@@ -312,56 +345,59 @@ export default function HomePage() {
 	);
 }
 
-const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#fff' },
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+	container: { flex: 1, backgroundColor: colors.background },
 	scrollContent: { paddingBottom: 40, paddingHorizontal: 16 },
 	utilityRow: { marginBottom: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
 	effectsWrap: { flex: 1, gap: 6 },
-	snackButton: { backgroundColor: '#0F766E', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignSelf: 'flex-start' },
-	snackButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-	effectCard: { backgroundColor: '#111827', borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
-	effectCardMuted: { backgroundColor: '#F3F4F6', borderRadius: 8, padding: 10 },
-	effectTitle: { color: '#fff', fontSize: 11, fontWeight: '700' },
-	effectTitleMuted: { color: '#111827', fontSize: 11, fontWeight: '700' },
-	effectText: { color: '#E5E7EB', fontSize: 10, marginTop: 2 },
-	effectTextMuted: { color: '#6B7280', fontSize: 10, marginTop: 2 },
-	effectTime: { color: '#93C5FD', fontSize: 10, marginTop: 2 },
+	snackButton: { backgroundColor: colors.buttonBackground, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, alignSelf: 'flex-start' },
+	snackButtonText: { color: colors.buttonText, fontWeight: '700', fontSize: 12 },
+	effectCard: { backgroundColor: colors.fourthBackground, borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
+	effectCardMuted: { backgroundColor: colors.secondaryBackground, borderRadius: 8, padding: 10 },
+	effectTitle: { color: colors.buttonText, fontSize: 11, fontWeight: '700' },
+	effectTitleMuted: { color: colors.titleText, fontSize: 11, fontWeight: '700' },
+	effectText: { color: colors.buttonText, fontSize: 10, marginTop: 2 },
+	effectTextMuted: { color: colors.secondaryText, fontSize: 10, marginTop: 2 },
+	effectTime: { color: colors.info, fontSize: 10, marginTop: 2 },
 	statsHeader: { flexDirection: 'row', gap: 12, marginTop: 12, marginBottom: 12 },
-	statBox: { flex: 1, alignItems: 'center', padding: 12, backgroundColor: '#F5F5F5', borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0' },
-	statLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 4 },
-	statValue: { fontSize: 20, fontWeight: '800', color: '#333' },
+	statBox: { flex: 1, alignItems: 'center', padding: 12, backgroundColor: colors.secondaryBackground, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+	statLabel: { fontSize: 12, color: colors.secondaryText, fontWeight: '600', marginBottom: 4 },
+	statValue: { fontSize: 20, fontWeight: '800', color: colors.titleText },
+	worldConflictGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+	conflictBox: { flexGrow: 1, flexBasis: '30%', minWidth: 96, alignItems: 'center', padding: 10, backgroundColor: colors.secondaryBackground, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
+	conflictValue: { fontSize: 15, fontWeight: '800', color: colors.titleText },
 	dragonArea: { alignItems: 'center', marginTop: 8 },
-	dragonName: { fontSize: 24, fontWeight: '800', textAlign: 'center' },
-	dragonStats: { fontSize: 14, color: '#666', marginTop: 4, textAlign: 'center' },
+	dragonName: { fontSize: 24, fontWeight: '800', textAlign: 'center', color: colors.titleText },
+	dragonStats: { fontSize: 14, color: colors.secondaryText, marginTop: 4, textAlign: 'center' },
 	dragonArtShell: { width: '100%', alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
 	dragonImage: { width: 220, height: 220, resizeMode: 'contain' },
 	deadDragonImage: { opacity: 0.7 },
 	eggImage: { opacity: 0.95 },
 	tapDragonButton: { backgroundColor: '#F59E0B', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, marginBottom: 10 },
 	tapDragonText: { color: '#fff', fontWeight: '800' },
-	lifecycleButton: { backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginBottom: 12 },
-	reviveButton: { backgroundColor: '#16A34A' },
-	lifecycleButtonText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+	lifecycleButton: { backgroundColor: colors.info, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginBottom: 12 },
+	reviveButton: { backgroundColor: colors.success },
+	lifecycleButtonText: { color: colors.buttonText, fontWeight: '800', fontSize: 15 },
 	surveySection: { width: '100%', marginTop: 12 },
-	surveyLabel: { fontSize: 18, fontWeight: '700', marginBottom: 12, color: '#333' },
+	surveyLabel: { fontSize: 18, fontWeight: '700', marginBottom: 12, color: colors.headerText },
 	surveysContainer: { flexDirection: 'row', gap: 12 },
 	largeButton: { flex: 1, borderRadius: 16, padding: 16, borderWidth: 1.5 },
-	buttonActive: { borderColor: '#4CAF50', backgroundColor: '#F0F9F1' },
-	buttonDisabled: { borderColor: '#E0E0E0', backgroundColor: '#FAFAFA', opacity: 0.6 },
+	buttonActive: { borderColor: colors.success, backgroundColor: colors.secondaryBackground },
+	buttonDisabled: { borderColor: colors.border, backgroundColor: colors.tertiaryBackground, opacity: 0.6 },
 	buttonTop: { backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-	largeButtonTitle: { fontSize: 17, fontWeight: '700' },
-	statusBadge: { fontSize: 12, fontWeight: '600', color: '#4CAF50', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-	progressBarSmall: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' },
-	progressFillSmall: { height: '100%', backgroundColor: '#4CAF50' },
-	surveyHint: { fontSize: 12, color: '#6B7280', marginTop: 8, textAlign: 'center' },
+	largeButtonTitle: { fontSize: 17, fontWeight: '700', color: colors.headerText },
+	statusBadge: { fontSize: 12, fontWeight: '600', color: colors.success, backgroundColor: colors.tertiaryBackground, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+	progressBarSmall: { height: 8, backgroundColor: colors.tertiaryBackground, borderRadius: 4, overflow: 'hidden' },
+	progressFillSmall: { height: '100%', backgroundColor: colors.success },
+	surveyHint: { fontSize: 12, color: colors.secondaryText, marginTop: 8, textAlign: 'center' },
 	modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-	modalCard: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 12, padding: 16 },
-	modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10 },
-	modalText: { fontSize: 14, color: '#333', marginBottom: 6, lineHeight: 20 },
-	snackRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 10 },
-	snackName: { fontSize: 15, fontWeight: '700', color: '#111' },
-	useSnackBtn: { backgroundColor: '#2563EB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
-	useSnackBtnText: { color: '#fff', fontWeight: '700' },
-	closeModalBtn: { marginTop: 12, backgroundColor: '#111827', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-	closeModalBtnText: { color: '#fff', fontWeight: '700' },
+	modalCard: { width: '100%', maxWidth: 420, backgroundColor: colors.secondaryBackground, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border },
+	modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 10, color: colors.titleText },
+	modalText: { fontSize: 14, color: colors.text, marginBottom: 6, lineHeight: 20 },
+	snackRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 10 },
+	snackName: { fontSize: 15, fontWeight: '700', color: colors.headerText },
+	useSnackBtn: { backgroundColor: colors.info, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
+	useSnackBtnText: { color: colors.buttonText, fontWeight: '700' },
+	closeModalBtn: { marginTop: 12, backgroundColor: colors.buttonBackground, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+	closeModalBtnText: { color: colors.buttonText, fontWeight: '700' },
 });

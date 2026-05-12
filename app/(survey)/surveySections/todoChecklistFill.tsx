@@ -2,6 +2,7 @@ import { Text, View } from '@/components/Themed';
 import { getTodoCompletionReward } from '@/data/goal-reward-utils';
 import { getGoalCategories, getGoalRewardWarning, getImportanceMeta, getTodoCompletionLockReason, isGoalChallengeActive } from '@/data/goal-utils';
 import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -20,6 +21,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 	getCompletionSnapshot: () => { updatedTodos: TodoGoal[]; completedTodoIds: string[] };
 } {
 	const goals = useGoals();
+	const questions = useQuestions();
 	const survey = useSurvey();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 	const isRefill = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
@@ -120,10 +122,12 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 									isCompleted ? sectionStyles.todoCompleted : null,
 									isLocked ? { opacity: 0.65 } : null,
 								]}>
-								<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-									<Text selectable={false} style={[sectionStyles.habitTitle, { textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>
-										{todo.title}
-									</Text>
+								<View style={sectionStyles.goalMainRow}>
+									<View style={sectionStyles.goalTextColumn}>
+										<Text selectable={false} style={[sectionStyles.habitTitle, { textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>
+											{todo.title}
+										</Text>
+									</View>
 									<Checkbox
 										value={isCompleted}
 										onValueChange={value => {
@@ -140,9 +144,9 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 								</View>
 
 								<View style={sectionStyles.metaRow}>
-									<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>
-										{importanceMeta.label}
-									</Text>
+									<View style={[sectionStyles.importanceChip, { borderColor: importanceMeta.color }]}>
+										<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>{importanceMeta.shortLabel}</Text>
+									</View>
 									{categories.map(category => (
 										<View key={`${todo.id}-${category}`} style={sectionStyles.categoryChip}>
 											<Text selectable={false} style={sectionStyles.categoryChipText}>
@@ -152,12 +156,12 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 									))}
 								</View>
 
-								<Text style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+								<Text style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
 									{todo.dueDate ? `Due ${todo.dueDate}` : 'No due date'} | Normal reward {normalReward.coins} coins
 								</Text>
 
 								{hasActiveChallenge ? (
-									<Text style={{ fontSize: 12, color: '#1565C0', marginTop: 6 }}>
+									<Text style={{ fontSize: 11, color: '#1565C0', marginTop: 4 }}>
 										Challenge reward: {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
 									</Text>
 								) : null}
@@ -166,7 +170,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 								{lockReason ? <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>{lockReason}</Text> : null}
 
 								{todo.subGoals.length > 0 ? (
-									<View style={{ marginTop: 8 }}>
+									<View style={{ marginTop: 5 }}>
 										{todo.subGoals.map(subGoal => (
 											<Pressable
 												key={subGoal.id}
@@ -203,7 +207,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 		section: {
 			key: 'todoFill',
 			label: 'To-Do Goals',
-			isEnabled: true,
+			isEnabled: questions.questionSettings.todoGoals.enabled,
 			isNextEnabled: true,
 			enableNext: null,
 			render,

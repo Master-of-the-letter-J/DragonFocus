@@ -87,15 +87,15 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 							isChallengeTodo ? { backgroundColor: '#E8F4FF' } : null,
 							isActive ? { transform: [{ scale: 1.02 }], elevation: 4 } : null,
 						]}>
-						<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-							<View style={{ flex: 1 }}>
+						<View style={sectionStyles.goalMainRow}>
+							<View style={sectionStyles.goalTextColumn}>
 								<Text selectable={false} style={sectionStyles.habitTitle}>
 									{todo.title}
 								</Text>
 								<View style={sectionStyles.metaRow}>
-									<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>
-										{importanceMeta.label}
-									</Text>
+									<View style={[sectionStyles.importanceChip, { borderColor: importanceMeta.color }]}>
+										<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>{importanceMeta.shortLabel}</Text>
+									</View>
 									{categories.map(category => (
 										<View key={`${todo.id}-${category}`} style={sectionStyles.categoryChip}>
 											<Text selectable={false} style={sectionStyles.categoryChipText}>
@@ -108,9 +108,9 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 									{todo.dueDate ? `Due ${todo.dueDate}` : 'No due date'}
 								</Text>
 							</View>
-							<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-								<Pressable style={{ marginRight: 8 }} onPress={() => cancelTodo(todo.id)}>
-									<Text style={{ fontSize: 12, fontWeight: '700', color: '#E53935' }}>Delete</Text>
+							<View style={sectionStyles.goalActionRow}>
+								<Pressable onPress={() => cancelTodo(todo.id)}>
+									<Text style={[sectionStyles.goalActionText, { color: '#E53935' }]}>Delete</Text>
 								</Pressable>
 								{!isChallengeTodo ? (
 									<Pressable style={[sectionStyles.miniButton, sectionStyles.miniEditButton]} onPress={() => setState(prev => ({ ...prev, editingTodo: todo }))}>
@@ -119,23 +119,23 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 										</Text>
 									</Pressable>
 								) : null}
-								<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 6, marginLeft: 8 }}>
-									<Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280' }}>Move</Text>
+								<Pressable onLongPress={drag} delayLongPress={150} style={{ padding: 4 }}>
+									<Text style={[sectionStyles.goalActionText, { color: '#6B7280' }]}>Move</Text>
 								</Pressable>
 							</View>
 						</View>
 
 						{isChallengeTodo ? (
-							<Text style={{ fontSize: 12, color: '#1565C0', marginTop: 8 }}>
+							<Text style={{ fontSize: 11, color: '#1565C0', marginTop: 6 }}>
 								Challenge active | reward {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
 							</Text>
 						) : null}
 
 						{todo.subGoals.length > 0 ? (
-							<View style={{ marginTop: 8 }}>
+							<View style={{ marginTop: 5 }}>
 								{todo.subGoals.map(subGoal => (
 									<View key={subGoal.id} style={sectionStyles.subGoalRow}>
-										<Text selectable={false} style={{ textDecorationLine: subGoal.completed ? 'line-through' : 'none' }}>
+										<Text selectable={false} style={{ fontSize: 12, color: '#4B5563', textDecorationLine: subGoal.completed ? 'line-through' : 'none' }}>
 											- {subGoal.title}
 										</Text>
 									</View>
@@ -236,7 +236,7 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 		section: {
 			key: 'todoEdit',
 			label: 'To-Do Goals',
-			isEnabled: true,
+			isEnabled: questions.questionSettings.todoGoals.enabled,
 			isNextEnabled: true,
 			enableNext: null,
 			render,

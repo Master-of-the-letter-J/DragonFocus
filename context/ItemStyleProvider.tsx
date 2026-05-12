@@ -9,6 +9,7 @@ interface ItemStyleContextType {
 	purchaseItem: (id: string) => boolean;
 	getItemCoinCost: (id: string) => number;
 	getItemShardCost: (id: string) => number;
+	getItemOrbCost: (id: string) => number;
 }
 
 const ItemStyleContext = createContext<ItemStyleContextType | undefined>(undefined);
@@ -23,6 +24,7 @@ export function ItemStyleProvider({ children }: { children: ReactNode }) {
 			purchaseItem: items.purchaseItem,
 			getItemCoinCost: items.getItemCoinCost,
 			getItemShardCost: items.getItemShardCost,
+			getItemOrbCost: items.getItemOrbCost,
 		}),
 		[items],
 	);

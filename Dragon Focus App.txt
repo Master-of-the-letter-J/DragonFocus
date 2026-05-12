@@ -4,6 +4,109 @@ Here is a checklist for what to do (for an AI, such as Codex)
 The App is named Dragon Focus, and centers around 2 surveys - morning and night - affecting a dragon’s HP and fury level.
 
 
+
+
+TODO:
+* Tweak the Transcension, Ascension, and Idlers
+* Tweak Potential Challenge Goals
+* Tweak Logs
+* Tweak Achievements
+* Tweak the new Changes to Fury
+* Add Art
+* The Not Useless To-Do
+
+
+________________
+What to Add Pt. 5 - Several Fixes Necessary
+Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it easily readable to a programmer. Make all the names consistent, keep everything consistent, not too complicated.
+
+
+1. Fix Bugs - Go through all scripts to check for any logic errors too
+   1. Health and Fury should be rounded to 3 decimal places if it exceeds this
+   2. Re-word the pricing for premium
+   3. Should say ‘Logs - Table’ and ‘Logs - List’ on the the Lair tabs instead of just Table and List
+   4. Sub-Goals should be with checkboxes
+   5. The [] and [x] should instead be legit checkboxes if possible, or emojis.
+   6. The Bottom of Ascensions and Transcension screens should have the buttons Asc Sickness Reset / Respect all in one row
+   7. Surveys button on top right (morning/evening) - make them do something
+2. Quick Updates
+   1. Have the popups when a dragon needs to be summoned when first getting into the app, similar to when the dragon is dead
+   2. Remove the ‘yes/no’ question when asking to edit habits or to-do goals in the survey.
+   3. Add Dragon Embers to the Top of the Screen, Along with Souls, Etc.
+   4. Dragon Coins Should be a Coin Emoji/Image
+   5. Clicking the ‘Dragon’ or ‘Dragon Egg’
+   6. When a dragon isn’t spawned, it should show.
+   7. Coins should be up to 2 decimal places on display, currently it’s 0
+   8. Remove the Tap Button, Clicking the Dragon should reward coins. It should shrink when clicking, animating like a button
+   9. Decorate the Landing Screen to be more medieval, even, related to a medieval dragon theme.
+   10. Left of Shop should say “Type of Item” and then “Sort By”
+   11. “Scar Unlock” to “Scar Level Required” in Market
+   12. Have the Check As Default before the Edit in Lair
+   13. Instead of ‘c’ and ‘sh’ or short cuts for short-term letters (survey rewards, etc), it should show the full amount, or simply the corresponding emoji
+   14. “Generators/Day” or “Coin Production/Day”
+   15. Allow Scroll For: Survey Rewards, Habit Goal Editor Page in Lair, and generally all pages should have a scroll if it exceeds the bottom of the screen.
+   16. See the Lair Section: “Unlock for:” if it has this, have a lock next to the slightly grayed out section name, and you can unlock it by clicking on it, showing a popup to are you sure to unlock for __ coins? (Then, acts as a normal unlock button, if not enough coins show a popup saying there is not enough coins)
+   17. Fury should always show even when exceeding the 66% threshold. Fury Earned should be Fury 
+   18. Hade’s market should have everything in the same, default order. Also should be in 2 columns
+   19. Have the ‘Mood Options’ in the settings page be in multiple columns (maybe 4), and be boxes
+   20. Default Tab is “Dragon Snacks”, or the first tab of each page in the market (not the ‘all options’)
+   21. Default Sort in all Market is ‘By Scar Level Unlock’
+3. New: Add Fun Facts Question to Survey, and Add an Option to Reorder The Questions / Enable & Disable Functionality
+   1. Add a Setting on the top in “Survey Settings” to Reorder and enable/disable each question in the morning and night survey (this will be draggable flatlists in two columns, having a subtle secondary background.
+   2. See: New Default Survey Order
+      1. Morning Survey: Mood → Goals (Habits + To‑Dos) → Prompts → Trivia/Fun Facts → Journal → Quotes → Results 
+      2. Evening Survey: Mood → Goal Checks (Habits + To‑Dos) → Prompts → Trivia/Fun Facts → Journal → Quotes → Results 
+   3. Fix: Ensure the Enable and Disable Functionality works on the Options page, meaning that if it is not toggled the question won't show up. There are toggles for this in the 1) Sorting the Questions in the new reordering system and 2) the toggles next to the setting for the setting of each question. These do the same thing, and activate/deactivate when this same variable is updated
+   4. New: Up to 3 Quotes on one page. This can be edited in the survey quote question editor
+   5. New: Add Fun Facts To Survey.  Add 1000+ Fun facts to the survey in a fun fact data.ts, which appears in a question similar to quotes. There can be up to 3 Fun facts on one page. Remember that each question has its section in the survey options in the settings page, with the toggle beside it.
+   6. Also: Compact and Simplify the Survey Options Page where you can see fit, and make it easier to read.
+4. New: Better Organized Challenge Goals Layout + More Goal Changes
+   1. Fix: Fix the Draggable Flatlist on Expo when moving goals
+   2. Fix: Scrolling when editing goals
+   3. Fix: Make the goal editors more readable and organized and good looking while compact for a person. 
+   4. New: The Challenges should be a button saying “Activate Challenge Mode”, which shows the popup menu with all the 3, 7, 30, 60, 90, and 365 day challenges, with the cost, and then  the rewards (these are labeled with Cost:, and Reward:). When challenge Mode is Activated It’ll show Challenge Activated: (Progress or Days Remaining depending on type of goal), neatly into the interface, and the Reward on the right if completed. It’ll also show if failed, and the reward will be grayed out. 
+   5. New: All goals have rewards (see the Survey Section in Dragon Focus Text), which are shown on the right so put those there
+5. New: Add Universal Themes Provider
+   1. Add App-Wide Themes For Primary, Secondary, Tertiary, and Fourth Background Colors and then a Title, Header 1, Header 2, Subheader/Subtitle (For Italics), Normal Text, and Secondary Text in a Theme Provider and implement across the entire app landscape and every page. These are changed with different themes, so please account for this. 
+   2. Have a Theme Data which has a structure / images for all the theme related changes, making it easy to add new themes (includes all the, etc).
+   3. Also Have a Cosmetic Data that Controls all the cosmetics of the dragon, though the images are to be added. This includes the earth on the background of the main page.
+6. New: New Lair’s Entrance 
+   1. The First Page When Initially Entering the Lair
+   2. Here will lay the image of the dragon (in the same spot as the home page) but without the earth, and with a different background (tba), with “Gates” surrounding the dragon (in neat fashion, or maybe above/below the dragon) with Gate Placeholder.png, and the name of the page below. This is how you navigate the Lair pages, and there’s always a back button to go back (use arrow icon from expo icons, back to heart)
+   3. No Gates: Entrance (Tabs: None) 
+   4. Gates: Habit Goals (Tabs: Check / Edit), To-Do Goals (Tabs: Check/Edit), Logs (Tabs: Table / List), Stats & Achievements, Dragon Graveyard, Ascension, Transcension
+7. New: Update the Achievement/Stats page to have updated information from Dragon Focus App.txt (Remember the themes provider too)
+   1. Achievements for Completing Morning Survey / Night Survey Once, 5 Times, 10 Times, 30 Times, 60 Times, 90 Times, 180 Times, 365 Times, 1000 Times (Secret)
+   2. Achievements for Clicking the Dragon 4 Achievements)
+   3. Achievements related to Scar Levels (5 Achievements Scar Level 0-24 + 4 For the Scar Level 25-29 + 1 Secret For the Final Scar Level 30)
+   4. Achievements for Gaining __ - Do this for each Currency (6 For Coins, 4 For Shards, Souls, and Embers) (+2 Secret for Coins, 1 Secret For the Rest
+   5. More Achievements! (80+)
+8. New: Fix Memory Issues
+   1. Dragon Revive State, Coin Amounts, and Past Surveys (The data found in should be added to the Async Storage)
+9. Re-go through Dragon Focus App.txt to ensure everything lines up!
+   1. Make sure population is changed for each day
+   2. Make sure Health/Fury is Changed for each day
+   3. Look into these sections to make sure everything lines up.
+   4. Simulating a day should also account for effects
+   5. Each should account for taking/not taking surveys, shown in stats & currencies section
+   6. Create the full tutorial page, with 100% the information of the app. Dragon Focus App.txt can help with this
+   7. REVIEW THE NEWLY ADDED GENERATORS in the generator section and ensure they are added
+10. Fix More Issues
+   1. Fix potential Lag when filling survey
+   2. Maximize the space the editors take in the survey, to allow scrolling
+   3. You cannot checklist to-do goals nor surveys
+   4. You cannot scroll in goals or surveys sections
+________________
+What to Add Pt. 4 - Have a Great Simplification
+Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it easily readable to a programmer. Make all the names consistent, keep everything consistent, not too complicated.
+
+
+11. Quick Updates
+   1. Ascension Sickness now Lasts 3 Days by Default, Instead of 7.
+   2. Ascension Dragon Souls Earned and Transcending Embers Earned Have Been Changed - Notably how it resets your dragon souls every ascend, and embers don’t reset, and draconian multipliers are not respected either.
+   3. Have a Dragon Embers Provider, instead of having it in the transcension provider.
+12. Make Storage Much More Centralized. Some of these were added previously. Be Creative, and Maybe Change up how these goals are (for example, combine them to one list, or combine goals or surveys, or create even more data types). Here is a List of Datas. Also Have Async for a potential account feature to be added for the future.
+13. Fix previous bugs from past iterations, proving an ultimate, simplified app
 ________________
 What to Add Pt. 3 - Look Through Dragon Focus App.txt
 Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it easily readable to a programmer. Make all the names consistent, keep everything consistent, not too complicated.
@@ -13,9 +116,8 @@ Going through all the scripts, do the following tasks (go through every detail, 
    1. Add a 60 and 90 and 365 Day Challenge to To-Do and Habit Goals (Or Skip This)
    2. Dragon Invincibility no longer has an additional cost after scar level 5
    3. Ascension/Transcension: Ascending now requires 20 years, transcending requires 30 years. (details of transcension is below)
-   4. Morning Survey: Add a yes/no question before the habit edit question asking if you want to edit habits, it skips the habit question if you say no. Then, add a yes/no question before the to-do edit question asking if you want to edit to-do goals, it skips the to-do question if you say no. 
-   5. Goals: Modify The Default Habit and To-Do Goals
-   6. Goals: The Importance of a goal for habit and to-do goals no longer changes the border or background of the info box, and instead shows the importance level in different colored text, before the categories are listed.
+   4. Goals: Modify The Default Habit and To-Do Goals
+   5. Goals: The Importance of a goal for habit and to-do goals no longer changes the border or background of the info box, and instead shows the importance level in different colored text, before the categories are listed.
       1. Shown in Dragon Focus App.txt: Importance text In Varying Colors (Red for High Importance, Medium Importance, Yellow for Low Importance Grayish Black For Default/Not Important). 
       2. Also ensure the rest of Dragon Focus App.txt for the section of habit and to-do goals are all fully implemented for both morning and evening surveys.
 2. Modify The Following For Goals:
@@ -279,7 +381,8 @@ ________________
    * Center/Floor/Background: On the Center, is The Central Object (Default is the Earth). Above is Text With the Dragon’s Age. Below as animated flying around the central object, is the Dragon (When Resting, is on floor, when flying, flies around the central object. Note that the Central Object is in a layer above the dragon, and the text is above both.) The Spawn/Revive Button also is on top, if the dragon isn’t yet spawned, or if the dragon needs to be revived.
    * Bottom: Take / Retake The Day or Night Surveys. These are Stacked Left/Right
 * The Lair
-   * Contains Multiple Pages - Check the Lair Section for more Details (Habit Goals, To-Do Goals, Logs (Chart), Logs (Detailed) Achievements, Dragon Graveyard, and Ascension)
+   * Contains Multiple Pages - Check the Lair Section for more Details 
+   * SECTIONS: Entrance, Habit Goals, To-Do Goals, Logs (Chart), Logs (Detailed) Achievements, Dragon Graveyard, Ascension, and Transcension
 * The Market
    * The Market: The Market contains Snacks, Cosmetics, Idlers, Among Other Items
    * SECTIONS (Above): Market, Black Market. Black Market Has Purchases That Cost Dragon Shards, or To Buy Dragon Shards.
@@ -332,9 +435,10 @@ Morning Survey
 5. Write: Fill In Short Answer Prompts 
 6. Write: Create Extra Prompts For Evening
 7. Questions: Fill In Trivia Questions
-8. Write: Journal Entry
-9. Show a Quote
-10. Show the Results
+8. Show up to 3 Fun Facts
+9. Write: Journal Entry
+10. Show up to 3 Quotes
+11. Show the Results
 
 
 Evening Survey
@@ -346,9 +450,10 @@ Evening Survey
 4. Question: What To-Do Goals to Go Check?
 5. Write: Fill In Short Answer Prompts, and Extra Prompts (If Any)
 6. Questions: Fill In Trivia Questions
-7. Write: Journal Entry
-8. Show a Quote
-9. Show the Results
+7. Show up to 3 Fun Facts
+8. Write: Journal Entry
+9. Show up to 3 Quotes
+10. Show the Results
 
 
 ________________
@@ -426,7 +531,7 @@ Note: Some Features Are Not Unlocked Until they Are Unlocked in the “Productiv
       * You Can Sort The Goals by Categories, Importance, or Due Date (Earliest On Top). Challenge Goals Always Show Up On Top As Priority.
       * The Importance (In the Colored text beside the goal), Categories Flairs (Beside the Goal), Challenge Activated (Shown With Coins Potentially Earned) and Sub-Goals (Checklistable, Below the To-Do Goal, Indented, and in smaller text) are all Shown.
       * There will be a checkbox on the left to complete a day goal. Results Are Submitted when the Survey is Submitted, and it’ll appear grayed out if the completion date is the same as the current date
-      * Note: To-Do Goal Cannot be Checked until All Sub-Goals are Completed. (If Any, If Not It Can Be Checked Anyways) It’ll be Grayed Out if Otherwise. 
+      * Note: To-Do Goal Cannot be Checked until All Sub-Goals are Completed. These are all checkboxes (If Any, If Not It Can Be Checked Anyways) It’ll be Grayed Out if Otherwise. 
       * Note: To-Do Goal Cannot be Checked Until there are only 7 days before The Due Date.(It’ll show a popup notifying this if clicked before, and grayed out). If there is no due date, you must wait at least 1 day to complete the due date (Again. Showing the popup, and being grayed out). If the To-Do Goal is less than 1-Day long, or if it is due in less than seven days, you can automatically check it, but for a reward you must wait at least 1 hour after its creation. (This prevents cheating. It’ll show a popup warning that no rewards are earned)
       * Rewards are Shown in the Survey Rewards Section.
 5. Write: Short Answer Prompts 
@@ -437,16 +542,21 @@ Note: Some Features Are Not Unlocked Until they Are Unlocked in the “Productiv
    1. Description: Create Extra Prompts for the Evening (Up to 3, depending on section)
    2. Note: Can’t continue to next Question until 10+ characters typed
    3. Note: These Prompts will show up in the evening survey of the same day as additional short answer prompts, requiring 25+ characters.
-7. Trivia Questions: Multiple Choice Questions
+7. Show up to 3 Fun Facts
+   1. Description: The Fun Facts Will Be Split into Categories (General, Pop Culture / Art / Music / Sports, History, Geography, Science, etc).
+   2. Note: Number of Fun Facts can Be Changed In Settings (0 to 3, 0 Will Skip This)
+   3. Topics: General, Pop Culture / Art / Music / Sports, History, Geography, Science, etc
+8. Trivia Questions: Multiple Choice Questions
    1. Description: Multiple Choice Questions of Various Topics that Earn Rewards (Up to 3, Depending on Section)
    2. Note: Can’t continue to next Question until submitted and results are shown (green for correct answer chosen, red if incorrect answer is chosen, and green for the correct answer)
    3. Topics: General, Pop Culture / Art / Music / Sports, History, Geography, Science, etc
-8. Write: Journal Entry
+9. Write: Journal Entry
    1. Description: An Entry to put in the Journal
-9. Show a Quote
+10. Show up to 3 Quotes
    1. Description: The Quotes Will Be Split into Categories (All Are From Famous People, Or if Unknown From an Unknown Source)
-   2. Topics: Motivational, Advice, Fun Fact, Comedic
-10. Show the Results
+   2. Note: Number of Quotes can Be Changed In Settings (0 to 3, 0 Will Skip This)
+   3. Topics: Motivational, Advice, Comedic
+11. Show the Results
 
 
 ________________
@@ -858,12 +968,16 @@ Survey Settings (Second)
 There will be Settings in the surveys for what you want and do not want in the surveys.
 
 
-Toggle: Give Survey Advice? (Unlock for 15 Coins)
+First: Edit Survey Order
+* Allows you to edit the order of the survey in two columns (one for morning in one for night)in draggable flatlists and boxes!
+* Each box has the name of the question,and to the very right a toggle of whether to toggle this question (only questions with ‘toggle’ are toggable
+* Below this, will be a setting for each question, which also has this same toggle to the right of the specified question.
+Toggle: Give Survey Advice? 
 * In this Section, you can add Custom Advice in a ‘Custom Category’, or Check the “Random’ Category (Only One Category).
 * This shows up at the start of the survey
-Toggle: Ask a Mood Question? (Unlock for 15 Coins)
+Toggle: Ask a Mood Question?
 * In this Section, you can add custom emoji and mood, and the amount of fury earned/lost (max +8, min -8)
-Toggle: Give Goal Advice? (Unlock for 15 Coins)
+Toggle: Give Goal Advice? 
 * In this Section, you can add Custom Advice in a ‘Custom Category’, or Check the “Random’ Category (Only One Category).
 * This shows up at as a subheader to habit and to-do goals
 Habit AND To-Do Goals Unlocks (Applies for Both Morning/Evening Surveys)
@@ -871,7 +985,7 @@ Habit AND To-Do Goals Unlocks (Applies for Both Morning/Evening Surveys)
 * Unlock Importance (Unlock for 10 Coins)
 * Unlock Custom Categories (Unlock for 5 Coins) - You’ll be able to add Custom Categories
 * Unlock Challenges (Unlock for 20 Coins)
-Toggle: Enable Journal (Unlock for 30 Coins)
+Toggle: Enable Journal
 * Unlock Journal, Where You Can Write Any Size Prompt. Choose Between Morning, Evening, Both, None.
 * Unlocking the Journal Allows For Unlocking Short Answers and Trivia
 Slider/Edit Categories/Add Custom Category Short Answer Prompts (Unlock for 10 Coins)
@@ -879,14 +993,15 @@ Slider/Edit Categories/Add Custom Category Short Answer Prompts (Unlock for 10 C
 * For Each Short Answer Prompt, You Can:
    * Have a Random Short Answer Based on Category(s) (Default)
    * Have ‘Custom’ Categories That Randomizes the Prompt Based on Those Typed Below (Unlock for 5 Coins)
-Slider: Custom Short Answer Prompts For Evening Survey (Unlock for 10 Coins)
+Slider: Custom Short Answer Prompts For Evening Survey
 * For this Section, you can have 0 to Up to 3 Custom-Made Short Answer Prompts. (Slider)
 * You fill in a Custom Prompt for the Morning Survey, and Answer them in the Evening Survey
-Edit: Trivia Questions (Unlock for 10 Coins)
+Edit: Trivia Questions
 * For this Section, you can have 0 to Up to 3 Trivia Questions
 * For Each Trivia Question, You Can:
    * Have a Random Trivia Question Based on Categories (Default)
-Toggle: Show a Quote? (Unlock for 15 Coins)
+Toggle: Show a Quote?
+* For this Section, you can have 0 to Up to 3 Quotes. 
 * In this Section, you can add Custom Quotes in a ‘Custom Category’, or Check the Categories.
 Misc Settings
 * Dragon Invincibility - Make Dragon Invincible (So to not have regret when not using app) (Requires Scar Level 5+)
@@ -1161,6 +1276,9 @@ Currencies
 * Dragon Souls
    * A Currency That is Gotten Through Ascension
    * Ascension - You Can Earn +(All Coins Earned during Ascension^0.75) Dragon Souls / Ascension
+* Dragon Embers
+   * A Currency That is Gotten Through Transcension
+   * Transcension - You Can Earn +(Dragon Souls Earned Total)^0.5, gained after transcending
 Dragon Stats / Other Stats
 * Streak
    * Every day you fill out a survey, a streak will go up. If broken, the streak resets to 0.
@@ -1586,6 +1704,7 @@ ________________
 
 The Dragon Pact
 Premium Costs & Account
+There is a page dedicated to your account, and for premium
 
 
 ________________
@@ -1619,6 +1738,11 @@ The Header Switches Through the Following Pages
 ________________
 
 
+Lair’s Entrance (Already Unlocked)
+* The First Page When Initially Entering the Lair
+* Here will lay the image of the dragon (in the same spot as the home page) but without the earth, and with a different background (tba), with “Gates” surrounding the dragon (in neat fashion, or maybe above/below the dragon) with Gate Placeholder.png, and the name of the page below. This is how you navigate the Lair pages, and there’s always a back button to go back (use arrow icon from expo icons, back to heart)
+* No Gates: Entrance (Tabs: None) 
+* Gates: Habit Goals (Tabs: Check / Edit), To-Do Goals (Tabs: Check/Edit), Logs (Tabs: Table / List), Stats & Achievements, Dragon Graveyard, Ascension, Transcension
 Check/Edit Habit Goals (Already Unlocked)
 * View Habit Goals in Survey, Edit them with a top-right edit button leading the habit editor/adder. 
 * When habits are checked, you can press a submit button which pops up. When clicked, the habits are checked and submitted (like the survey) and the rewards are shown.
@@ -1650,9 +1774,10 @@ Ascension (Scar Level 4+, Unlock For 50 Coins)
 * Also Once you ascend, you must wait until you no longer have the ‘Ascension Sickness’ Effect to ascend again.
 * This will reset all your coins, coin generators (to 0), and dragon clickers (to 0), and convert all coins earned to dragon souls.
    * +(All Coins Earned during Ascension^0.75) Dragon Souls.
+   * Each Ascension Resets the Dragon Souls to (0), and Auto-Sells All The Soul Relics & Prophets, without any reward. This means ascending is recommended when you earn more dragon souls, then your currency has or has spent.
    * Each Ascension Resets the Coins Earned During Ascension.
 * Ascensions will add 1 million people to the population, and does not reset the current population counter
-* It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 7 days (each ascend, +1 days are added. So for the 8th ascension, this would be 14 days since there were 6 previous ascensions).
+* It will apply an ‘Ascension Sickness’ Effect to the dragon, causing it to lose 15 HP/day for 3 days (each ascend, +1 days are added. So for the 8th ascension, this would be 10 days since there were 7 previous ascensions).
 * The Ascension Page will contain the dragon-heart.png in images, and then a button to ascend (which will show the requirements below, in a checklist format). The button is grayed out if you can’t ascend. Above the Ascension Button will the the # of Dragon Souls in text (Similar to the Age of dragon in the main page)
 * The Bottom of the Ascension Page Has a “Soul Convertor”, Where every time the button is clicked, Dragon Souls are converted to 1 Dragon Shard. It starts off with requiring 1 Dragon Souls, and this cost multiplies by 1.02* For Every Click, Rounded Down (This Never Resets, Unless all User Data is Cleared)
 * The Bottom of the Ascension Page Also Has a “Shop Resetor”, Where every time the button is clicked, The Snack Section of the Shop has the Costs Reset to Defaults. You Can Only Reset the Shop Once Per Ascension. It starts off with requiring 1000 Dragon Souls, and 100 Dragon Shards, Dragon Soul Costs multiplies by 1000* For Every Reset (Dragon Shards Cost Remains 100)
@@ -1660,9 +1785,10 @@ Ascension (Scar Level 4+, Unlock For 50 Coins)
 Transcension (Scar Level 8+, Unlock for 100 Coins)
 * Transcending Ritual - your dragon must be at least a Juvenile (30 Days old), and you must be at least Scar Level 8. 
 * Transcending also Requires 1 Billion * 10^(Min(Transcension Count, 20)) People have been killed in that Transcension. Transcending itself has no costs, but has a warning that you are about to transcend.
-   * Dragon Ember is Earned by +(Dragon Souls Earned Total)^0.5, gained after transcending
-   * Each Transcensions do not reset the souls earned total, meaning
-   * Every Dragon Ember you Earn Permanently Increases Max Fury By (How Many You Earned) 
+   * Dragon Ember is Earned by +(Dragon Souls Earned All Time)^0.5, gained after transcending
+   * Each Transcension does not reset the “Dragon Souls Earned All Time”, Meaning Earning A few Dragon Souls After 1 Transcension Won’t Earn it Again.
+   * Transcending does not respec draconian multipliers.
+* Every Dragon Ember you Earn Permanently Increases Max Fury By (How Many You Earned) 
 * Transcending gives the "Transcension Fury X” Effect, dramatically increasing the dragon’s fury by 50 for 7 days 
 * Transcending also gives the lesser “Transcension Fury I” Effect, increasing the dragon’s fury by 5 for 30 additional days 
 * The Bottom of the Transcension Page Has a “Reset Ascension Sickness Time”, Where you Can reset the Ascension Sickness Time Back to 7. You can only do this once a transcension (and cannot be done before first transcension), and is Unlocked with a one-time 50 Ember Cost, and costs 500 Dragon Shards to Click the Button (Of course has warning)
@@ -1674,6 +1800,40 @@ ________________
 
 
 
+List of Data
+List of Data
+This Section Will List all the Data Needed to be Added To App, if not already added
+
+
+________________
+
+
+Survey - Quotes & Prompts & Advice & Suggested Goals
+Generate These with AI and put in a Data Script
+
+
+1. 100+ Survey Advice
+2. 100+ Habit/To-Do Goal Advice
+3. 200+ Quotes For Each Topic
+4. 1000+ Random Fun Facts
+5. 100+ Short Answer Prompts For Each Topic
+6. 100+ Suggested To-Do Goals For Each Goal Category
+7. 100+ Suggested Habit Goals For Each Goal Category
+
+
+________________
+
+
+Achievements
+Achievements Reward Coins, Extra Fire XP, and Some Reward Dragon Shards, Which are all shown. Put these in a data script.
+Secret Achievements Earn Even More of All 3 These Rewards 
+
+
+* Achievements for Completing Morning Survey / Night Survey Once, 5 Times, 10 Times, 30 Times, 60 Times, 90 Times, 180 Times, 365 Times, 1000 Times (Secret)
+* Achievements for Clicking the Dragon 4 Achievements)
+* Achievements related to Scar Levels (5 Achievements Scar Level 0-24 + 4 For the Scar Level 25-29 + 1 Secret For the Final Scar Level 30)
+* Achievements for Gaining __ - Do this for each Currency (6 For Coins, 4 For Shards, Souls, and Embers) (+2 Secret for Coins, 1 Secret For the Rest
+* More Achievements! (80+)
 Marketing Posts
 The Reddit Post:
 

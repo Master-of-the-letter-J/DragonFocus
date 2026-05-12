@@ -1,9 +1,10 @@
 import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
 import React, { createContext, ReactNode, useContext } from 'react';
+import { useDragonOrbs } from './DragonOrbsProvider';
 
 interface DragonShardsContextType {
 	shards: number;
-	addShards: (amount: number) => void;
+	addShards: (amount: number, options?: { grantOrbs?: boolean }) => void;
 	spendShards: (amount: number) => boolean;
 	getShards: () => number;
 	resetShards?: () => void;
@@ -13,8 +14,12 @@ const DragonShardsContext = createContext<DragonShardsContextType | undefined>(u
 
 export function DragonShardsProvider({ children }: { children: ReactNode }) {
 	const { state: shards, setState: setShards } = usePersistedState(APP_STORAGE_KEYS.dragonShards, 0);
+	const orbs = useDragonOrbs();
 
-	const addShards = (amount: number) => {
+	const addShards = (amount: number, options: { grantOrbs?: boolean } = {}) => {
+		if (amount > 0 && options.grantOrbs !== false) {
+			orbs.earnOrbs(amount * 2, 'shards');
+		}
 		setShards(prev => Math.max(0, prev + amount));
 	};
 

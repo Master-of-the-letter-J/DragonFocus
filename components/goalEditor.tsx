@@ -413,31 +413,34 @@ const styles = StyleSheet.create({
 		backgroundColor: '#fff',
 	},
 	formContent: {
-		padding: 16,
+		padding: 12,
+		paddingBottom: 20,
 	},
 	title: {
-		fontSize: 22,
-		fontWeight: 'bold',
-		marginBottom: 20,
+		fontSize: 18,
+		fontWeight: '800',
+		marginBottom: 10,
 	},
 	label: {
-		fontSize: 16,
-		fontWeight: '600',
-		marginTop: 16,
-		marginBottom: 8,
+		fontSize: 12,
+		fontWeight: '800',
+		color: '#374151',
+		marginTop: 10,
+		marginBottom: 5,
 	},
 	infoText: {
-		fontSize: 13,
-		lineHeight: 20,
+		fontSize: 12,
+		lineHeight: 17,
 		color: '#4B5563',
-		marginBottom: 10,
+		marginBottom: 6,
 	},
 	input: {
 		borderWidth: 1,
 		borderColor: '#D1D5DB',
-		borderRadius: 10,
-		padding: 12,
-		fontSize: 16,
+		borderRadius: 8,
+		paddingVertical: 8,
+		paddingHorizontal: 10,
+		fontSize: 14,
 		backgroundColor: '#fff',
 	},
 	flexInput: {
@@ -446,11 +449,11 @@ const styles = StyleSheet.create({
 	buttonGroup: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
-		gap: 8,
+		gap: 6,
 	},
 	segmentButton: {
-		paddingVertical: 8,
-		paddingHorizontal: 12,
+		paddingVertical: 6,
+		paddingHorizontal: 10,
 		borderRadius: 8,
 		borderWidth: 1,
 		borderColor: '#D1D5DB',
@@ -461,15 +464,15 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F9FAFB',
 	},
 	segmentText: {
-		fontSize: 14,
+		fontSize: 12,
 		color: '#666',
 	},
 	segmentTextActive: {
 		fontWeight: '700',
 	},
 	tagButton: {
-		paddingVertical: 7,
-		paddingHorizontal: 10,
+		paddingVertical: 5,
+		paddingHorizontal: 9,
 		borderRadius: 999,
 		borderWidth: 1,
 		borderColor: '#D1D5DB',
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#E0F2FE',
 	},
 	tagText: {
-		fontSize: 13,
+		fontSize: 12,
 		color: '#4B5563',
 	},
 	tagTextActive: {
@@ -488,7 +491,7 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 	},
 	challengeGrid: {
-		gap: 8,
+		gap: 6,
 	},
 	challengeHeaderRow: {
 		flexDirection: 'row',
@@ -496,9 +499,9 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	infoButton: {
-		width: 28,
-		height: 28,
-		borderRadius: 14,
+		width: 24,
+		height: 24,
+		borderRadius: 12,
 		alignItems: 'center',
 		justifyContent: 'center',
 		backgroundColor: '#111827',
@@ -510,8 +513,8 @@ const styles = StyleSheet.create({
 	challengeButton: {
 		borderWidth: 1,
 		borderColor: '#D1D5DB',
-		borderRadius: 12,
-		padding: 12,
+		borderRadius: 8,
+		padding: 8,
 		backgroundColor: '#fff',
 	},
 	challengeButtonActive: {
@@ -519,7 +522,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#EFF6FF',
 	},
 	challengeTitle: {
-		fontSize: 14,
+		fontSize: 12,
 		fontWeight: '800',
 		color: '#111827',
 	},
@@ -527,18 +530,18 @@ const styles = StyleSheet.create({
 		color: '#1D4ED8',
 	},
 	challengeMeta: {
-		fontSize: 12,
+		fontSize: 11,
 		color: '#6B7280',
-		marginTop: 4,
+		marginTop: 2,
 	},
 	challengeMetaActive: {
 		color: '#1E40AF',
 	},
 	seeMoreButton: {
 		alignSelf: 'flex-start',
-		paddingVertical: 8,
-		paddingHorizontal: 12,
-		borderRadius: 10,
+		paddingVertical: 6,
+		paddingHorizontal: 10,
+		borderRadius: 8,
 		backgroundColor: '#F3F4F6',
 	},
 	seeMoreText: {
@@ -547,16 +550,16 @@ const styles = StyleSheet.create({
 	},
 	inlineRow: {
 		flexDirection: 'row',
-		gap: 8,
-		marginTop: 8,
-		marginBottom: 12,
+		gap: 6,
+		marginTop: 6,
+		marginBottom: 8,
 	},
 	inlineButton: {
 		flex: 0,
 		paddingHorizontal: 16,
 	},
 	subGoalCard: {
-		paddingVertical: 10,
+		paddingVertical: 6,
 		borderBottomWidth: 1,
 		borderBottomColor: '#E5E7EB',
 	},
@@ -565,16 +568,16 @@ const styles = StyleSheet.create({
 	},
 	subGoalActions: {
 		flexDirection: 'row',
-		gap: 16,
-		marginBottom: 8,
+		gap: 12,
+		marginBottom: 4,
 	},
 	subGoalInput: {
 		borderWidth: 1,
 		borderColor: 'transparent',
 		borderRadius: 8,
-		paddingVertical: 8,
-		paddingHorizontal: 10,
-		fontSize: 15,
+		paddingVertical: 6,
+		paddingHorizontal: 8,
+		fontSize: 13,
 		color: '#111827',
 		backgroundColor: '#fff',
 	},
@@ -599,13 +602,13 @@ const styles = StyleSheet.create({
 	},
 	footerButtons: {
 		flexDirection: 'row',
-		gap: 12,
-		marginTop: 20,
+		gap: 8,
+		marginTop: 12,
 	},
 	button: {
 		flex: 1,
-		paddingVertical: 12,
-		borderRadius: 10,
+		paddingVertical: 9,
+		borderRadius: 8,
 		alignItems: 'center',
 	},
 	buttonSuccess: {
@@ -618,7 +621,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#6B7280',
 	},
 	buttonText: {
-		fontSize: 14,
+		fontSize: 13,
 		fontWeight: '700',
 	},
 	buttonTextLight: {

@@ -18,7 +18,7 @@ import { useResultsSection, type SurveyResultsData } from '../(survey)/surveySec
 import { sectionStyles } from '../(survey)/surveySections/sectionStyles';
 
 export default function HabitGoalsPage() {
-	const [mode, setMode] = useState<'edit' | 'complete'>('edit');
+  const [mode, setMode] = useState<'edit' | 'complete'>('complete');
 	const [results, setResults] = useState<SurveyResultsData | null>(null);
 	const goals = useGoals();
 	const survey = useSurvey();
@@ -119,8 +119,8 @@ export default function HabitGoalsPage() {
 	return (
 		<View style={{ flex: 1 }}>
 			<View style={styles.modeRow}>
-				<ModeButton label="Edit" selected={mode === 'edit'} onPress={() => setMode('edit')} />
-				<ModeButton label="Complete" selected={mode === 'complete'} onPress={() => setMode('complete')} />
+          <ModeButton label="Check" selected={mode === 'complete'} onPress={() => setMode('complete')} />
+          <ModeButton label="Edit" selected={mode === 'edit'} onPress={() => setMode('edit')} />
 			</View>
 
 			{mode === 'edit' ? editSection.section.render() : fillSection.section.render()}

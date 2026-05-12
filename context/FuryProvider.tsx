@@ -23,20 +23,21 @@ export function FuryProvider({ children }: { children: ReactNode }) {
 	const [maxFuryBonus, setMaxFuryBonusState] = useState(0);
 
 	const maxFury = 100 + Math.max(0, maxFuryBonus);
+	const absoluteFuryLimit = maxFury * 2;
 
 	const addFury = (amount: number) => {
-		setFuryMeter(prev => roundToDecimalPlaces(Math.max(0, Math.min(maxFury, prev + amount)), 3));
+		setFuryMeter(prev => roundToDecimalPlaces(Math.max(0, Math.min(absoluteFuryLimit, prev + amount)), 3));
 	};
 
 	const setFury = (value: number) => {
-		setFuryMeter(roundToDecimalPlaces(Math.max(0, Math.min(maxFury, value)), 3));
+		setFuryMeter(roundToDecimalPlaces(Math.max(0, Math.min(absoluteFuryLimit, value)), 3));
 	};
 
 	const resetFury = () => setFuryMeter(50);
 	const setMaxFuryBonus = (bonus: number) => {
 		const nextBonus = Math.max(0, Math.floor(bonus));
 		setMaxFuryBonusState(nextBonus);
-		setFuryMeter(prev => roundToDecimalPlaces(Math.max(0, Math.min(100 + nextBonus, prev)), 3));
+		setFuryMeter(prev => roundToDecimalPlaces(Math.max(0, Math.min((100 + nextBonus) * 2, prev)), 3));
 	};
 	const getMaxFury = () => maxFury;
 

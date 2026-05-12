@@ -12,6 +12,7 @@ interface ItemSnacksContextType {
 	useSnack: (id: string) => boolean;
 	getSnackCoinCost: (id: string) => number;
 	getSnackShardCost: (id: string) => number;
+	getSnackOrbCost: (id: string) => number;
 	getSurveyCompletionBonus: (surveyCoins: number, baseShards?: number, currentScarLevel?: number) => SurveyCompletionBonus;
 	grantRandomUnlockedSnacks: (count: number, currentScarLevel?: number) => string[];
 	getEffectDisplayList: () => EffectDisplayEntry[];
@@ -35,6 +36,7 @@ export function ItemSnacksProvider({ children }: { children: ReactNode }) {
 			useSnack: items.useItem,
 			getSnackCoinCost: items.getItemCoinCost,
 			getSnackShardCost: items.getItemShardCost,
+			getSnackOrbCost: items.getItemOrbCost,
 			getSurveyCompletionBonus: items.getSurveyCompletionBonus,
 			grantRandomUnlockedSnacks: items.grantRandomUnlockedSnacks,
 			getEffectDisplayList: items.getEffectDisplayList,

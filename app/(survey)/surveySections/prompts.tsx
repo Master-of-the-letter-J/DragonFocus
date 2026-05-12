@@ -75,7 +75,7 @@ export function useShortAnswersSection({
 	const { questionSettings: contextSettings } = useQuestions();
 	const survey = useSurvey();
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const resolvedEnable = enablePrompts ?? survey.options.enableProjectQuestion ?? true;
+	const resolvedEnable = enablePrompts ?? true;
 	const resolvedRandomCount =
 		randomPromptCount ??
 		(surveyType === 'morning'

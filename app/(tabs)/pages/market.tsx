@@ -1,27 +1,32 @@
 import { Text, View } from '@/components/Themed';
 import TopHeader from '@/components/TopHeader';
 import { formatAbbreviatedNumber, formatCoinNumber } from '@/constants/number-abbreviation';
-import { BLACK_MARKET_COIN_BUNDLES, BLACK_MARKET_SHARD_BUNDLES } from '@/data/black-market-data';
+import { BLACK_MARKET_COIN_BUNDLES, BLACK_MARKET_ORB_BUNDLES, BLACK_MARKET_SHARD_BUNDLES } from '@/data/black-market-data';
+import { useDragonAttacks } from '@/context/DragonAttacksProvider';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragonEmbers } from '@/context/DragonEmbersProvider';
+import { useDragonOrbs } from '@/context/DragonOrbsProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { useItemStyle } from '@/context/ItemStyleProvider';
+import { usePopulation } from '@/context/PopulationProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
+import { useTheme } from '@/context/ThemeProvider';
 import { useToast } from '@/context/ToastProvider';
 import { useTranscension } from '@/context/TranscensionProvider';
 import React, { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
 
-type MarketMode = 'market' | 'blackMarket' | 'hadesMarket';
+type MarketMode = 'market' | 'dragonAttacks' | 'blackMarket' | 'hadesMarket';
 type MarketFilter = 'all' | 'snack' | 'generator' | 'cosmetic' | 'clicker' | 'theme';
 type HadesFilter = 'all' | 'soulProphets' | 'emberMultipliers';
 type SortMode = 'scar' | 'priceHigh' | 'priceLow';
 
-const formatMarketCost = (coinCost: number, shardCost: number, soulCost: number) => {
+const formatMarketCost = (coinCost: number, shardCost: number, soulCost: number, orbCost = 0) => {
 	const costParts: string[] = [];
+	if (orbCost > 0) costParts.push(`${formatAbbreviatedNumber(orbCost)} Orbs`);
 	if (coinCost > 0) costParts.push(`🪙 ${formatCoinNumber(coinCost)}`);
 	if (shardCost > 0) costParts.push(`💎 ${formatAbbreviatedNumber(shardCost)}`);
 	if (soulCost > 0) costParts.push(`🔮 ${formatAbbreviatedNumber(soulCost)}`);
@@ -32,17 +37,22 @@ export default function MarketPage() {
 	const itemEconomy = useItemEconomy();
 	const itemSnacks = useItemSnacks();
 	const itemStyle = useItemStyle();
+	const attacks = useDragonAttacks();
 	const coins = useDragonCoins();
 	const embers = useDragonEmbers();
+	const orbs = useDragonOrbs();
 	const shards = useShards();
 	const souls = useDragonSouls();
+	const population = usePopulation();
 	const scarLevel = useScarLevel();
 	const transcension = useTranscension();
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	const { showToast } = useToast();
 
 	const [marketMode, setMarketMode] = useState<MarketMode>('market');
 	const [filterType, setFilterType] = useState<MarketFilter>('snack');
-	const [hadesFilter, setHadesFilter] = useState<HadesFilter>('all');
+	const [hadesFilter, setHadesFilter] = useState<HadesFilter>('soulProphets');
 	const [sortMode, setSortMode] = useState<SortMode>('scar');
 
 	type MarketEntry =
@@ -54,7 +64,7 @@ export default function MarketPage() {
 		| (typeof itemStyle.themeItems)[number];
 
 	const totalPriceMetric = (itemId: string) => {
-		return itemEconomy.getItemCoinCost(itemId) + itemEconomy.getItemShardCost(itemId) * 250 + itemEconomy.getItemSoulCost(itemId) * 1000;
+		return itemEconomy.getItemCoinCost(itemId) + itemEconomy.getItemOrbCost(itemId) * 500 + itemEconomy.getItemShardCost(itemId) * 250 + itemEconomy.getItemSoulCost(itemId) * 1000;
 	};
 
 	const marketItems = useMemo(
@@ -122,10 +132,12 @@ export default function MarketPage() {
 
 		const coinCost = itemEconomy.getItemCoinCost(item.id);
 		const shardCost = itemEconomy.getItemShardCost(item.id);
+		const orbCost = itemEconomy.getItemOrbCost(item.id);
 		const soulCost = itemEconomy.getItemSoulCost(item.id);
 		const missingParts: string[] = [];
 
 		if (coins.getCoins() < coinCost) missingParts.push(`${formatAbbreviatedNumber(coinCost - coins.getCoins())} coins`);
+		if (orbs.getOrbs() < orbCost) missingParts.push(`${formatAbbreviatedNumber(Math.max(0, orbCost - orbs.getOrbs()), 1000)} orbs`);
 		if (shards.getShards() < shardCost) missingParts.push(`${formatAbbreviatedNumber(Math.max(0, shardCost - shards.getShards()))} shards`);
 		if (souls.getSouls() < soulCost) missingParts.push(`${formatAbbreviatedNumber(Math.max(0, soulCost - souls.getSouls()))} souls`);
 
@@ -157,10 +169,38 @@ export default function MarketPage() {
 			return;
 		}
 
-		coins.addCoins(bundle.coinReward);
+		const instantCoinReward = Math.max(0, itemEconomy.getTotalGeneratorProductionPerDay() * bundle.instantCoinDays);
+		const totalCoinReward = bundle.coinReward + instantCoinReward;
+		coins.addCoins(totalCoinReward);
 		showToast({
 			title: 'Black Market Deal',
-			message: `Spent ${formatAbbreviatedNumber(bundle.shardCost)} shards for ${formatAbbreviatedNumber(bundle.coinReward)} coins.`,
+			message: `Spent ${formatAbbreviatedNumber(bundle.shardCost)} shards for ${formatAbbreviatedNumber(totalCoinReward)} coins.`,
+			backgroundColor: '#F0FDF4',
+			textColor: '#166534',
+			shadowColor: '#15803D',
+			shadowAmount: 18,
+		});
+	};
+
+	const handleBlackMarketOrbTrade = (bundle: (typeof BLACK_MARKET_ORB_BUNDLES)[number]) => {
+		if (!shards.spendShards(bundle.shardCost)) {
+			showToast({
+				title: 'Not Enough Shards',
+				message: `Need ${formatAbbreviatedNumber(bundle.shardCost)} shards to buy this orb bundle.`,
+				backgroundColor: '#FEF2F2',
+				textColor: '#991B1B',
+				shadowColor: '#DC2626',
+				shadowAmount: 18,
+			});
+			return;
+		}
+
+		const deathBonus = Math.max(0, (population.deathCount || 0) / bundle.deathCountDivisor);
+		const totalOrbReward = bundle.orbReward + deathBonus;
+		orbs.earnOrbs(totalOrbReward, 'other');
+		showToast({
+			title: 'Black Market Deal',
+			message: `Spent ${formatAbbreviatedNumber(bundle.shardCost)} shards for ${formatAbbreviatedNumber(totalOrbReward, 1000)} Dragon Orbs.`,
 			backgroundColor: '#F0FDF4',
 			textColor: '#166534',
 			shadowColor: '#15803D',
@@ -173,12 +213,14 @@ export default function MarketPage() {
 		const isLocked = item.scarLevelRequired ? scarLevel.currentScarLevel < item.scarLevelRequired : false;
 		const coinCost = itemEconomy.getItemCoinCost(item.id);
 		const shardCost = itemEconomy.getItemShardCost(item.id);
+		const orbCost = itemEconomy.getItemOrbCost(item.id);
 		const soulCost = itemEconomy.getItemSoulCost(item.id);
 		const unitProduction = item.type === 'generator' ? itemEconomy.getGeneratorProductionPerDay(item.id) : 0;
 		const canUse = item.type === 'snack' && owned > 0 && !isLocked;
 		const canSell = (item.type === 'generator' || item.type === 'clicker' || item.type === 'soulMultiplier') && owned > 0 && !isLocked;
 		const singlePurchaseOwned = isSinglePurchaseItem(item) && owned > 0;
-		const buyLabel = singlePurchaseOwned ? 'Owned' : 'Buy';
+		const needsSoulSummon = item.type === 'soulMultiplier' && !itemEconomy.isSoulMultiplierSummoned(item.id);
+		const buyLabel = singlePurchaseOwned ? 'Owned' : needsSoulSummon ? 'Summon' : 'Buy';
 		const buyDisabled = isLocked || singlePurchaseOwned;
 
 		return (
@@ -188,12 +230,12 @@ export default function MarketPage() {
 				{!!item.description ? <Text style={styles.itemDesc}>{item.description}</Text> : null}
 				{item.type === 'generator' ? <Text style={styles.itemDesc}>Production: {unitProduction.toFixed(2)}/day each | {formatAbbreviatedNumber(unitProduction * owned)}/day total</Text> : null}
 				{item.type === 'clicker' ? <Text style={styles.itemDesc}>Owned clicker upgrades: {formatAbbreviatedNumber(owned)}</Text> : null}
-				{item.type === 'soulMultiplier' ? <Text style={styles.itemDesc}>Owned soul prophets/relics: {formatAbbreviatedNumber(owned)}</Text> : null}
+				{item.type === 'soulMultiplier' ? <Text style={styles.itemDesc}>{needsSoulSummon ? 'Summon this prophet before upgrades apply.' : `Owned soul prophet/relic upgrades: ${formatAbbreviatedNumber(owned)}`}</Text> : null}
 				{singlePurchaseOwned ? <Text style={styles.itemDesc}>Owned permanently.</Text> : null}
 
 				<View style={styles.priceRow}>
 					<Text style={styles.priceText}>Cost</Text>
-					<Text style={styles.priceValue}>{formatMarketCost(coinCost, shardCost, soulCost)}</Text>
+					<Text style={styles.priceValue}>{formatMarketCost(coinCost, shardCost, soulCost, orbCost)}</Text>
 				</View>
 
 				<View style={styles.actions}>
@@ -217,6 +259,7 @@ export default function MarketPage() {
 					<View style={styles.summaryGrid}>
 						<SummaryCard label="Coins" value={`🪙 ${formatCoinNumber(coins.getCoins())}`} />
 						<SummaryCard label="Shards" value={formatAbbreviatedNumber(shards.getShards())} />
+						<SummaryCard label="Orbs" value={formatAbbreviatedNumber(orbs.getOrbs(), 1000)} accent={theme.colors.success} />
 						<SummaryCard label="Souls" value={formatAbbreviatedNumber(souls.getSouls())} accent="rgb(153, 102, 204)" />
 						<SummaryCard label="Coin Production/Day" value={formatAbbreviatedNumber(itemEconomy.getTotalGeneratorProductionPerDay())} />
 					</View>
@@ -257,6 +300,13 @@ export default function MarketPage() {
 
 	const renderBlackMarketMode = () => (
 		<ScrollView contentContainerStyle={styles.scrollContent}>
+			<View style={styles.summaryGrid}>
+				<SummaryCard label="Coins" value={formatCoinNumber(coins.getCoins())} />
+				<SummaryCard label="Shards" value={formatAbbreviatedNumber(shards.getShards())} />
+				<SummaryCard label="Orbs" value={formatAbbreviatedNumber(orbs.getOrbs(), 1000)} accent={theme.colors.success} />
+				<SummaryCard label="Total Death Count" value={formatAbbreviatedNumber(population.deathCount || 0, 1000)} accent={theme.colors.danger} />
+			</View>
+
 			<Text style={styles.sectionTitle}>Shard for Coin Deals</Text>
 			{BLACK_MARKET_COIN_BUNDLES.map(bundle => (
 				<View key={bundle.id} style={styles.featureCard}>
@@ -264,12 +314,33 @@ export default function MarketPage() {
 						<Text style={styles.featureTitle}>{formatAbbreviatedNumber(bundle.shardCost)} Shards</Text>
 						{bundle.label ? <Text style={styles.featureBadge}>{bundle.label}</Text> : null}
 					</View>
-					<Text style={styles.itemDesc}>{formatAbbreviatedNumber(bundle.coinReward)} Coins</Text>
+					<Text style={styles.itemDesc}>
+						{formatAbbreviatedNumber(bundle.coinReward)} Coins + {formatAbbreviatedNumber(bundle.instantCoinDays)} Day{bundle.instantCoinDays === 1 ? '' : 's'} of Coins Instantly
+					</Text>
 					<View style={styles.actions}>
 						<ActionButton label="Trade Shards" variant="buy" onPress={() => handleBlackMarketCoinTrade(bundle)} />
 					</View>
 				</View>
 			))}
+
+			<Text style={styles.sectionTitle}>Shard for Orb Deals</Text>
+			{BLACK_MARKET_ORB_BUNDLES.map(bundle => {
+				const deathBonus = Math.max(0, (population.deathCount || 0) / bundle.deathCountDivisor);
+				return (
+					<View key={bundle.id} style={styles.featureCard}>
+						<View style={styles.featureHeader}>
+							<Text style={styles.featureTitle}>{formatAbbreviatedNumber(bundle.shardCost)} Shards</Text>
+							{bundle.label ? <Text style={styles.featureBadge}>{bundle.label}</Text> : null}
+						</View>
+						<Text style={styles.itemDesc}>
+							{formatAbbreviatedNumber(bundle.orbReward, 1000)} Orbs + {formatAbbreviatedNumber(deathBonus, 1000)} from Total Death Count
+						</Text>
+						<View style={styles.actions}>
+							<ActionButton label="Trade Shards" variant="buy" onPress={() => handleBlackMarketOrbTrade(bundle)} />
+						</View>
+					</View>
+				);
+			})}
 
 			<Text style={styles.sectionTitle}>Premium Shard Packs</Text>
 			{BLACK_MARKET_SHARD_BUNDLES.map(bundle => (
@@ -400,6 +471,81 @@ export default function MarketPage() {
 		);
 	};
 
+	const renderDragonAttacksMode = () => (
+		<ScrollView contentContainerStyle={styles.scrollContent}>
+			<View style={styles.summaryGrid}>
+				<SummaryCard label="Dragon Orbs" value={formatAbbreviatedNumber(orbs.getOrbs(), 1000)} accent={theme.colors.success} />
+				<SummaryCard label="Damage" value={formatAbbreviatedNumber(attacks.rates.damage, 1000)} />
+				<SummaryCard label="Population/Day" value={formatAbbreviatedNumber(attacks.rates.populationDestroyedPerDay, 1000)} />
+				<SummaryCard label="Orbs/Day" value={formatAbbreviatedNumber(attacks.rates.orbsPerDay, 1000)} accent={theme.colors.success} />
+				<SummaryCard label="Legion Damage/Day" value={formatAbbreviatedNumber(attacks.rates.legionsDestroyedPerDay, 1000)} />
+				<SummaryCard label="Dragon HP Loss/Day" value={formatAbbreviatedNumber(attacks.rates.healthDeclinePerDay, 1000)} accent={theme.colors.danger} />
+			</View>
+
+			<Text style={styles.marketNote}>
+				Dragon Orbs are a harder secondary currency. Earning Dragon Shards grants 2 Orbs per shard, and destruction grants 0.001 Orbs per population, 0.1 per tank, and 1 per aircraft.
+			</Text>
+
+			<Text style={styles.sectionTitle}>Dragon Damage Upgrades</Text>
+			<View style={styles.twoColumnGrid}>
+				{attacks.upgradeDefinitions.map(upgrade => {
+					const level = attacks.getUpgradeLevel(upgrade.id);
+					const coinCost = attacks.getUpgradeCoinCost(upgrade.id);
+					const orbCost = attacks.getUpgradeOrbCost(upgrade.id);
+					const maxed = upgrade.maxLevel !== undefined && level >= upgrade.maxLevel;
+					return (
+						<View key={upgrade.id} style={[styles.featureCard, styles.twoColumnCell]}>
+							<View style={styles.featureHeader}>
+								<Text style={styles.featureTitle}>{upgrade.name}</Text>
+								<Text style={styles.featureBadge}>Level {formatAbbreviatedNumber(level)}</Text>
+							</View>
+							<Text style={styles.itemDesc}>{upgrade.description}</Text>
+							<Text style={styles.priceValue}>Cost: {maxed ? 'Maxed' : formatMarketCost(coinCost, 0, 0, orbCost)}</Text>
+							<View style={styles.actions}>
+								<ActionButton
+									label={maxed ? 'Maxed' : 'Buy Upgrade'}
+									variant="buy"
+									disabled={maxed}
+									onPress={() => {
+										const result = attacks.purchaseUpgrade(upgrade.id);
+										if (!result.success) Alert.alert('Purchase blocked', result.message ?? 'Unable to buy this dragon attack upgrade.');
+									}}
+								/>
+							</View>
+						</View>
+					);
+				})}
+			</View>
+
+			<Text style={styles.sectionTitle}>Dragon Abilities</Text>
+			<View style={styles.twoColumnGrid}>
+				{attacks.abilityDefinitions.map(ability => {
+					const remaining = attacks.getAbilityRemainingSeconds(ability.id);
+					return (
+						<View key={ability.id} style={[styles.featureCard, styles.twoColumnCell]}>
+							<View style={styles.featureHeader}>
+								<Text style={styles.featureTitle}>{ability.name}</Text>
+								<Text style={styles.featureBadge}>{formatAbbreviatedNumber(ability.orbCost)} Orbs</Text>
+							</View>
+							<Text style={styles.itemDesc}>{ability.description}</Text>
+							{remaining > 0 ? <Text style={styles.priceValue}>Active: {Math.ceil(remaining / 60)}m left</Text> : null}
+							<View style={styles.actions}>
+								<ActionButton
+									label={remaining > 0 && ability.durationSeconds ? 'Extend' : 'Use Ability'}
+									variant="use"
+									onPress={() => {
+										const result = attacks.activateAbility(ability.id);
+										if (!result.success) Alert.alert('Ability blocked', result.message ?? 'Unable to use this dragon ability.');
+									}}
+								/>
+							</View>
+						</View>
+					);
+				})}
+			</View>
+		</ScrollView>
+	);
+
 	return (
 		<View style={styles.container}>
 			<TopHeader isHomePage={false} />
@@ -408,12 +554,14 @@ export default function MarketPage() {
 				<Text style={styles.title}>Market</Text>
 				<View style={styles.topTabs}>
 					<FilterPill label="Market" selected={marketMode === 'market'} onPress={() => setMarketMode('market')} />
+					<FilterPill label="Dragon's Attacks" selected={marketMode === 'dragonAttacks'} onPress={() => setMarketMode('dragonAttacks')} />
 					<FilterPill label="Hade's Market" selected={marketMode === 'hadesMarket'} onPress={() => setMarketMode('hadesMarket')} />
 					<FilterPill label="Black Market" selected={marketMode === 'blackMarket'} onPress={() => setMarketMode('blackMarket')} />
 				</View>
 			</View>
 
 			{marketMode === 'market' ? renderMarketMode() : null}
+			{marketMode === 'dragonAttacks' ? renderDragonAttacksMode() : null}
 			{marketMode === 'blackMarket' ? renderBlackMarketMode() : null}
 			{marketMode === 'hadesMarket' ? renderHadesMarketMode() : null}
 		</View>
@@ -421,6 +569,8 @@ export default function MarketPage() {
 }
 
 function SummaryCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<View style={styles.summaryCard}>
 			<Text style={styles.summaryLabel}>{label}</Text>
@@ -430,6 +580,8 @@ function SummaryCard({ label, value, accent }: { label: string; value: string; a
 }
 
 function FilterPill({ label, selected, onPress, compact = false }: { label: string; selected: boolean; onPress: () => void; compact?: boolean }) {
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<Pressable style={[styles.filterButton, compact ? styles.filterButtonCompact : null, selected && styles.filterActive]} onPress={onPress}>
 			<Text style={[styles.filterText, selected && styles.filterTextActive]}>{label}</Text>
@@ -438,6 +590,8 @@ function FilterPill({ label, selected, onPress, compact = false }: { label: stri
 }
 
 function ActionButton({ label, onPress, variant, disabled = false }: { label: string; onPress: () => void; variant: 'buy' | 'use' | 'sell'; disabled?: boolean }) {
+	const theme = useTheme();
+	const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<Pressable style={[styles.actionButton, variant === 'buy' ? styles.buyButton : variant === 'use' ? styles.useButton : styles.sellButton, disabled ? styles.actionDisabled : null]} onPress={onPress} disabled={disabled}>
 			<Text style={styles.actionButtonText}>{label}</Text>
@@ -445,46 +599,46 @@ function ActionButton({ label, onPress, variant, disabled = false }: { label: st
 	);
 }
 
-const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#fff' },
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+	container: { flex: 1, backgroundColor: colors.background },
 	pageHeader: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
-	title: { fontSize: 24, fontWeight: '800', marginBottom: 12 },
+	title: { fontSize: 24, fontWeight: '800', marginBottom: 12, color: colors.titleText },
 	topTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 	summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10, marginBottom: 12 },
-	summaryCard: { width: '47%', backgroundColor: '#F5F7FB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-	summaryLabel: { fontSize: 12, color: '#6B7280', fontWeight: '600' },
-	summaryValue: { fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 4 },
+	summaryCard: { width: '47%', backgroundColor: colors.secondaryBackground, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border },
+	summaryLabel: { fontSize: 12, color: colors.secondaryText, fontWeight: '600' },
+	summaryValue: { fontSize: 20, fontWeight: '800', color: colors.titleText, marginTop: 4 },
 	sortRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, marginBottom: 10 },
-	controlLabel: { paddingHorizontal: 12, marginBottom: 6, fontSize: 12, fontWeight: '800', color: '#374151' },
-	filterButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#fff' },
+	controlLabel: { paddingHorizontal: 12, marginBottom: 6, fontSize: 12, fontWeight: '800', color: colors.headerText },
+	filterButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.secondaryBackground },
 	filterButtonCompact: { paddingVertical: 7, paddingHorizontal: 10 },
-	filterActive: { backgroundColor: '#166534', borderColor: '#166534' },
-	filterText: { fontSize: 12, fontWeight: '700', color: '#4B5563' },
-	filterTextActive: { color: '#fff' },
+	filterActive: { backgroundColor: colors.buttonBackground, borderColor: colors.buttonBackground },
+	filterText: { fontSize: 12, fontWeight: '700', color: colors.text },
+	filterTextActive: { color: colors.buttonText },
 	list: { paddingBottom: 36, paddingHorizontal: 4 },
-	card: { flex: 1, margin: 8, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#fff' },
-	cardLocked: { opacity: 0.7, backgroundColor: '#F9FAFB' },
-	itemName: { fontSize: 16, fontWeight: '800', color: '#111827' },
-	lockBadge: { fontSize: 11, color: '#7C3AED', marginTop: 4, fontWeight: '700' },
-	itemDesc: { fontSize: 12, color: '#4B5563', marginTop: 8, lineHeight: 18 },
-	priceRow: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-	priceText: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
-	priceValue: { fontSize: 13, fontWeight: '700', color: '#111827', marginTop: 4 },
+	card: { flex: 1, margin: 8, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.secondaryBackground },
+	cardLocked: { opacity: 0.7, backgroundColor: colors.tertiaryBackground },
+	itemName: { fontSize: 16, fontWeight: '800', color: colors.titleText },
+	lockBadge: { fontSize: 11, color: colors.tint, marginTop: 4, fontWeight: '700' },
+	itemDesc: { fontSize: 12, color: colors.text, marginTop: 8, lineHeight: 18 },
+	priceRow: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+	priceText: { fontSize: 11, fontWeight: '700', color: colors.secondaryText },
+	priceValue: { fontSize: 13, fontWeight: '700', color: colors.headerText, marginTop: 4 },
 	actions: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
 	actionButton: { borderRadius: 10, paddingVertical: 9, paddingHorizontal: 12, alignItems: 'center' },
-	buyButton: { backgroundColor: '#15803D' },
-	useButton: { backgroundColor: '#2563EB' },
-	sellButton: { backgroundColor: '#7C3AED' },
-	actionDisabled: { backgroundColor: '#D1D5DB' },
-	actionButtonText: { color: '#fff', fontWeight: '800' },
-	marketNote: { fontSize: 12, color: '#6B7280', lineHeight: 18, paddingHorizontal: 12, marginBottom: 12 },
-	footerNote: { fontSize: 12, color: '#6B7280', lineHeight: 18, paddingHorizontal: 12, paddingTop: 8 },
+	buyButton: { backgroundColor: colors.success },
+	useButton: { backgroundColor: colors.info },
+	sellButton: { backgroundColor: colors.tint },
+	actionDisabled: { backgroundColor: colors.border },
+	actionButtonText: { color: colors.buttonText, fontWeight: '800' },
+	marketNote: { fontSize: 12, color: colors.secondaryText, lineHeight: 18, paddingHorizontal: 12, marginBottom: 12 },
+	footerNote: { fontSize: 12, color: colors.secondaryText, lineHeight: 18, paddingHorizontal: 12, paddingTop: 8 },
 	scrollContent: { paddingHorizontal: 12, paddingBottom: 36 },
-	sectionTitle: { fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 8, marginBottom: 12 },
-	featureCard: { borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#fff', padding: 14, marginBottom: 12 },
+	sectionTitle: { fontSize: 20, fontWeight: '800', color: colors.titleText, marginTop: 8, marginBottom: 12 },
+	featureCard: { borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.secondaryBackground, padding: 14, marginBottom: 12 },
 	featureHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, alignItems: 'center' },
-	featureTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: '#111827' },
-	featureBadge: { fontSize: 11, fontWeight: '800', color: '#92400E', backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+	featureTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.titleText },
+	featureBadge: { fontSize: 11, fontWeight: '800', color: colors.headerText, backgroundColor: colors.tertiaryBackground, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
 	twoColumnGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 0 },
 	twoColumnCell: { width: '50%' },
 });

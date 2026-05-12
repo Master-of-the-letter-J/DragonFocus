@@ -16,7 +16,9 @@ interface ItemEconomyContextType {
 	getClickReward: () => number;
 	getItemCoinCost: (id: string) => number;
 	getItemShardCost: (id: string) => number;
+	getItemOrbCost: (id: string) => number;
 	getItemSoulCost: (id: string) => number;
+	isSoulMultiplierSummoned: (id: string) => boolean;
 	getOwnedTotalByType: ReturnType<typeof useItemCore>['getOwnedTotalByType'];
 	getGeneratorProductionPerDay: (id: string) => number;
 	getTotalGeneratorProductionPerDay: () => number;
@@ -49,7 +51,9 @@ export function ItemEconomyProvider({ children }: { children: ReactNode }) {
 			getClickReward: items.getClickReward,
 			getItemCoinCost: items.getItemCoinCost,
 			getItemShardCost: items.getItemShardCost,
+			getItemOrbCost: items.getItemOrbCost,
 			getItemSoulCost: items.getItemSoulCost,
+			isSoulMultiplierSummoned: items.isSoulMultiplierSummoned,
 			getOwnedTotalByType: items.getOwnedTotalByType,
 			getGeneratorProductionPerDay: items.getGeneratorProductionPerDay,
 			getTotalGeneratorProductionPerDay: items.getTotalGeneratorProductionPerDay,

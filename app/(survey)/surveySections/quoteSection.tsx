@@ -2,13 +2,13 @@
 import { QUOTES, type Quote } from '@/data/quotes-data';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
-import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
 
 export interface QuoteSectionState {
 	quoteIndex: number | null;
+	quoteIndices: number[];
 }
 
 export type QuoteSectionSetState = React.Dispatch<React.SetStateAction<QuoteSectionState>>;
@@ -22,15 +22,23 @@ export interface UseQuoteSectionParams {
 }
 
 const pickRandomIndex = (len: number) => (len > 0 ? Math.floor(Math.random() * len) : null);
+const pickRandomIndices = (len: number, count: number) => {
+	const indices = Array.from({ length: len }, (_, index) => index);
+	for (let i = indices.length - 1; i > 0; i -= 1) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[indices[i], indices[j]] = [indices[j], indices[i]];
+	}
+	return indices.slice(0, Math.min(count, len));
+};
 
 export function useQuoteSection({ surveyType, questionSettings, enableQuote, showInMorning, currentScarLevel }: UseQuoteSectionParams): SectionHookResult<QuoteSectionState> {
 	const { questionSettings: contextSettings } = useQuestions();
-	const survey = useSurvey();
 	const scarLevel = useScarLevel();
 	const resolvedSettings = questionSettings ?? contextSettings;
-	const resolvedEnable = enableQuote ?? survey.options.showQuote ?? true;
-	const resolvedShowInMorning = showInMorning ?? survey.options.quoteMorning ?? true;
+	const resolvedEnable = enableQuote ?? true;
+	const resolvedShowInMorning = showInMorning ?? true;
 	const resolvedScar = currentScarLevel ?? scarLevel.currentScarLevel ?? 0;
+	const quoteCount = Math.min(3, Math.max(1, surveyType === 'morning' ? resolvedSettings.quotes.morningCount : resolvedSettings.quotes.nightCount));
 
 	const allowedTypes = useMemo(() => {
 		return Object.entries(resolvedSettings.quotes.types)
@@ -46,24 +54,33 @@ export function useQuoteSection({ surveyType, questionSettings, enableQuote, sho
 	}, [allowedTypes, resolvedSettings.quotes.enabled]);
 
 	const isEnabled = resolvedEnable && resolvedSettings.quotes.enabled && (surveyType !== 'morning' || resolvedShowInMorning) && resolvedScar >= 1 && pool.length > 0;
-	const [state, setState] = useState<QuoteSectionState>({ quoteIndex: null });
+	const [state, setState] = useState<QuoteSectionState>({ quoteIndex: null, quoteIndices: [] });
 
 	useEffect(() => {
 		if (!isEnabled) return;
-		if ((state.quoteIndex === null || state.quoteIndex >= pool.length) && pool.length > 0) {
-			setState(prev => ({ ...prev, quoteIndex: pickRandomIndex(pool.length) }));
+		const validIndices = state.quoteIndices.length === quoteCount && state.quoteIndices.every(index => index < pool.length);
+		if (!validIndices && pool.length > 0) {
+			const quoteIndices = pickRandomIndices(pool.length, quoteCount);
+			setState(prev => ({ ...prev, quoteIndex: quoteIndices[0] ?? pickRandomIndex(pool.length), quoteIndices }));
 		}
-	}, [isEnabled, pool.length, state.quoteIndex]);
+	}, [isEnabled, pool.length, quoteCount, state.quoteIndices]);
+
+	const quotes = useMemo(() => {
+		const indices = state.quoteIndices.length > 0 ? state.quoteIndices : state.quoteIndex !== null ? [state.quoteIndex] : [];
+		return indices.map(index => pool[index]).filter(Boolean);
+	}, [pool, state.quoteIndex, state.quoteIndices]);
 
 	const render = useCallback(() => {
 		return (
 			<View>
 				<Text style={sectionStyles.question}>Dragon Exhales...</Text>
-				{state.quoteIndex !== null && pool[state.quoteIndex] ? (
+				{quotes.length > 0 ? (
 					<>
-						<Text selectable={false} style={[sectionStyles.adviceText, { fontStyle: 'italic', marginBottom: 12 }]}>
-							"{pool[state.quoteIndex].text}{pool[state.quoteIndex].author ? ` — ${pool[state.quoteIndex].author}` : ''}"
-						</Text>
+						{quotes.map((quote, index) => (
+							<Text key={`${quote.text}-${index}`} selectable={false} style={[sectionStyles.adviceText, { fontStyle: 'italic', marginBottom: 12 }]}>
+								"{quote.text}{quote.author ? ` - ${quote.author}` : ''}"
+							</Text>
+						))}
 						<Text selectable={false} style={sectionStyles.adviceLabel}>
 							— Words of wisdom
 						</Text>
@@ -73,7 +90,7 @@ export function useQuoteSection({ surveyType, questionSettings, enableQuote, sho
 				)}
 			</View>
 		);
-	}, [pool, state.quoteIndex]);
+	}, [quotes]);
 
 	return {
 		section: {
@@ -86,10 +103,14 @@ export function useQuoteSection({ surveyType, questionSettings, enableQuote, sho
 		},
 		state,
 		setState,
-		saveState: () => ({ quoteIndex: state.quoteIndex }),
+		saveState: () => ({ quoteIndex: state.quoteIndex, quoteIndices: state.quoteIndices }),
 		restoreState: data => {
 			if (!data) return;
-			setState(prev => ({ ...prev, quoteIndex: typeof data.quoteIndex === 'number' ? data.quoteIndex : prev.quoteIndex }));
+			setState(prev => ({
+				...prev,
+				quoteIndex: typeof data.quoteIndex === 'number' ? data.quoteIndex : prev.quoteIndex,
+				quoteIndices: Array.isArray(data.quoteIndices) ? data.quoteIndices : prev.quoteIndices,
+			}));
 		},
 	};
 }

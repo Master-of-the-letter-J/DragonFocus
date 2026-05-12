@@ -2,6 +2,7 @@ import { Text, View } from '@/components/Themed';
 import { getHabitCompletionReward } from '@/data/goal-reward-utils';
 import { GOAL_CHALLENGE_TIERS, getGoalRewardWarning, getHabitCompletionStreak, getImportanceMeta, getGoalCategories, isGoalChallengeActive, isHabitScheduledOnDate } from '@/data/goal-utils';
 import { useGoals, type HabitGoal } from '@/context/GoalsProvider';
+import { useQuestions } from '@/context/QuestionProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import Checkbox from 'expo-checkbox';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -20,6 +21,7 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 	getCompletionSnapshot: () => { updatedHabits: HabitGoal[]; completedHabitIds: string[] };
 } {
 	const goals = useGoals();
+	const questions = useQuestions();
 	const survey = useSurvey();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 	const isRefill = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
@@ -90,51 +92,52 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 											hasActiveChallenge ? sectionStyles.challengeRow : null,
 											isCompleted ? sectionStyles.habitCompleted : null,
 											isLockedByRefill ? { opacity: 0.55 } : null,
-											{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 										]}>
-										<View style={{ flex: 1 }}>
-											<Text selectable={false} style={sectionStyles.habitTitle}>
-												{habit.title}
-											</Text>
-											<View style={sectionStyles.metaRow}>
-												<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>
-													{importanceMeta.label}
+										<View style={sectionStyles.goalMainRow}>
+											<View style={sectionStyles.goalTextColumn}>
+												<Text selectable={false} style={sectionStyles.habitTitle}>
+													{habit.title}
 												</Text>
-												{categories.map(category => (
-													<View key={`${habit.id}-${category}`} style={sectionStyles.categoryChip}>
-														<Text selectable={false} style={sectionStyles.categoryChipText}>
-															{category}
-														</Text>
+												<View style={sectionStyles.metaRow}>
+													<View style={[sectionStyles.importanceChip, { borderColor: importanceMeta.color }]}>
+														<Text selectable={false} style={[sectionStyles.importanceText, { color: importanceMeta.color }]}>{importanceMeta.shortLabel}</Text>
 													</View>
-												))}
+													{categories.map(category => (
+														<View key={`${habit.id}-${category}`} style={sectionStyles.categoryChip}>
+															<Text selectable={false} style={sectionStyles.categoryChipText}>
+																{category}
+															</Text>
+														</View>
+													))}
+												</View>
+												<Text selectable={false} style={sectionStyles.habitMeta}>
+													Goal Streak {habit.streak ?? 0} | Normal reward {normalReward.coins} coins
+												</Text>
+												{hasActiveChallenge && habit.challengeLength && (
+													<Text selectable={false} style={{ fontSize: 11, color: '#1565C0', marginTop: 4 }}>
+														Challenge Streak {habit.streak ?? 0}/{habit.challengeLength}
+														{challengeTier ? ` | Reward ${challengeTier.rewardCoins} coins | ${challengeTier.rewardShards} shards` : ''}
+													</Text>
+												)}
+												{rewardWarning && !hasActiveChallenge ? <Text style={sectionStyles.warningText}>{rewardWarning}</Text> : null}
+												{isLockedByRefill && (
+													<Text selectable={false} style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>
+														Already rewarded earlier today. Refill mode keeps this goal locked.
+													</Text>
+												)}
 											</View>
-											<Text selectable={false} style={sectionStyles.habitMeta}>
-												Goal Streak {habit.streak ?? 0} | Normal reward {normalReward.coins} coins
-											</Text>
-											{hasActiveChallenge && habit.challengeLength && (
-												<Text selectable={false} style={{ fontSize: 12, color: '#1565C0', marginTop: 6 }}>
-													Challenge Streak {habit.streak ?? 0}/{habit.challengeLength}
-													{challengeTier ? ` | Reward ${challengeTier.rewardCoins} coins | ${challengeTier.rewardShards} shards` : ''}
-												</Text>
-											)}
-											{rewardWarning && !hasActiveChallenge ? <Text style={sectionStyles.warningText}>{rewardWarning}</Text> : null}
-											{isLockedByRefill && (
-												<Text selectable={false} style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>
-													Already rewarded earlier today. Refill mode keeps this goal locked.
-												</Text>
-											)}
-										</View>
 
-										<Checkbox
-											disabled={isLockedByRefill}
-											value={isCompleted}
-											onValueChange={value => {
-												if (value && rewardWarning && !hasActiveChallenge) {
-													Alert.alert('No normal reward yet', rewardWarning);
-												}
-												setState(prev => ({ ...prev, checked: { ...prev.checked, [habit.id]: value } }));
-											}}
-										/>
+											<Checkbox
+												disabled={isLockedByRefill}
+												value={isCompleted}
+												onValueChange={value => {
+													if (value && rewardWarning && !hasActiveChallenge) {
+														Alert.alert('No normal reward yet', rewardWarning);
+													}
+													setState(prev => ({ ...prev, checked: { ...prev.checked, [habit.id]: value } }));
+												}}
+											/>
+										</View>
 									</View>
 
 									{missedStreak && !isCompleted && !isLockedByRefill && (
@@ -163,7 +166,7 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 		section: {
 			key: 'habitFill',
 			label: 'Day Goals',
-			isEnabled: true,
+			isEnabled: questions.questionSettings.habitGoals.enabled,
 			isNextEnabled: true,
 			enableNext: null,
 			render,

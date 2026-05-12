@@ -2,11 +2,14 @@ import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
 import { GOAL_CATEGORY_OPTIONS, normalizeGoalCategories, normalizeGoalCategory } from '@/data/goal-utils';
 import React, { ReactNode, createContext, useContext } from 'react';
 
-export type QuestionType = 'advice' | 'quotes' | 'mood' | 'habitGoals' | 'todoGoals' | 'prompts' | 'trivia' | 'journalEntry';
+export type QuestionType = 'advice' | 'quotes' | 'mood' | 'habitGoals' | 'todoGoals' | 'prompts' | 'trivia' | 'funFacts' | 'journalEntry';
+export type SurveyQuestionKey = QuestionType;
+export type SurveyOrderType = 'morning' | 'night';
 export type PromptTarget = 'morning' | 'night' | 'both';
 export type JournalPlacement = 'morning' | 'night' | 'both' | 'none';
 export type PromptCategoryKey = 'SelfDiscovery' | 'Reflection' | 'Gratitude' | 'Creative' | 'Mindfulness' | 'Productivity' | 'Relationships';
 export type TriviaCategoryKey = 'General' | 'PopCulture' | 'History' | 'Science' | 'Geography' | 'Sports' | 'LiteratureArts' | 'Food';
+export type FunFactCategoryKey = 'nature' | 'space' | 'history' | 'science' | 'language' | 'culture' | 'technology' | 'biology';
 
 export interface CustomEmotion {
 	id: string;
@@ -35,6 +38,8 @@ export interface QuestionSettings {
 	};
 	quotes: {
 		enabled: boolean;
+		morningCount: number;
+		nightCount: number;
 		types: {
 			inspirational: boolean;
 			witty: boolean;
@@ -61,20 +66,34 @@ export interface QuestionSettings {
 		customPrompts: CustomPrompt[];
 	};
 	trivia: {
+		enabled: boolean;
 		morningCount: number;
 		nightCount: number;
 		types: Record<TriviaCategoryKey, boolean>;
 	};
+	funFacts: {
+		enabled: boolean;
+		morningCount: number;
+		nightCount: number;
+		types: Record<FunFactCategoryKey, boolean>;
+	};
 	journalEntry: {
+		enabled: boolean;
 		setting: JournalPlacement;
 		template: string;
 	};
+	morningOrder: SurveyQuestionKey[];
+	nightOrder: SurveyQuestionKey[];
 }
 
 interface QuestionContextType {
 	questionSettings: QuestionSettings;
+	setQuestionEnabled: (question: QuestionType, enabled: boolean) => void;
+	setSurveyQuestionOrder: (surveyType: SurveyOrderType, order: SurveyQuestionKey[]) => void;
+	moveSurveyQuestion: (surveyType: SurveyOrderType, fromIndex: number, toIndex: number) => void;
 	updateAdviceSettings: (types: { inspirational: boolean; witty: boolean; philosophical: boolean }) => void;
 	updateQuotesSettings: (types: { inspirational: boolean; witty: boolean; philosophical: boolean }) => void;
+	setQuoteCount: (morning: number, night: number) => void;
 	toggleMood: (enabled: boolean) => void;
 	addCustomEmotion: (emotion: CustomEmotion) => void;
 	removeCustomEmotion: (id: string) => void;
@@ -90,6 +109,8 @@ interface QuestionContextType {
 	togglePromptCategory: (category: string) => void;
 	toggleTriviaCategory: (category: string) => void;
 	setTriviaCount: (morning: number, night: number) => void;
+	updateFunFactsSettings: (types: Record<FunFactCategoryKey, boolean>) => void;
+	setFunFactCount: (morning: number, night: number) => void;
 	setJournalEntry: (setting: JournalPlacement, template: string) => void;
 }
 
@@ -118,6 +139,30 @@ export const TRIVIA_CATEGORY_OPTIONS: Array<{ key: TriviaCategoryKey; label: str
 	{ key: 'LiteratureArts', label: 'Literature / Arts' },
 	{ key: 'Food', label: 'Food' },
 ];
+export const FUN_FACT_CATEGORY_OPTIONS: Array<{ key: FunFactCategoryKey; label: string }> = [
+	{ key: 'nature', label: 'Nature' },
+	{ key: 'space', label: 'Space' },
+	{ key: 'history', label: 'History' },
+	{ key: 'science', label: 'Science' },
+	{ key: 'language', label: 'Language' },
+	{ key: 'culture', label: 'Culture' },
+	{ key: 'technology', label: 'Technology' },
+	{ key: 'biology', label: 'Biology' },
+];
+export const SURVEY_QUESTION_OPTIONS: Array<{ key: SurveyQuestionKey; label: string; morningLabel?: string; nightLabel?: string }> = [
+	{ key: 'mood', label: 'Mood' },
+	{ key: 'habitGoals', label: 'Habit Goals', morningLabel: 'Goals: Habits', nightLabel: 'Goal Checks: Habits' },
+	{ key: 'todoGoals', label: 'To-Do Goals', morningLabel: 'Goals: To-Dos', nightLabel: 'Goal Checks: To-Dos' },
+	{ key: 'prompts', label: 'Prompts' },
+	{ key: 'trivia', label: 'Trivia' },
+	{ key: 'funFacts', label: 'Fun Facts' },
+	{ key: 'journalEntry', label: 'Journal' },
+	{ key: 'quotes', label: 'Quotes' },
+	{ key: 'advice', label: 'Advice' },
+];
+
+const DEFAULT_MORNING_ORDER: SurveyQuestionKey[] = ['mood', 'habitGoals', 'todoGoals', 'prompts', 'trivia', 'funFacts', 'journalEntry', 'quotes', 'advice'];
+const DEFAULT_NIGHT_ORDER: SurveyQuestionKey[] = ['mood', 'habitGoals', 'todoGoals', 'prompts', 'trivia', 'funFacts', 'journalEntry', 'quotes', 'advice'];
 
 export const DEFAULT_EMOTIONS: CustomEmotion[] = [
 	{ id: '1', emoji: '😭', description: 'Devastated', furyChange: 8, custom: false },
@@ -136,7 +181,7 @@ export const DEFAULT_EMOTIONS: CustomEmotion[] = [
 
 const DEFAULT_SETTINGS: QuestionSettings = {
 	advice: {
-		enabled: true,
+		enabled: false,
 		types: {
 			inspirational: true,
 			witty: true,
@@ -145,6 +190,8 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 	},
 	quotes: {
 		enabled: true,
+		morningCount: 1,
+		nightCount: 1,
 		types: {
 			inspirational: true,
 			witty: true,
@@ -187,6 +234,7 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 		],
 	},
 	trivia: {
+		enabled: true,
 		morningCount: 1,
 		nightCount: 1,
 		types: {
@@ -200,10 +248,28 @@ const DEFAULT_SETTINGS: QuestionSettings = {
 			Food: true,
 		},
 	},
+	funFacts: {
+		enabled: true,
+		morningCount: 1,
+		nightCount: 1,
+		types: {
+			nature: true,
+			space: true,
+			history: true,
+			science: true,
+			language: true,
+			culture: true,
+			technology: true,
+			biology: true,
+		},
+	},
 	journalEntry: {
+		enabled: true,
 		setting: 'both',
 		template: '',
 	},
+	morningOrder: DEFAULT_MORNING_ORDER,
+	nightOrder: DEFAULT_NIGHT_ORDER,
 };
 
 const createDefaultSettings = (): QuestionSettings => ({
@@ -213,6 +279,8 @@ const createDefaultSettings = (): QuestionSettings => ({
 	},
 	quotes: {
 		enabled: DEFAULT_SETTINGS.quotes.enabled,
+		morningCount: DEFAULT_SETTINGS.quotes.morningCount,
+		nightCount: DEFAULT_SETTINGS.quotes.nightCount,
 		types: { ...DEFAULT_SETTINGS.quotes.types },
 	},
 	mood: {
@@ -235,14 +303,24 @@ const createDefaultSettings = (): QuestionSettings => ({
 		customPrompts: [...DEFAULT_SETTINGS.prompts.customPrompts],
 	},
 	trivia: {
+		enabled: DEFAULT_SETTINGS.trivia.enabled,
 		morningCount: DEFAULT_SETTINGS.trivia.morningCount,
 		nightCount: DEFAULT_SETTINGS.trivia.nightCount,
 		types: { ...DEFAULT_SETTINGS.trivia.types },
 	},
+	funFacts: {
+		enabled: DEFAULT_SETTINGS.funFacts.enabled,
+		morningCount: DEFAULT_SETTINGS.funFacts.morningCount,
+		nightCount: DEFAULT_SETTINGS.funFacts.nightCount,
+		types: { ...DEFAULT_SETTINGS.funFacts.types },
+	},
 	journalEntry: {
+		enabled: DEFAULT_SETTINGS.journalEntry.enabled,
 		setting: DEFAULT_SETTINGS.journalEntry.setting,
 		template: DEFAULT_SETTINGS.journalEntry.template,
 	},
+	morningOrder: [...DEFAULT_MORNING_ORDER],
+	nightOrder: [...DEFAULT_NIGHT_ORDER],
 });
 
 const normalizeStoredCategoryList = (categories: string[] | undefined, fallbackCategories: string[]) => {
@@ -253,6 +331,13 @@ const normalizeStoredCategoryList = (categories: string[] | undefined, fallbackC
 const normalizeCustomCategoryList = (categories: string[] | undefined) => normalizeGoalCategories(categories);
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const normalizeSurveyOrder = (order: SurveyQuestionKey[] | undefined, fallback: SurveyQuestionKey[]) => {
+	const validKeys = new Set(SURVEY_QUESTION_OPTIONS.map(option => option.key));
+	const seen = new Set<string>();
+	const normalized = Array.isArray(order) ? order.filter((key): key is SurveyQuestionKey => validKeys.has(key) && !seen.has(key) && !!seen.add(key)) : [];
+	return [...normalized, ...fallback.filter(key => !seen.has(key))];
+};
 
 const normalizeQuestionSettings = (storedSettings?: Partial<QuestionSettings> | null): QuestionSettings => {
 	const defaults = createDefaultSettings();
@@ -268,6 +353,8 @@ const normalizeQuestionSettings = (storedSettings?: Partial<QuestionSettings> | 
 		},
 		quotes: {
 			enabled: storedSettings.quotes?.enabled ?? defaults.quotes.enabled,
+			morningCount: clamp(storedSettings.quotes?.morningCount ?? defaults.quotes.morningCount, 1, 3),
+			nightCount: clamp(storedSettings.quotes?.nightCount ?? defaults.quotes.nightCount, 1, 3),
 			types: {
 				...defaults.quotes.types,
 				...storedSettings.quotes?.types,
@@ -296,6 +383,7 @@ const normalizeQuestionSettings = (storedSettings?: Partial<QuestionSettings> | 
 			customPrompts: storedSettings.prompts?.customPrompts?.length ? storedSettings.prompts.customPrompts : defaults.prompts.customPrompts,
 		},
 		trivia: {
+			enabled: storedSettings.trivia?.enabled ?? defaults.trivia.enabled,
 			morningCount: clamp(storedSettings.trivia?.morningCount ?? defaults.trivia.morningCount, 0, 3),
 			nightCount: clamp(storedSettings.trivia?.nightCount ?? defaults.trivia.nightCount, 0, 3),
 			types: {
@@ -303,10 +391,22 @@ const normalizeQuestionSettings = (storedSettings?: Partial<QuestionSettings> | 
 				...storedSettings.trivia?.types,
 			},
 		},
+		funFacts: {
+			enabled: storedSettings.funFacts?.enabled ?? defaults.funFacts.enabled,
+			morningCount: clamp(storedSettings.funFacts?.morningCount ?? defaults.funFacts.morningCount, 0, 3),
+			nightCount: clamp(storedSettings.funFacts?.nightCount ?? defaults.funFacts.nightCount, 0, 3),
+			types: {
+				...defaults.funFacts.types,
+				...storedSettings.funFacts?.types,
+			},
+		},
 		journalEntry: {
+			enabled: storedSettings.journalEntry?.enabled ?? defaults.journalEntry.enabled,
 			setting: storedSettings.journalEntry?.setting ?? defaults.journalEntry.setting,
 			template: storedSettings.journalEntry?.template ?? defaults.journalEntry.template,
 		},
+		morningOrder: normalizeSurveyOrder(storedSettings.morningOrder, DEFAULT_MORNING_ORDER),
+		nightOrder: normalizeSurveyOrder(storedSettings.nightOrder, DEFAULT_NIGHT_ORDER),
 	};
 };
 
@@ -350,12 +450,54 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 		}));
 	};
 
+	const setQuestionEnabled = (question: QuestionType, enabled: boolean) => {
+		setQuestionSettings(prev => ({
+			...prev,
+			[question]: {
+				...prev[question],
+				enabled,
+			},
+		}));
+	};
+
+	const setSurveyQuestionOrder = (surveyType: SurveyOrderType, order: SurveyQuestionKey[]) => {
+		setQuestionSettings(prev => ({
+			...prev,
+			[surveyType === 'morning' ? 'morningOrder' : 'nightOrder']: normalizeSurveyOrder(order, surveyType === 'morning' ? DEFAULT_MORNING_ORDER : DEFAULT_NIGHT_ORDER),
+		}));
+	};
+
+	const moveSurveyQuestion = (surveyType: SurveyOrderType, fromIndex: number, toIndex: number) => {
+		setQuestionSettings(prev => {
+			const orderKey = surveyType === 'morning' ? 'morningOrder' : 'nightOrder';
+			const nextOrder = [...prev[orderKey]];
+			const [moved] = nextOrder.splice(fromIndex, 1);
+			if (!moved) return prev;
+			nextOrder.splice(Math.max(0, Math.min(toIndex, nextOrder.length)), 0, moved);
+			return {
+				...prev,
+				[orderKey]: normalizeSurveyOrder(nextOrder, surveyType === 'morning' ? DEFAULT_MORNING_ORDER : DEFAULT_NIGHT_ORDER),
+			};
+		});
+	};
+
 	const updateQuotesSettings = (types: { inspirational: boolean; witty: boolean; philosophical: boolean }) => {
 		setQuestionSettings(prev => ({
 			...prev,
 			quotes: {
 				...prev.quotes,
 				types,
+			},
+		}));
+	};
+
+	const setQuoteCount = (morning: number, night: number) => {
+		setQuestionSettings(prev => ({
+			...prev,
+			quotes: {
+				...prev.quotes,
+				morningCount: clamp(morning, 1, 3),
+				nightCount: clamp(night, 1, 3),
 			},
 		}));
 	};
@@ -560,10 +702,32 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 		}));
 	};
 
+	const setFunFactCount = (morning: number, night: number) => {
+		setQuestionSettings(prev => ({
+			...prev,
+			funFacts: {
+				...prev.funFacts,
+				morningCount: clamp(morning, 0, 3),
+				nightCount: clamp(night, 0, 3),
+			},
+		}));
+	};
+
+	const updateFunFactsSettings = (types: Record<FunFactCategoryKey, boolean>) => {
+		setQuestionSettings(prev => ({
+			...prev,
+			funFacts: {
+				...prev.funFacts,
+				types,
+			},
+		}));
+	};
+
 	const setJournalEntry = (setting: JournalPlacement, template: string) => {
 		setQuestionSettings(prev => ({
 			...prev,
 			journalEntry: {
+				...prev.journalEntry,
 				setting,
 				template,
 			},
@@ -574,8 +738,12 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 		<QuestionContext.Provider
 			value={{
 				questionSettings,
+				setQuestionEnabled,
+				setSurveyQuestionOrder,
+				moveSurveyQuestion,
 				updateAdviceSettings,
 				updateQuotesSettings,
+				setQuoteCount,
 				toggleMood,
 				addCustomEmotion,
 				removeCustomEmotion,
@@ -591,6 +759,8 @@ export function QuestionProvider({ children }: { children: ReactNode }) {
 				togglePromptCategory,
 				toggleTriviaCategory,
 				setTriviaCount,
+				updateFunFactsSettings,
+				setFunFactCount,
 				setJournalEntry,
 			}}>
 			{children}

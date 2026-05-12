@@ -1,5 +1,6 @@
 import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
 import React, { createContext, ReactNode, useCallback, useContext } from 'react';
+import { useDragonOrbs } from './DragonOrbsProvider';
 
 interface PopulationState {
 	population: number;
@@ -12,9 +13,11 @@ interface PopulationContextType {
 	deathCount: number;
 	addPopulation: (amount: number) => void;
 	setPopulation: (amount: number) => void;
+	destroyPopulation: (amount: number) => void;
 	dailyPopulationUpdate: (yang: number, dragonAge: number) => void;
 	onDragonRevival: () => void; // Add 1M when dragon revived
 	setExternalGrowthBonus: (amount: number) => void;
+	resetPopulationConflict: () => void;
 }
 
 const PopulationContext = createContext<PopulationContextType | undefined>(undefined);
@@ -29,6 +32,7 @@ const INITIAL_POPULATION_STATE: PopulationState = {
 
 export function PopulationProvider({ children }: { children: ReactNode }) {
 	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.population, INITIAL_POPULATION_STATE);
+	const orbs = useDragonOrbs();
 
 	const addPopulation = useCallback((amount: number) => {
 		setState(current => ({
@@ -44,7 +48,32 @@ export function PopulationProvider({ children }: { children: ReactNode }) {
 		}));
 	}, [setState]);
 
+	const destroyPopulation = useCallback((amount: number) => {
+		if (amount <= 0) return;
+		const deaths = Math.min(state.population, amount);
+		if (deaths <= 0) return;
+		orbs.earnOrbs(deaths * 0.001, 'attack');
+		setState(current => {
+			const actualDeaths = Math.min(current.population, deaths);
+			return {
+				...current,
+				population: Math.max(0, current.population - actualDeaths),
+				deathCount: current.deathCount + actualDeaths,
+			};
+		});
+	}, [orbs, setState, state.population]);
+
 	const dailyPopulationUpdate = useCallback((yang: number, dragonAge: number) => {
+		let projectedDeaths = 0;
+		if (yang > 50) {
+			const overYangRatio = Math.max(0, Math.min(1, (yang - 50) / 50));
+			const maxDecreasePercent = 5 + Math.min(20, dragonAge / 73);
+			const decreasePercent = (maxDecreasePercent / 100) * overYangRatio;
+			projectedDeaths += Math.floor(state.population * decreasePercent);
+			projectedDeaths += Math.floor(50_000 * overYangRatio);
+		}
+		if (projectedDeaths > 0) orbs.earnOrbs(projectedDeaths * 0.001, 'attack');
+
 		setState(current => {
 			let newPop = current.population;
 			let deaths = 0;
@@ -71,7 +100,7 @@ export function PopulationProvider({ children }: { children: ReactNode }) {
 				deathCount: current.deathCount + deaths,
 			};
 		});
-	}, [setState]);
+	}, [orbs, setState, state.population]);
 
 	const onDragonRevival = useCallback(() => {
 		addPopulation(1_000_000); // +1 million on revival
@@ -84,12 +113,18 @@ export function PopulationProvider({ children }: { children: ReactNode }) {
 				deathCount: state.deathCount,
 				addPopulation,
 				setPopulation,
+				destroyPopulation,
 				dailyPopulationUpdate,
 				onDragonRevival,
 				setExternalGrowthBonus: amount =>
 					setState(current => ({
 						...current,
 						externalGrowthBonus: Math.max(0, amount),
+					})),
+				resetPopulationConflict: () =>
+					setState(current => ({
+						...current,
+						deathCount: 0,
 					})),
 			}}>
 			{children}

@@ -4,8 +4,11 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 export const APP_STORAGE_KEYS = {
 	survey: 'dragonfocus:survey-state',
 	questionSettings: 'dragonfocus:question-settings',
+	theme: 'dragonfocus:theme',
 	dragonCoins: 'dragonfocus:dragon-coins',
 	dragonShards: 'dragonfocus:dragon-shards',
+	dragonOrbs: 'dragonfocus:dragon-orbs',
+	dragonAttacks: 'dragonfocus:dragon-attacks',
 	dragonSouls: 'dragonfocus:dragon-souls',
 	dragonEmbers: 'dragonfocus:dragon-embers',
 	population: 'dragonfocus:population',
