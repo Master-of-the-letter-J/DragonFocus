@@ -1,12 +1,8 @@
-import { COIN_GENERATOR_DATA } from '@/data/coin-generator-data';
-import { getSnackEffectConfig } from '@/data/effect-data';
-import { MARKET_ITEMS } from '@/data/market-item-data';
-import { type ItemType, type MarketItem, type RuntimeMarketStats, type SnackItem, type SoulMultiplierItem } from '@/data/market-types';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
 import { useDragonOrbs } from '@/context/DragonOrbsProvider';
 import { useDragon } from '@/context/DragonProvider';
-import { useDragonSouls } from '@/context/DragonSoulsProvider';
 import { useShards } from '@/context/DragonShardsProvider';
+import { useDragonSouls } from '@/context/DragonSoulsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { usePopulation } from '@/context/PopulationProvider';
 import { usePremium } from '@/context/PremiumProvider';
@@ -14,11 +10,14 @@ import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import type { ActiveEffect, EffectDisplayEntry, EffectSnapshot, IdleSummary, ItemsContextType, SimResult, SnackUseToast, SurveyCompletionBonus } from '@/context/item-system/types';
 import { clamp, DAY_MS, DAY_SECONDS, effectStrength, formatSignedDailyValue, formatSignedValue, makeEffectId, randInt, resolveRangeValue, round2, SNACK_RARE_IDS } from '@/context/item-system/utils';
+import { COIN_GENERATOR_DATA } from '@/data/coin-generator-data';
+import { getSnackEffectConfig } from '@/data/effect-data';
+import { MARKET_ITEMS } from '@/data/market-item-data';
+import { type ItemType, type RuntimeMarketStats, type SnackItem, type SoulMultiplierItem } from '@/data/market-types';
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
-export type { ActiveEffect, EffectDisplayEntry, IdleSummary, ItemsContextType, SnackUseToast, SurveyCompletionBonus } from '@/context/item-system/types';
-export type { ItemType, MarketItem } from '@/context/item-system/types';
+export type { ActiveEffect, EffectDisplayEntry, IdleSummary, ItemsContextType, ItemType, MarketItem, SnackUseToast, SurveyCompletionBonus } from '@/context/item-system/types';
 
 const ItemCoreContext = React.createContext<ItemsContextType | undefined>(undefined);
 
@@ -27,7 +26,6 @@ export const useItemCore = () => {
 	if (!context) throw new Error('useItemCore must be used within ItemCoreProvider');
 	return context;
 };
-
 
 /** @requires DragonCoinsProvider @requires DragonShardsProvider */
 export default function ItemCoreProvider({ children }: { children: ReactNode }) {
@@ -357,12 +355,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 					})
 					.filter(segment => segment.remaining > 0);
 
-				const existing = segments.find(
-					segment =>
-						segment.sourceItemId === payload.sourceItemId &&
-						segment.surveyMultiplier === (payload.surveyMultiplier ?? 1) &&
-						segment.generatorMultiplier === (payload.generatorMultiplier ?? 1),
-				);
+				const existing = segments.find(segment => segment.sourceItemId === payload.sourceItemId && segment.surveyMultiplier === (payload.surveyMultiplier ?? 1) && segment.generatorMultiplier === (payload.generatorMultiplier ?? 1));
 
 				if (existing) {
 					existing.remaining += durationMs;
@@ -402,17 +395,7 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 				return [...other, ...rebuilt];
 			}
 
-			const mergeIndex = cleaned.findIndex(
-				item =>
-					!item.queueGroup &&
-					item.sourceItemId === payload.sourceItemId &&
-					item.surveyMultiplier === payload.surveyMultiplier &&
-					item.generatorMultiplier === payload.generatorMultiplier &&
-					item.clickerMultiplier === payload.clickerMultiplier &&
-					item.jeopardyMultiplier === payload.jeopardyMultiplier &&
-					item.furyPerDay === payload.furyPerDay &&
-					item.healthPerDay === payload.healthPerDay,
-			);
+			const mergeIndex = cleaned.findIndex(item => !item.queueGroup && item.sourceItemId === payload.sourceItemId && item.surveyMultiplier === payload.surveyMultiplier && item.generatorMultiplier === payload.generatorMultiplier && item.clickerMultiplier === payload.clickerMultiplier && item.jeopardyMultiplier === payload.jeopardyMultiplier && item.furyPerDay === payload.furyPerDay && item.healthPerDay === payload.healthPerDay);
 
 			if (mergeIndex >= 0) {
 				const next = [...cleaned];
@@ -718,6 +701,16 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 		return result.coins;
 	}, [simulateElapsedSeconds]);
 
+	const simulateProductionSeconds = useCallback(
+		(seconds: number) => {
+			const safeSeconds = Math.max(0, Math.min(100_000, seconds));
+			const result = simulateElapsedSeconds(safeSeconds);
+			lastProcessedMsRef.current = Date.now();
+			return result;
+		},
+		[simulateElapsedSeconds],
+	);
+
 	const clearEffects = useCallback((includeProtected = false) => {
 		setActiveEffects(prev => prev.filter(effect => !includeProtected && effect.protectedEffect));
 	}, []);
@@ -844,26 +837,26 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 		setSnackPurchaseCounts({});
 	}, [marketItems]);
 
-	const getOwnedTotalByType = useCallback(
-		(type: ItemType) => marketItems.filter(item => item.type === type).reduce((sum, item) => sum + (ownedItems[item.id] || 0), 0),
-		[marketItems, ownedItems],
-	);
+	const getOwnedTotalByType = useCallback((type: ItemType) => marketItems.filter(item => item.type === type).reduce((sum, item) => sum + (ownedItems[item.id] || 0), 0), [marketItems, ownedItems]);
 
 	const getSoulMultiplierRefundTotal = useCallback(() => {
 		const summonedIds = marketItems.filter(item => item.type === 'soulMultiplier' && isSoulSummoned(item.id)).map(item => item.id);
 		const summonRefund = summonedIds.reduce((sum, _id, index) => sum + Math.pow(2, Math.min(0.5 * index, 30)), 0);
-		return summonRefund + marketItems
-			.filter(item => item.type === 'soulMultiplier')
-			.reduce((sum, item) => {
-				const owned = getOwnedCount(item.id);
-				if (owned <= 0) return sum;
-				const soulItem = item as SoulMultiplierItem;
-				let total = 0;
-				for (let index = 0; index < owned; index += 1) {
-					total += round2((soulItem.soulCost ?? 0) * Math.pow(soulItem.soulGrowth ?? 1, index));
-				}
-				return sum + total;
-			}, 0);
+		return (
+			summonRefund +
+			marketItems
+				.filter(item => item.type === 'soulMultiplier')
+				.reduce((sum, item) => {
+					const owned = getOwnedCount(item.id);
+					if (owned <= 0) return sum;
+					const soulItem = item as SoulMultiplierItem;
+					let total = 0;
+					for (let index = 0; index < owned; index += 1) {
+						total += round2((soulItem.soulCost ?? 0) * Math.pow(soulItem.soulGrowth ?? 1, index));
+					}
+					return sum + total;
+				}, 0)
+		);
 	}, [getOwnedCount, isSoulSummoned, marketItems]);
 
 	const resetSoulMultipliers = useCallback(() => {
@@ -889,27 +882,14 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 				const startsInSeconds = Math.max(0, Math.ceil((effect.startsAtMs - now) / 1000));
 				const remainingSeconds = Math.max(0, Math.ceil((effect.endsAtMs - Math.max(now, effect.startsAtMs)) / 1000));
 				const topEffect =
-					effect.surveyMultiplier !== undefined
-						? `Survey x${round2(effect.surveyMultiplier)}`
-						: effect.generatorMultiplier !== undefined
-							? `Generator x${round2(effect.generatorMultiplier)}`
-							: effect.clickerMultiplier !== undefined
-								? `Clicker x${round2(effect.clickerMultiplier)}`
-								: effect.jeopardyMultiplier !== undefined
-									? `Jeopardy x${round2(effect.jeopardyMultiplier)}`
-									: effect.furyPerDay !== undefined
-										? `Fury/day ${effect.furyPerDay >= 0 ? '+' : ''}${round2(effect.furyPerDay)}`
-										: effect.healthPerDay !== undefined
-											? `Health/day ${effect.healthPerDay >= 0 ? '+' : ''}${round2(effect.healthPerDay)}`
-											: 'Effect active';
-				const strength = Math.max(
-					Math.abs(effect.surveyMultiplier ?? 0),
-					Math.abs(effect.generatorMultiplier ?? 0),
-					Math.abs(effect.clickerMultiplier ?? 0),
-					Math.abs(effect.jeopardyMultiplier ?? 0),
-					Math.abs(effect.furyPerDay ?? 0) / 10,
-					Math.abs(effect.healthPerDay ?? 0) / 10,
-				);
+					effect.surveyMultiplier !== undefined ? `Survey x${round2(effect.surveyMultiplier)}`
+					: effect.generatorMultiplier !== undefined ? `Generator x${round2(effect.generatorMultiplier)}`
+					: effect.clickerMultiplier !== undefined ? `Clicker x${round2(effect.clickerMultiplier)}`
+					: effect.jeopardyMultiplier !== undefined ? `Jeopardy x${round2(effect.jeopardyMultiplier)}`
+					: effect.furyPerDay !== undefined ? `Fury/day ${effect.furyPerDay >= 0 ? '+' : ''}${round2(effect.furyPerDay)}`
+					: effect.healthPerDay !== undefined ? `Health/day ${effect.healthPerDay >= 0 ? '+' : ''}${round2(effect.healthPerDay)}`
+					: 'Effect active';
+				const strength = Math.max(Math.abs(effect.surveyMultiplier ?? 0), Math.abs(effect.generatorMultiplier ?? 0), Math.abs(effect.clickerMultiplier ?? 0), Math.abs(effect.jeopardyMultiplier ?? 0), Math.abs(effect.furyPerDay ?? 0) / 10, Math.abs(effect.healthPerDay ?? 0) / 10);
 				return { id: effect.id, name: effect.name, topEffect, remainingSeconds, startsInSeconds, strength };
 			})
 			.sort((a, b) => {
@@ -986,44 +966,45 @@ export default function ItemCoreProvider({ children }: { children: ReactNode }) 
 	}, []);
 
 	const value: ItemsContextType = {
-				marketItems,
-				ownedItems,
-				purchaseItem,
-				useItem,
-				addItemToInventory,
-				sellItem,
-				processDailyPayouts,
-				processDragonClick,
-				getClickReward,
-				getItemCoinCost,
-				getItemShardCost,
-				getItemOrbCost,
-				getItemSoulCost,
-				isSoulMultiplierSummoned: isSoulSummoned,
-				getGeneratorProductionPerDay,
-				getTotalGeneratorProductionPerDay,
-				activeEffects,
-				getActiveCoinMultiplier,
-				getActiveJeopardyMultiplier,
-				getSurveyMultiplier,
-				getGeneratorMultiplier,
-				getClickerMultiplier,
-				getSurveyCompletionBonus,
-				grantRandomUnlockedSnacks,
-				getEffectDisplayList,
-				pendingIdleSummary,
-				consumeIdleSummary,
-				snackToast,
-				consumeSnackToast,
-				clearEffects,
-				addCustomEffect: addTimedEffect,
-				resetSnackPrices,
-				resetAfterAscension,
-				getOwnedTotalByType,
-				getSoulMultiplierRefundTotal,
-				resetSoulMultipliers,
-				resetInventory,
-			};
+		marketItems,
+		ownedItems,
+		purchaseItem,
+		useItem,
+		addItemToInventory,
+		sellItem,
+		processDailyPayouts,
+		simulateProductionSeconds,
+		processDragonClick,
+		getClickReward,
+		getItemCoinCost,
+		getItemShardCost,
+		getItemOrbCost,
+		getItemSoulCost,
+		isSoulMultiplierSummoned: isSoulSummoned,
+		getGeneratorProductionPerDay,
+		getTotalGeneratorProductionPerDay,
+		activeEffects,
+		getActiveCoinMultiplier,
+		getActiveJeopardyMultiplier,
+		getSurveyMultiplier,
+		getGeneratorMultiplier,
+		getClickerMultiplier,
+		getSurveyCompletionBonus,
+		grantRandomUnlockedSnacks,
+		getEffectDisplayList,
+		pendingIdleSummary,
+		consumeIdleSummary,
+		snackToast,
+		consumeSnackToast,
+		clearEffects,
+		addCustomEffect: addTimedEffect,
+		resetSnackPrices,
+		resetAfterAscension,
+		getOwnedTotalByType,
+		getSoulMultiplierRefundTotal,
+		resetSoulMultipliers,
+		resetInventory,
+	};
 
 	return <ItemCoreContext.Provider value={value}>{children}</ItemCoreContext.Provider>;
 }

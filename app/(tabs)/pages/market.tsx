@@ -26,7 +26,7 @@ type SortMode = 'scar' | 'priceHigh' | 'priceLow';
 
 const formatMarketCost = (coinCost: number, shardCost: number, soulCost: number, orbCost = 0) => {
 	const costParts: string[] = [];
-	if (orbCost > 0) costParts.push(`${formatAbbreviatedNumber(orbCost)} Orbs`);
+	if (orbCost > 0) costParts.push(`🟢 ${formatAbbreviatedNumber(orbCost)}`);
 	if (coinCost > 0) costParts.push(`🪙 ${formatCoinNumber(coinCost)}`);
 	if (shardCost > 0) costParts.push(`💎 ${formatAbbreviatedNumber(shardCost)}`);
 	if (soulCost > 0) costParts.push(`🔮 ${formatAbbreviatedNumber(soulCost)}`);

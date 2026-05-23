@@ -14,7 +14,7 @@ import { useTheme } from '@/context/ThemeProvider';
 import { useToast } from '@/context/ToastProvider';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet, type GestureResponderEvent } from 'react-native';
 
 const formatDuration = (seconds: number) => {
 	if (seconds <= 0) return '0s';
@@ -26,6 +26,14 @@ const formatDuration = (seconds: number) => {
 	if (hours > 0) return `${hours}h ${mins}m`;
 	if (mins > 0) return `${mins}m ${secs}s`;
 	return `${secs}s`;
+};
+
+type ClickFloat = {
+	id: number;
+	x: number;
+	y: number;
+	amount: number;
+	anim: Animated.Value;
 };
 
 export default function HomePage() {
@@ -44,6 +52,7 @@ export default function HomePage() {
 	const [snackModalOpen, setSnackModalOpen] = useState(false);
 	const [idleModalOpen, setIdleModalOpen] = useState(false);
 	const [eventModal, setEventModal] = useState<{ title: string; message: string } | null>(null);
+	const [clickFloats, setClickFloats] = useState<ClickFloat[]>([]);
 	const dragonPressScale = useRef(new Animated.Value(1)).current;
 
 	const today = new Date().toISOString().split('T')[0];
@@ -142,7 +151,22 @@ export default function HomePage() {
 		}).start();
 	};
 
-	const handleDragonPress = () => {
+	const showClickFloat = (event: GestureResponderEvent, amount: number) => {
+		const id = Date.now() + Math.random();
+		const anim = new Animated.Value(0);
+		const { pageX, pageY } = event.nativeEvent;
+		const nextFloat = { id, x: pageX, y: pageY, amount, anim };
+		setClickFloats(prev => [...prev.slice(-5), nextFloat]);
+		Animated.timing(anim, {
+			toValue: 1,
+			duration: 850,
+			useNativeDriver: true,
+		}).start(() => {
+			setClickFloats(prev => prev.filter(item => item.id !== id));
+		});
+	};
+
+	const handleDragonPress = (event: GestureResponderEvent) => {
 		if (dragon.dragonState === 'unspawned') {
 			dragon.spawnDragon();
 			return;
@@ -154,7 +178,7 @@ export default function HomePage() {
 		population.addPopulation(1);
 		const reward = itemEconomy.processDragonClick();
 		if (reward > 0) {
-			showToast({ title: 'Dragon Click', message: `+${reward.toFixed(2)} coins`, shadowColor: '#F59E0B', backgroundColor: '#FFFBEB' }, { durationMs: 900 });
+			showClickFloat(event, reward);
 		}
 	};
 
@@ -341,6 +365,30 @@ export default function HomePage() {
 					</View>
 				</View>
 			</Modal>
+
+			{clickFloats.map(item => (
+				<Animated.Text
+					key={item.id}
+					pointerEvents="none"
+					style={[
+						styles.clickFloat,
+						{
+							left: item.x - 34,
+							top: item.y - 28,
+							opacity: item.anim.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
+							transform: [
+								{
+									translateY: item.anim.interpolate({ inputRange: [0, 1], outputRange: [0, -44] }),
+								},
+								{
+									scale: item.anim.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0.92, 1.08, 1] }),
+								},
+							],
+						},
+					]}>
+					+{item.amount.toFixed(2)} coins
+				</Animated.Text>
+			))}
 		</View>
 	);
 }
@@ -400,4 +448,5 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
 	useSnackBtnText: { color: colors.buttonText, fontWeight: '700' },
 	closeModalBtn: { marginTop: 12, backgroundColor: colors.buttonBackground, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
 	closeModalBtnText: { color: colors.buttonText, fontWeight: '700' },
+	clickFloat: { position: 'absolute', zIndex: 9998, color: colors.warning, fontWeight: '900', fontSize: 15, textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
 });

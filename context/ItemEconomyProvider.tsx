@@ -12,6 +12,7 @@ interface ItemEconomyContextType {
 	purchaseItem: (id: string) => boolean;
 	sellItem: (id: string) => boolean;
 	processDailyPayouts: () => number;
+	simulateProductionSeconds: ReturnType<typeof useItemCore>['simulateProductionSeconds'];
 	processDragonClick: () => number;
 	getClickReward: () => number;
 	getItemCoinCost: (id: string) => number;
@@ -47,6 +48,7 @@ export function ItemEconomyProvider({ children }: { children: ReactNode }) {
 			purchaseItem: items.purchaseItem,
 			sellItem: items.sellItem,
 			processDailyPayouts: items.processDailyPayouts,
+			simulateProductionSeconds: items.simulateProductionSeconds,
 			processDragonClick: items.processDragonClick,
 			getClickReward: items.getClickReward,
 			getItemCoinCost: items.getItemCoinCost,

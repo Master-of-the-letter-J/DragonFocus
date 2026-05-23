@@ -1,6 +1,5 @@
 import { FUN_FACT_CATEGORY_OPTIONS, PROMPT_CATEGORY_OPTIONS, SURVEY_QUESTION_OPTIONS, TRIVIA_CATEGORY_OPTIONS, useQuestions, type PromptTarget, type SurveyOrderType, type SurveyQuestionKey } from '@/context/QuestionProvider';
 import { useSurvey } from '@/context/SurveyProvider';
-import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -11,7 +10,6 @@ const JOURNAL_OPTIONS = ['none', 'morning', 'night', 'both'] as const;
 const PROMPT_TARGET_OPTIONS = ['morning', 'night', 'both'] as const;
 
 export default function SurveySettings() {
-	const router = useRouter();
 	const survey = useSurvey();
 	const questions = useQuestions();
 
@@ -63,10 +61,6 @@ export default function SurveySettings() {
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.title}>Survey Settings</Text>
 			<Text style={styles.subtitle}>Changes apply immediately and the morning/night surveys will use the new settings without needing a separate save button.</Text>
-
-			<Pressable style={styles.tutorialButton} onPress={() => router.push('/survey/tutorial' as any)}>
-				<Text style={styles.tutorialButtonText}>Open Full Tutorial</Text>
-			</Pressable>
 
 			<SurveyOrderGrid />
 
@@ -352,8 +346,6 @@ const styles = StyleSheet.create({
 	container: { padding: 16, paddingBottom: 40 },
 	title: { fontSize: 24, fontWeight: '800', color: '#111827' },
 	subtitle: { marginTop: 6, marginBottom: 12, color: '#6B7280', lineHeight: 20 },
-	tutorialButton: { alignSelf: 'flex-start', backgroundColor: '#2563EB', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 14 },
-	tutorialButtonText: { color: '#fff', fontWeight: '800' },
 	card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, marginBottom: 14 },
 	cardTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 10 },
 	cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 10 },

@@ -15,9 +15,7 @@ interface TutorialSection {
 const TUTORIAL_SECTIONS: TutorialSection[] = [
 	{
 		title: 'Core Loop',
-		body: [
-			'Dragon Focus is a focus tracker built around a living dragon. You plan the day in the morning, complete goals in the evening, and your choices affect rewards, health, fury, scar levels, currencies, market progression, and prestige systems.',
-		],
+		body: ['Dragon Focus is a focus tracker built around a living dragon. You plan the day in the morning, complete goals in the evening, and your choices affect rewards, health, fury, scar levels, currencies, market progression, and prestige systems.'],
 		bullets: [
 			'Morning Survey: plan habit goals, to-do goals, prompts, trivia, mood, journal entries, and daily intent.',
 			'Evening Survey: check completed habits, to-dos, sub-goals, prompts, trivia, mood, and journal entries.',
@@ -145,56 +143,30 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 		subsections: [
 			{
 				title: 'Dragon Coins',
-				bullets: [
-					'Coins come from surveys, goals, prompts, trivia, dragon clicks, generators, market effects, and prestige multipliers.',
-					'Dragon clicks default to 0.01 coins per click before upgrades and multipliers.',
-					'Header coin display shows two decimals below 100K coins, then uses compact abbreviations.',
-				],
+				bullets: ['Coins come from surveys, goals, prompts, trivia, dragon clicks, generators, market effects, and prestige multipliers.', 'Dragon clicks default to 0.1 coins per click before upgrades and multipliers.', 'Header coin display shows two decimals below 100K coins, then uses compact abbreviations.'],
 			},
 			{
 				title: 'Dragon Shards',
-				bullets: [
-					'Shards come from survey completions, challenges, scar level rewards, ascension rewards, black-market packs, and special effects.',
-					'Shards are used for premium-like market purchases, snack costs, respec actions, and some unlocks.',
-				],
+				bullets: ['Shards come from survey completions, challenges, scar level rewards, ascension rewards, black-market packs, and special effects.', 'Shards are used for premium-like market purchases, snack costs, respec actions, and some unlocks.'],
 			},
 			{
 				title: 'Fire XP and Scar Level',
-				bullets: [
-					'Fire XP levels up Scar Level.',
-					'Fire XP is earned from survey coins and idle/click coins.',
-					'Leveling up resets the current Fire XP amount toward the next scar level.',
-					'Scar Level unlocks market tiers, lair systems, cosmetics, invincibility, ascension, transcension, and larger goal limits.',
-				],
+				bullets: ['Fire XP levels up Scar Level.', 'Fire XP is earned from survey coins and idle/click coins.', 'Leveling up resets the current Fire XP amount toward the next scar level.', 'Scar Level unlocks market tiers, lair systems, cosmetics, invincibility, ascension, transcension, and larger goal limits.'],
 			},
 			{
 				title: 'Dragon Souls',
-				bullets: [
-					'Souls are earned from ascension.',
-					'Souls buy soul prophets, relics, converters, and respec-related systems.',
-					'Ascension reward is based on coins earned during the current ascension run.',
-				],
+				bullets: ['Souls are earned from ascension.', 'Souls buy soul prophets, relics, converters, and respec-related systems.', 'Ascension reward is based on coins earned during the current ascension run.'],
 			},
 			{
 				title: 'Dragon Embers',
-				bullets: [
-					'Embers are earned through transcension.',
-					'Every ember earned permanently increases max fury.',
-					'Embers buy draconian multipliers and unlock late-game respec tools.',
-				],
+				bullets: ['Embers are earned through transcension.', 'Every ember earned permanently increases max fury.', 'Embers buy draconian multipliers and unlock late-game respec tools.'],
 			},
 		],
 	},
 	{
 		title: 'Coin Multipliers',
 		body: ['Coin production is affected by multiple systems. The exact implementation can change as balancing improves, but the tutorial-level rule is simple: better progression and upgrades multiply what you earn.'],
-		bullets: [
-			'Scar Level increases coin multipliers.',
-			'Dragon Shards, snacks, premium, soul upgrades, ember upgrades, and temporary effects can raise rewards.',
-			'High fury can reduce some coin outcomes depending on the formula.',
-			'Generators produce coins per day, while clickers improve dragon tap rewards.',
-			'Effects can boost surveys, generators, clickers, or trivia risk/reward.',
-		],
+		bullets: ['Scar Level increases coin multipliers.', 'Dragon Shards, snacks, premium, soul upgrades, ember upgrades, and temporary effects can raise rewards.', 'High fury can reduce some coin outcomes depending on the formula.', 'Generators produce coins per day, while clickers improve dragon tap rewards.', 'Effects can boost surveys, generators, clickers, or trivia risk/reward.'],
 	},
 	{
 		title: 'Dragon Health and Fury',
@@ -212,13 +184,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 	{
 		title: 'Population and Death Count',
 		body: ['Population is the world-scale dragon consequence system. It gives the dragon lifecycle and Fury stat a larger idle-game flavor.'],
-		bullets: [
-			'Population can grow each simulated day.',
-			'High Fury can reduce population and increase death count.',
-			'Death count is used by transcension requirements.',
-			'Ascension adds 1 million population and does not reset the current population counter.',
-			'Population display abbreviates only at very large values.',
-		],
+		bullets: ['Population can grow each simulated day.', 'High Fury can reduce population and increase death count.', 'Death count is used by transcension requirements.', 'Ascension adds 1 million population and does not reset the current population counter.', 'Population display abbreviates only at very large values.'],
 	},
 	{
 		title: 'Market',
@@ -226,69 +192,34 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 		subsections: [
 			{
 				title: 'Main Market',
-				bullets: [
-					'Default tab is Dragon Snacks.',
-					'Item type filters include Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Background and Themes, and All Items.',
-					'Sort options include Scar Level Required, Price High, and Price Low.',
-					'Locked items show scar requirements and cannot be bought early.',
-					'Failed buys show what resource is missing.',
-					'Sell buttons appear for owned generators, clickers, and soul multipliers where applicable.',
-				],
+				bullets: ['Default tab is Dragon Snacks.', 'Item type filters include Dragon Snacks, Cosmetics, Coin Generators, Dragon Clickers, Background and Themes, and All Items.', 'Sort options include Scar Level Required, Price High, and Price Low.', 'Locked items show scar requirements and cannot be bought early.', 'Failed buys show what resource is missing.', 'Sell buttons appear for owned generators, clickers, and soul multipliers where applicable.'],
 			},
 			{
 				title: 'Snacks',
-				bullets: [
-					'Snacks create immediate or timed effects.',
-					'Snack coin costs increase per purchase. Most snacks use 1.02 growth. Scar Level 10 snacks use 1.1 growth.',
-					'Snack prices can be reset through ascension tools once per ascension.',
-					'Milk clears normal effects. Super Milk clears all effects including protected ascension sickness.',
-				],
+				bullets: ['Snacks create immediate or timed effects.', 'Snack coin costs increase per purchase. Most snacks use 1.02 growth. Scar Level 10 snacks use 1.1 growth.', 'Snack prices can be reset through ascension tools once per ascension.', 'Milk clears normal effects. Super Milk clears all effects including protected ascension sickness.'],
 			},
 			{
 				title: 'Coin Generators',
-				bullets: [
-					'Generators produce coins per day.',
-					'Generator formulas can use base output, fury/yin-yang values, streak, scar level, age, population, death count, or total generator count.',
-					'Generator output is affected by generator multipliers and effects.',
-				],
+				bullets: ['Generators produce coins per day.', 'Generator formulas can use base output, fury/yin-yang values, streak, scar level, age, population, death count, or total generator count.', 'Generator output is affected by generator multipliers and effects.'],
 			},
 			{
 				title: 'Dragon Clickers',
-				bullets: [
-					'Clickers improve dragon tap rewards.',
-					'Dragon Clicks add click value. Age, demonic, mega, and impossible clickers add later scaling.',
-					'Click rewards are affected by click multipliers and coin multipliers.',
-				],
+				bullets: ['Clickers improve dragon tap rewards.', 'Dragon Clicks add click value. Age, demonic, mega, and impossible clickers add later scaling.', 'Click rewards are affected by click multipliers and coin multipliers.'],
 			},
 			{
 				title: "Hade's Market",
-				bullets: [
-					'Hade\'s Market contains soul prophets, relics, and draconian multipliers.',
-					'Soul prophet and relic families stack within their family, while different families multiply together.',
-					'Draconian upgrades use Dragon Embers and affect ascension shards, sickness time, survey duplication, max fury, and population growth.',
-					'Hade\'s Market uses two-column item layout for easier scanning.',
-				],
+				bullets: ["Hade's Market contains soul prophets, relics, and draconian multipliers.", 'Soul prophet and relic families stack within their family, while different families multiply together.', 'Draconian upgrades use Dragon Embers and affect ascension shards, sickness time, survey duplication, max fury, and population growth.', "Hade's Market uses two-column item layout for easier scanning."],
 			},
 			{
 				title: 'Black Market',
-				bullets: [
-					'Coin bundles trade shards for coins.',
-					'Shard packs represent real-money purchase placeholders.',
-					'Checkout is still placeholder-only until billing is wired.',
-				],
+				bullets: ['Coin bundles trade shards for coins.', 'Shard packs represent real-money purchase placeholders.', 'Checkout is still placeholder-only until billing is wired.'],
 			},
 		],
 	},
 	{
 		title: 'Status Effects',
 		body: ['Status effects are temporary modifiers from snacks, ascension, transcension, death events, and special systems.'],
-		bullets: [
-			'Effects can change survey rewards, generator rewards, click rewards, trivia rewards, fury per day, health per day, or immediate health/fury.',
-			'Effects can have durations and queue groups so related effects interact cleanly.',
-			'Protected effects, like ascension sickness, resist normal clearing.',
-			'Active effects appear on the home page and idle reward popup.',
-			'Idle simulation accounts for effects across elapsed time.',
-		],
+		bullets: ['Effects can change survey rewards, generator rewards, click rewards, trivia rewards, fury per day, health per day, or immediate health/fury.', 'Effects can have durations and queue groups so related effects interact cleanly.', 'Protected effects, like ascension sickness, resist normal clearing.', 'Active effects appear on the home page and idle reward popup.', 'Idle simulation accounts for effects across elapsed time.'],
 	},
 	{
 		title: 'Scar Levels',
@@ -379,11 +310,7 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 	{
 		title: 'Premium Dragon Pact',
 		body: ['Premium is currently represented by Dragon Pact. Real checkout is placeholder-only, but pricing and benefits are laid out in the app.'],
-		bullets: [
-			'Pricing C is active: $1.99 monthly, $4.99 yearly, and $9.99 permanent.',
-			'Benefits include 2x coin multiplier, 2x Fire XP multiplier, unlimited to-do goals, premium cosmetics, unlimited goal rerolls, premium early unlocks, expanded logs, and premium backgrounds.',
-			'Premium can be toggled in dev/general settings until real billing is connected.',
-		],
+		bullets: ['Pricing C is active: $1.99 monthly, $4.99 yearly, and $9.99 permanent.', 'Benefits include 2x coin multiplier, 2x Fire XP multiplier, unlimited to-do goals, premium cosmetics, unlimited goal rerolls, premium early unlocks, expanded logs, and premium backgrounds.', 'Premium can be toggled in dev/general settings until real billing is connected.'],
 	},
 	{
 		title: 'Settings',
@@ -404,56 +331,29 @@ const TUTORIAL_SECTIONS: TutorialSection[] = [
 			},
 			{
 				title: 'General Settings',
-				bullets: [
-					'Adjust music, sound effects, ambient, and dragon sound volumes.',
-					'Set light/dark mode, background theme, brightness, and dynamic weather.',
-					'Toggle premium Dragon Pact and dragon invincibility.',
-					'Reset visible dragon, market inventory, and survey progress.',
-					'Enable dev mode for testing day simulation, currencies, streaks, scar XP, health, fury, dragon lifecycle, and effects.',
-				],
+				bullets: ['Adjust music, sound effects, ambient, and dragon sound volumes.', 'Set light/dark mode, background theme, brightness, and dynamic weather.', 'Toggle premium Dragon Pact and dragon invincibility.', 'Reset visible dragon, market inventory, and survey progress.', 'Enable dev mode for testing day simulation, currencies, streaks, scar XP, health, fury, dragon lifecycle, and effects.'],
 			},
 		],
 	},
 	{
 		title: 'Daily Simulation and Dev Tools',
 		body: ['Dev tools are for testing app logic quickly. They are intentionally gated behind Dev Mode.'],
-		bullets: [
-			'Simulate Day increments dragon age, processes daily generator/effect payouts, updates population, applies skipped-survey fury, applies health penalties, and forces a new survey day.',
-			'Force New Day resets the survey-day lockout state without simulating every effect.',
-			'Cheat buttons can spawn, kill, revive, age the dragon, change resources, change streak, add Fire XP, alter Fury, and alter HP.',
-			'Clear Effects can remove timed effects for testing.',
-		],
+		bullets: ['Simulate Day increments dragon age, processes daily generator/effect payouts, updates population, applies skipped-survey fury, applies health penalties, and forces a new survey day.', 'Force New Day resets the survey-day lockout state without simulating every effect.', 'Cheat buttons can spawn, kill, revive, age the dragon, change resources, change streak, add Fire XP, alter Fury, and alter HP.', 'Clear Effects can remove timed effects for testing.'],
 	},
 	{
 		title: 'Logs and Data',
 		body: ['Logs are how the app turns surveys into a usable history. They are designed for both quick scanning and detailed review.'],
-		bullets: [
-			'Logs store morning and evening mood, goals planned, goals completed, goals incomplete, to-do counts, failed to-dos, rewards, prompts, trivia, and journal entries.',
-			'Table view is best for scanning rows of days.',
-			'List view is best for reading one day in detail.',
-			'Journal modals show prompt responses, trivia results, and journal entries.',
-			'Statistics summarize survey behavior, rewards earned, prompts answered, trivia answered, journal entries, average rewards, and best days.',
-		],
+		bullets: ['Logs store morning and evening mood, goals planned, goals completed, goals incomplete, to-do counts, failed to-dos, rewards, prompts, trivia, and journal entries.', 'Table view is best for scanning rows of days.', 'List view is best for reading one day in detail.', 'Journal modals show prompt responses, trivia results, and journal entries.', 'Statistics summarize survey behavior, rewards earned, prompts answered, trivia answered, journal entries, average rewards, and best days.'],
 	},
 	{
 		title: 'Achievements',
 		body: ['Achievements track progress across surveys, coins, goals, challenges, scar levels, dragon lifecycle, and special systems.'],
-		bullets: [
-			'Achievements show title, icon or emoji, and progress.',
-			'Opening an achievement can show expanded detail.',
-			'Some achievements relate to surveys, streaks, perfect days, scar levels, dragon death/revival, market use, and long-term progression.',
-		],
+		bullets: ['Achievements show title, icon or emoji, and progress.', 'Opening an achievement can show expanded detail.', 'Some achievements relate to surveys, streaks, perfect days, scar levels, dragon death/revival, market use, and long-term progression.'],
 	},
 	{
 		title: 'Visuals and Placeholders',
 		body: ['Some art, video, audio, and cosmetic systems are intentionally placeholder-ready while the gameplay logic is built.'],
-		bullets: [
-			'Dragon stage art uses current placeholder images.',
-			'Spawn, death, and revival video moments currently use popup placeholders.',
-			'Market cosmetics, themes, backgrounds, and premium backgrounds are structured for future refinement.',
-			'Landing page uses a medieval dragon theme and can later swap in final media.',
-			'Sound effects and ambience controls exist, while final sound polish can be added later.',
-		],
+		bullets: ['Dragon stage art uses current placeholder images.', 'Spawn, death, and revival video moments currently use popup placeholders.', 'Market cosmetics, themes, backgrounds, and premium backgrounds are structured for future refinement.', 'Landing page uses a medieval dragon theme and can later swap in final media.', 'Sound effects and ambience controls exist, while final sound polish can be added later.'],
 	},
 	{
 		title: 'Practical Tips',
@@ -476,9 +376,7 @@ export default function TutorialPage() {
 			<TopHeader isHomePage={false} />
 			<ScrollView contentContainerStyle={styles.container}>
 				<Text style={styles.title}>Dragon Focus Complete Tutorial</Text>
-				<Text style={styles.lead}>
-					This page is the full in-app reference for Dragon Focus. It follows the current Dragon Focus App spec and explains the app systems as a user-facing guide.
-				</Text>
+				<Text style={styles.lead}>This page is the full in-app reference for Dragon Focus. It follows the current Dragon Focus App spec and explains the app systems as a user-facing guide.</Text>
 
 				{TUTORIAL_SECTIONS.map(section => (
 					<View key={section.title} style={styles.section}>
@@ -506,9 +404,7 @@ export default function TutorialPage() {
 					</View>
 				))}
 
-				<Text style={styles.note}>
-					This tutorial is intentionally comprehensive. Some items describe planned or placeholder-ready systems as noted in the spec; unavailable checkout, final videos, and final art assets are still placeholders.
-				</Text>
+				<Text style={styles.note}>This tutorial is intentionally comprehensive. Some items describe planned or placeholder-ready systems as noted in the spec; unavailable checkout, final videos, and final art assets are still placeholders.</Text>
 			</ScrollView>
 		</View>
 	);

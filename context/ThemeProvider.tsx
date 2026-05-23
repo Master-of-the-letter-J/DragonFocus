@@ -3,7 +3,7 @@ import { DRAGON_THEME_PRESETS, type DragonThemePreset, type DragonThemeTokenSet 
 import React, { createContext, type ReactNode, useContext, useMemo } from 'react';
 
 export type ThemeMode = 'light' | 'dark';
-export type BackgroundTheme = 'dungeon' | 'castlePlains' | 'space' | 'volcano' | 'forest' | 'sky' | 'custom';
+export type BackgroundTheme = 'dungeon' | 'castlePlains' | 'space' | 'volcano' | 'forest' | 'sky' | 'ocean' | 'aurora' | 'crystal' | 'custom';
 export type ThemeBrightness = 'bright' | 'slight_bright' | 'normal' | 'slight_dimmer' | 'dimmer';
 
 export interface ThemeColors {

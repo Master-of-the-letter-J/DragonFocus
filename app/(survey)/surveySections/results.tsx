@@ -1,7 +1,7 @@
 import { Text, View } from '@/components/Themed';
 import { formatAbbreviatedNumber, formatDecimalNumber } from '@/constants/number-abbreviation';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
 import { sectionStyles } from './sectionStyles';
 
@@ -40,7 +40,7 @@ export function useResultsSection({ title, results, onFinish }: UseResultsSectio
 		return (
 			<View style={sectionStyles.content}>
 				<Text style={sectionStyles.title}>{state.title}</Text>
-				<View style={sectionStyles.resultsCard}>
+				<ScrollView style={sectionStyles.resultsCard} contentContainerStyle={sectionStyles.resultsCardContent}>
 					<Text style={sectionStyles.resultText}>Coins Earned: +{formatAbbreviatedNumber(state.results.coinsEarned)}</Text>
 					<Text style={sectionStyles.resultText}>Shards Earned: +{formatAbbreviatedNumber(state.results.shardsEarned)}</Text>
 					<Text style={sectionStyles.resultText}>Fire XP Earned: +{formatAbbreviatedNumber(state.results.xpEarned)}</Text>
@@ -59,7 +59,7 @@ export function useResultsSection({ title, results, onFinish }: UseResultsSectio
 							))}
 						</View>
 					))}
-				</View>
+				</ScrollView>
 				<Pressable style={sectionStyles.finishButton} onPress={onFinish}>
 					<Text style={sectionStyles.finishButtonText}>Return</Text>
 				</Pressable>

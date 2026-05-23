@@ -60,6 +60,8 @@ interface DragonAttacksContextType {
 	getAbilityRemainingSeconds: (id: DragonAttackAbilityId) => number;
 	purchaseUpgrade: (id: DragonAttackUpgradeId) => { success: boolean; message?: string };
 	activateAbility: (id: DragonAttackAbilityId) => { success: boolean; message?: string };
+	addObsidianLegions: (amount: number) => void;
+	addDragonGuards: (amount: number) => void;
 	resetDragonAttacks: () => void;
 }
 
@@ -377,6 +379,36 @@ export function DragonAttacksProvider({ children }: { children: ReactNode }) {
 		[orbs, rates.aircraftDestroyedPerDay, rates.legionsDestroyedPerDay, rates.tanksDestroyedPerDay, setState],
 	);
 
+	const addObsidianLegions = useCallback(
+		(amount: number) => {
+			const safeAmount = Math.max(0, Math.min(1_000_000_000, amount));
+			if (safeAmount <= 0) return;
+			setState(current => ({
+				...current,
+				world: {
+					...current.world,
+					obsidianLegions: round3(current.world.obsidianLegions + safeAmount),
+				},
+			}));
+		},
+		[setState],
+	);
+
+	const addDragonGuards = useCallback(
+		(amount: number) => {
+			const safeAmount = Math.max(0, Math.min(1_000_000_000, amount));
+			if (safeAmount <= 0) return;
+			setState(current => ({
+				...current,
+				world: {
+					...current.world,
+					dragonGuards: round3(current.world.dragonGuards + safeAmount),
+				},
+			}));
+		},
+		[setState],
+	);
+
 	const resetDragonAttacks = useCallback(() => setState({ ...INITIAL_ATTACK_STATE, world: { ...INITIAL_WORLD_STATE, lastProcessedAtMs: Date.now() } }), [setState]);
 
 	const value = useMemo<DragonAttacksContextType>(
@@ -393,9 +425,11 @@ export function DragonAttacksProvider({ children }: { children: ReactNode }) {
 			getAbilityRemainingSeconds,
 			purchaseUpgrade,
 			activateAbility,
+			addObsidianLegions,
+			addDragonGuards,
 			resetDragonAttacks,
 		}),
-		[activateAbility, getAbilityRemainingSeconds, getUpgradeCoinCost, getUpgradeLevel, getUpgradeOrbCost, purchaseUpgrade, rates, resetDragonAttacks, state.activeAbilityUntilMs, state.upgradeLevels, state.world],
+		[activateAbility, addDragonGuards, addObsidianLegions, getAbilityRemainingSeconds, getUpgradeCoinCost, getUpgradeLevel, getUpgradeOrbCost, purchaseUpgrade, rates, resetDragonAttacks, state.activeAbilityUntilMs, state.upgradeLevels, state.world],
 	);
 
 	return <DragonAttacksContext.Provider value={value}>{children}</DragonAttacksContext.Provider>;

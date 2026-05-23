@@ -77,6 +77,7 @@ export interface ItemsContextType {
 	addItemToInventory: (id: string, qty?: number) => void;
 	sellItem: (id: string) => boolean;
 	processDailyPayouts: () => number;
+	simulateProductionSeconds: (seconds: number) => SimResult;
 	processDragonClick: () => number;
 	getClickReward: () => number;
 	getItemCoinCost: (id: string) => number;

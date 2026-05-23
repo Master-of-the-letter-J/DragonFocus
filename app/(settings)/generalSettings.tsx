@@ -1,7 +1,9 @@
 import { useAscension } from '@/context/AscensionProvider';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
+import { useDragonOrbs } from '@/context/DragonOrbsProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useDragonSouls } from '@/context/DragonSoulsProvider';
+import { useDragonAttacks } from '@/context/DragonAttacksProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useItemCore } from '@/context/ItemCoreProvider';
@@ -12,16 +14,17 @@ import { usePopulation } from '@/context/PopulationProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
 import { useSurvey } from '@/context/SurveyProvider';
-import { useTheme } from '@/context/ThemeProvider';
+import { useTheme, type BackgroundTheme } from '@/context/ThemeProvider';
 import { useWeather } from '@/context/WeatherProvider';
 import Slider from '@react-native-community/slider';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 type VolumeKey = 'music' | 'sounds' | 'ambient' | 'dragonSounds';
 
 export default function GeneralSettings() {
 	const dragon = useDragon();
+	const attacks = useDragonAttacks();
 	const itemCore = useItemCore();
 	const itemEconomy = useItemEconomy();
 	const itemSnacks = useItemSnacks();
@@ -35,12 +38,14 @@ export default function GeneralSettings() {
 	const population = usePopulation();
 	const streak = useStreak();
 	const shards = useShards();
+	const orbs = useDragonOrbs();
 	const souls = useDragonSouls();
 	const coins = useDragonCoins();
 	const ascension = useAscension();
 
 	const [volumes, setVolumes] = useState({ music: 0.7, sounds: 0.8, ambient: 0.5, dragonSounds: 0.9 });
 	const [devMode, setDevMode] = useState(false);
+	const [cheatAmountInput, setCheatAmountInput] = useState('1000000');
 
 	const handleVolumeChange = (key: VolumeKey, value: number) => setVolumes(prev => ({ ...prev, [key]: value }));
 
@@ -58,9 +63,31 @@ export default function GeneralSettings() {
 
 	const resourceSummary = useMemo(
 		() =>
-			`${coins.getCoins().toFixed(0)} coins | ${shards.getShards()} shards | ${souls.getSouls()} souls | streak ${streak.getStreak()} | scar ${scarLevel.currentScarLevel}`,
-		[coins, scarLevel.currentScarLevel, shards, souls, streak],
+			`${coins.getCoins().toFixed(0)} coins | ${shards.getShards()} shards | ${orbs.getOrbs()} orbs | ${souls.getSouls()} souls | streak ${streak.getStreak()} | scar ${scarLevel.currentScarLevel}`,
+		[coins, orbs, scarLevel.currentScarLevel, shards, souls, streak],
 	);
+
+	const themeChoices: { id: BackgroundTheme; label: string; swatch: string }[] = [
+		{ id: 'dungeon', label: 'Dungeon', swatch: '#9F5427' },
+		{ id: 'castlePlains', label: 'Castle', swatch: '#6D9C52' },
+		{ id: 'forest', label: 'Forest', swatch: '#4E9A61' },
+		{ id: 'sky', label: 'Sky', swatch: '#5B9CC4' },
+		{ id: 'space', label: 'Space', swatch: '#5F85DB' },
+		{ id: 'volcano', label: 'Volcano', swatch: '#E45B2A' },
+		{ id: 'ocean', label: 'Ocean', swatch: '#0E7490' },
+		{ id: 'aurora', label: 'Aurora', swatch: '#7C3AED' },
+		{ id: 'crystal', label: 'Crystal', swatch: '#C026D3' },
+	];
+
+	const parseCheatAmount = () => {
+		const parsed = Number.parseInt(cheatAmountInput.replace(/,/g, ''), 10);
+		if (Number.isNaN(parsed)) return 1;
+		return Math.max(1, Math.min(1_000_000_000, parsed));
+	};
+
+	const runProductionTicks = (seconds: number) => {
+		itemEconomy.simulateProductionSeconds(Math.max(1, Math.min(100_000, seconds)));
+	};
 
 	const applyCoinMultiplier = (factor: number) => {
 		const current = coins.getCoins();
@@ -116,18 +143,17 @@ export default function GeneralSettings() {
 
 			<View style={styles.card}>
 				<Text style={styles.cardTitle}>Theme & Weather</Text>
-				<Text style={styles.infoText}>Theme mode: {theme.mode}</Text>
-				<Text style={styles.infoText}>Background theme: {theme.backgroundTheme}</Text>
-				<Text style={styles.infoText}>Brightness: {theme.brightness.replaceAll('_', ' ')}</Text>
-				<Text style={styles.infoText}>Dynamic weather: {weather.enabled ? 'On' : 'Off'}</Text>
-				<View style={styles.buttonRow}>
-					<ActionButton label="Light" onPress={() => theme.setMode('light')} variant="ghost" />
-					<ActionButton label="Dark" onPress={() => theme.setMode('dark')} variant="ghost" />
-					<ActionButton label="Dungeon" onPress={() => theme.setBackgroundTheme('dungeon')} variant="ghost" />
-					<ActionButton label="Castle" onPress={() => theme.setBackgroundTheme('castlePlains')} variant="ghost" />
-					<ActionButton label="Volcano" onPress={() => theme.setBackgroundTheme('volcano')} variant="ghost" />
-					<ActionButton label="Forest" onPress={() => theme.setBackgroundTheme('forest')} variant="ghost" />
+				<SettingRow label="Dark mode" value={theme.mode === 'dark'} onValueChange={value => theme.setMode(value ? 'dark' : 'light')} />
+				<Text style={styles.sectionLabel}>Background Theme</Text>
+				<View style={styles.themeGrid}>
+					{themeChoices.map(choice => (
+						<Pressable key={choice.id} style={[styles.themeChoice, theme.backgroundTheme === choice.id && styles.themeChoiceActive]} onPress={() => theme.setBackgroundTheme(choice.id)}>
+							<View style={[styles.themeSwatch, { backgroundColor: choice.swatch }]} />
+							<Text style={[styles.themeChoiceText, theme.backgroundTheme === choice.id && styles.themeChoiceTextActive]}>{choice.label}</Text>
+						</Pressable>
+					))}
 				</View>
+				<Text style={styles.sectionLabel}>Brightness</Text>
 				<View style={styles.buttonRow}>
 					<ActionButton label="Bright" onPress={() => theme.setBrightness('bright')} variant="ghost" />
 					<ActionButton label="Slight Bright" onPress={() => theme.setBrightness('slight_bright')} variant="ghost" />
@@ -155,6 +181,8 @@ export default function GeneralSettings() {
 				{devMode && (
 					<>
 						<Text style={styles.helperText}>Current resources: {resourceSummary}</Text>
+						<Text style={styles.helperText}>Cheat amount is clamped from 1 to 1,000,000,000.</Text>
+						<TextInput value={cheatAmountInput} onChangeText={setCheatAmountInput} keyboardType="number-pad" style={styles.cheatInput} placeholder="Cheat amount" placeholderTextColor={theme.colors.secondaryText} />
 
 						<Text style={styles.sectionLabel}>Day Flow</Text>
 						<View style={styles.buttonRow}>
@@ -162,6 +190,16 @@ export default function GeneralSettings() {
 							<ActionButton label="Force New Day" onPress={survey.forceNewDay} />
 							<ActionButton label="Try Ascend" onPress={() => ascension.ascend()} />
 							<ActionButton label="Clear Effects" onPress={() => itemSnacks.clearEffects(true)} />
+						</View>
+
+						<Text style={styles.sectionLabel}>Production Speed</Text>
+						<View style={styles.buttonRow}>
+							<ActionButton label="Run 1s Tick" onPress={() => runProductionTicks(1)} />
+							<ActionButton label="Run 1h Ticks" onPress={() => runProductionTicks(3600)} />
+							<ActionButton label="Run 1 Day Ticks" onPress={() => runProductionTicks(86_400)} />
+							<ActionButton label="Run 100K Ticks" onPress={() => runProductionTicks(100_000)} />
+							<ActionButton label="Coin Mult x86400" onPress={() => coins.setExternalCoinMultiplier(86_400)} />
+							<ActionButton label="Coin Mult x1" onPress={() => coins.setExternalCoinMultiplier(1)} />
 						</View>
 
 						<Text style={styles.sectionLabel}>Dragon</Text>
@@ -183,6 +221,7 @@ export default function GeneralSettings() {
 							<ActionButton label="+10" onPress={() => coins.addCoins(10)} />
 							<ActionButton label="+100" onPress={() => coins.addCoins(100)} />
 							<ActionButton label="+1000" onPress={() => coins.addCoins(1000)} />
+							<ActionButton label="+Amount" onPress={() => coins.addCoins(parseCheatAmount())} />
 							<ActionButton label="+10000000" onPress={() => coins.addCoins(10_000_000)} />
 							<ActionButton label="x2" onPress={() => applyCoinMultiplier(2)} />
 							<ActionButton label="x10" onPress={() => applyCoinMultiplier(10)} />
@@ -194,9 +233,17 @@ export default function GeneralSettings() {
 							<ActionButton label="+10" onPress={() => shards.addShards(10)} />
 							<ActionButton label="+100" onPress={() => shards.addShards(100)} />
 							<ActionButton label="+1000" onPress={() => shards.addShards(1000)} />
+							<ActionButton label="+Amount" onPress={() => shards.addShards(parseCheatAmount())} />
 							<ActionButton label="+10000000" onPress={() => shards.addShards(10_000_000)} />
 							<ActionButton label="x2" onPress={() => applyShardMultiplier(2)} />
 							<ActionButton label="x10" onPress={() => applyShardMultiplier(10)} />
+						</View>
+
+						<Text style={styles.sectionLabel}>Orbs</Text>
+						<View style={styles.buttonRow}>
+							<ActionButton label="+1" onPress={() => orbs.earnOrbs(1, 'other')} />
+							<ActionButton label="+100" onPress={() => orbs.earnOrbs(100, 'other')} />
+							<ActionButton label="+Amount" onPress={() => orbs.earnOrbs(parseCheatAmount(), 'other')} />
 						</View>
 
 						<Text style={styles.sectionLabel}>Souls</Text>
@@ -205,6 +252,7 @@ export default function GeneralSettings() {
 							<ActionButton label="+10" onPress={() => souls.addSouls(10)} />
 							<ActionButton label="+100" onPress={() => souls.addSouls(100)} />
 							<ActionButton label="+1000" onPress={() => souls.addSouls(1000)} />
+							<ActionButton label="+Amount" onPress={() => souls.addSouls(parseCheatAmount())} />
 							<ActionButton label="+10000000" onPress={() => souls.addSouls(10_000_000)} />
 							<ActionButton label="x2" onPress={() => applySoulMultiplier(2)} />
 							<ActionButton label="x10" onPress={() => applySoulMultiplier(10)} />
@@ -238,6 +286,16 @@ export default function GeneralSettings() {
 							<ActionButton label="+1 HP" onPress={() => adjustHp(1)} />
 							<ActionButton label="+10 HP" onPress={() => adjustHp(10)} />
 							<ActionButton label="+100 HP" onPress={() => adjustHp(100)} />
+						</View>
+
+						<Text style={styles.sectionLabel}>Population & Armies</Text>
+						<View style={styles.buttonRow}>
+							<ActionButton label="+Population" onPress={() => population.addPopulation(parseCheatAmount())} />
+							<ActionButton label="Kill Amount" onPress={() => population.destroyPopulation(parseCheatAmount())} />
+							<ActionButton label="Kill Population" onPress={() => population.destroyPopulation(population.population)} />
+							<ActionButton label="+Army" onPress={() => attacks.addObsidianLegions(parseCheatAmount())} />
+							<ActionButton label="+Dragon Guards" onPress={() => attacks.addDragonGuards(parseCheatAmount())} />
+							<ActionButton label="Reset War" onPress={() => attacks.resetDragonAttacks()} />
 						</View>
 					</>
 				)}
@@ -292,12 +350,19 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
 	sliderLabel: { color: colors.headerText, fontWeight: '700' },
 	sliderValue: { color: colors.secondaryText, fontWeight: '700' },
 	buttonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+	themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8, marginBottom: 4 },
+	themeChoice: { minWidth: 96, flexGrow: 1, flexBasis: '30%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primaryBackground, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 10 },
+	themeChoiceActive: { borderColor: colors.tint, backgroundColor: colors.tertiaryBackground },
+	themeSwatch: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: colors.border },
+	themeChoiceText: { color: colors.headerText, fontWeight: '800', fontSize: 12 },
+	themeChoiceTextActive: { color: colors.titleText },
 	ghostButton: { backgroundColor: colors.primaryBackground, borderWidth: 1, borderColor: colors.border },
 	ghostButtonText: { color: colors.headerText },
 	primaryButton: { backgroundColor: colors.buttonBackground, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' },
 	primaryButtonText: { color: colors.buttonText, fontWeight: '800', textAlign: 'center' },
 	cheatButton: { backgroundColor: colors.tertiaryBackground, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
 	cheatButtonText: { color: colors.titleText, fontWeight: '800' },
+	cheatInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: colors.text, backgroundColor: colors.inputBackground, marginBottom: 8 },
 	sectionLabel: { fontSize: 13, fontWeight: '800', color: colors.titleText, marginTop: 8 },
 	settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
 	settingLabel: { flex: 1, paddingRight: 12, color: colors.headerText, fontWeight: '600' },
