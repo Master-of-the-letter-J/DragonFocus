@@ -3,7 +3,7 @@ import { formatAbbreviatedNumber, formatDecimalNumber } from '@/constants/number
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface SurveyResultsData {
 	coinsEarned: number;
@@ -29,6 +29,7 @@ export interface UseResultsSectionParams {
 }
 
 export function useResultsSection({ title, results, onFinish }: UseResultsSectionParams): SectionHookResult<ResultsSectionState> {
+	const sectionStyles = useSectionStyles();
 	const [state, setState] = useState<ResultsSectionState>({ results, title });
 
 	useEffect(() => {

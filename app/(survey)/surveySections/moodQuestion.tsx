@@ -3,7 +3,7 @@ import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider'
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface MoodOption {
 	emoji: string;
@@ -50,6 +50,7 @@ export function useMoodQuestionSection({
 	lockedMessage,
 }: UseMoodQuestionParams = {}): SectionHookResult<MoodSectionState> & { moodOptions: MoodOption[] } {
 	const { questionSettings: contextSettings } = useQuestions();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enableMood ?? true;
 

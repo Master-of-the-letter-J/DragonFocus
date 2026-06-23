@@ -2,7 +2,7 @@ import { Text, View } from '@/components/Themed';
 import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider';
 import { FUN_FACTS, type FunFact } from '@/data/fun-fact-data';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 import type { SectionHookResult } from './sectionTypes';
 
 export interface FunFactSectionState {
@@ -27,6 +27,7 @@ const pickRandomIndices = (length: number, count: number) => {
 
 export function useFunFactSection({ surveyType, questionSettings }: UseFunFactSectionParams): SectionHookResult<FunFactSectionState> {
 	const { questionSettings: contextSettings } = useQuestions();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const count = clamp(surveyType === 'morning' ? resolvedSettings.funFacts.morningCount : resolvedSettings.funFacts.nightCount, 0, 3);
 

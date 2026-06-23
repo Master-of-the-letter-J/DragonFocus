@@ -1,0 +1,1154 @@
+﻿Coding Instructions
+Coding Instructions
+Here is a checklist for what to do (for an AI, such as Codex)
+The App is named Dragon Focus, and centers around 2 surveys - morning and night - affecting a dragon’s HP and fury level.
+
+
+________________
+
+
+What to Add Pt. 1 - Complete Overhaul & Expansion
+Going through all the scripts, do the following tasks (go through every detail, don’t omit nor truncate even a little section) in one go, then fix all errors. Be creative and make sure the layout is usable, neat, and organized and make the code simple/readable/concise if possible! Add Comments where necessary, and have consistent formatting and make it easily readable to a programmer. Make all the names consistent, keep everything consistent, not too complicated.
+
+
+1. Complete App Reset
+   1. 4 Tabs: Hatchery, World, Archives, Options Page. 
+   2. Top Header: Much More Simplified to Fit on Phone. A Menu, Dragon Fury, Energy, and Dark Energy (And Crimson Streak) Only
+   3. Completely Overhaul these Pages Reading the Introduction and Layout of the Dragon Focus App 2.0 File Changes.
+   4. Reconstruct the Simplified Incomplete-Goal Goal Editors and Complete Goals + The Harvest Page
+   5. Reconstruct the Survey into the streamlined simplified Version
+   6. Add the New World Mechanics and the new Idle Game, Balance Changes may Be Needed In Future
+   7. Add the New Gamemode Mechanic Features
+   8. Revise the Archives Logs Tab With The New Logs Table System
+   9. Redo the Achievements
+   10. Revise the Popups with the new Milestones or when unlocking/discovering features or events.
+   11. Missions are To Be Added in the Future!
+   12. Add the Saving Feature as Well for the currencies, logs of goals, stats, achievements, dragon stats, milestones, etc, for the future account system
+2. (Paste The 2.0 Document Changes)
+
+
+________________
+
+
+
+
+Introduction
+Dragon Focus App
+The App to Help Concentration: Gives a Customizable Survey at the End of the day on how Concentrated the User has been and becomes angry or happy depending on the result, accumulating over days and weeks.
+
+
+Check Out: Collaboration
+________________
+
+
+Premise:
+TODO: Add New Names, Simplify Game Aspects!
+
+
+Summary
+Everyday, you have 2 surveys: one to fill in goals to accomplish, and another in the evening of completing them. You can also check them throughout the day. By completing goals, you change the status of a ‘dragon’ — it’s happiness , health, and age.
+
+
+* Lore: You’re Chosen By a Secret Government to Raise an Ancient Cosmic Dragon Producing Energy for the will of your country, at the expense of being in a cult to be well-fed and happy. Your goal is to raise it to the highest age possible (1 age = 1 day). This ancient dragon has a rage bar, which if it fills up, it starts attacking Civilization, having unprecedented costs to your energy production. Your country must perform a balancing act, to contain this dragon secretly, while producing as much energy to become an ultimate superpower. Your goal is to maintain balance, raise your dragon, and unlock deep secrets, all through deep focus.
+   * Early Into App: Unlock Milestones to Unlock New Features and Reveal Secret Government Logs
+   * Mid Into App: Continuously Transcend, Complete Goals, Gain Exponential Energy, and Potential Missions to Keep Your Dragon Alive.
+   * Late Into App: Keep the Dragon Alive as Long as Possible with Harder and Harder Missions
+* Function: To give motivation for achieving goals.
+   * Surveys: There’s a “Morning Briefing”, and “Debrief”, which are both editable. Fill these in to review goals at start and end of the day.
+   * Goals: Each goal has a title, and can have a description. They Can Have Sub-Goals. You can choose a Goal to Repeat (A “Habitual Goal”), and choose the days of week it repeats (custom, weekends, or weekdays option). Or you can have it to not repeat (A “To-Do Goal”), Setting the Date to be Completed (default Today). Lastly, You Can set a Start Time, End Time, and The Duration it Takes for both goals, or due ‘end of the day’ (each updating in a clean ui), or have a check for no due date. You Can Add a Category Flair, and an Importance Flair to each goal.
+   * Types of Goals (Top to Bottom): Late To-Do Goals (ONLY if not completed by end of day), Habit Goals Due Today, To-Do Goals Due Today, Future Habit Goals, To-Do Goals Due 1-7 Days, To-Do Goals Due >7 Days.
+   * Non-Premium Goals: Up to 10 Goals, Up to 5 Repeating Goals, 5 Sub-Goals/Goal.
+   * Premium Goals: Unlimited Goals, Unlimited Repeating Goals, Unlimited Sub-Goals
+   * Settings: You can change settings to make the app less gamified.
+   * Pomodoro Timer: The Primary Way to Focus on Goals, Gives a Massive Necessary Boost.
+* The Motivation: Unlocking All-Round Secrets. (Stats)
+   * Energy: The Primary Currency. You Gain Cosmic Energy Through Generators that harvest the dragon, Which are Boosted Through Pomodoro Timers. Which are Bought Through More Cosmic Energy.
+   * Dark Energy: The Secondary Currency. Rarer, Used to Buy Advanced Armies and For Boosts.
+   * Crimson Shards: The In-App Purchase Currency. Used to Unlock New Features. You Gain By Milestones, Focus Sessions, and Surveys.
+   * Plasma: Prestige Currency With Ascension of Energy. Used to Buy Massive Powers and Boosts Upgrades 
+   * Anomalies: Prestige Currency With Transcendence of Plasma. Resets Generators. Used to Buy Ultimate Deities
+   * World Population: Max Energy = Current World Population. World Population has a Cap, Which Can Only Be Increased During Transcension.
+   * Dragon’s Fury: When Dragon Gets Angry (Percentage Bar) >100, It Unleashes It on The Population. The Dragon Will Succumb To Death if The Population Reaches 0, Since it Gathers its Energy From Population.
+* Completion: The Milestones For Completions
+   * Ascension (or Armaggedon): After Reaching An Energy Threshold, You Unlock Ascension. This Allows you To Harvest Plasma From Energy Resetting the World’s Energy in An Apocalypse. Plasma Gives Powerful Boosts and Powers That Accelerate Dark Energy Earned, And Therefore Energy Itself.
+   * Transcension (or Ascension): Unlocked After Reaching Max Energy and Population Cap, You Unlock Transcension. These Reset Your World and Give You Anomalies Depending on the Total Plasma Gained, Which Are Used to Fund Dragon Deities - The Final Ultimate Feature Allowing for More Control Over the App and Features and Boosts. The Dragon Gives You Secrets on the Origin of the Universe.
+* Account, Logs, and Monetization: Details for Account Page
+   * The Dragon Pact: A Subscription for More tools to make Scheduling, to Make Progression Faster, and to Buy In-Game Currency (Crimson Shards) For a Discount
+   * Logs: Can be Viewed in a Table or List Format, Displaying Results of Surveys For Each Day
+   * Achievements and Statstics: Shows Achievements and Statstics
+   * Graveyard Page: Shows all Deceased Dragons From…Unfortunate Mishaps.
+   * Black Market: Use Money to Buy Crimson Shards. Use Crimson Shards to Unlock Features, or Buy Additional Energy, Orbs, or Boosts.
+* General Layout: 4 Tabs. All Pages Have a Top Panel.
+   * A Top Panel: For All Pages
+   * The Moon Lair: Displays the Dragon, Goals, and the Pomodoro Timer. Everything Focus-Related
+   * The World: With the “Game” Aspects (Dragon Guards vs Obsidian League, Ascension, Transcension), and the Market and Black Market.
+   * The Dragon Pact: Shows Info to Buy Premium (the Dragon Pact), and The Profile Page (The Dragon Pact) / The Archives in table of list format, Achievements, Statistics A Graveyard)
+   * Settings/Options Page: Shows settings for the survey and general settings
+
+
+________________
+
+
+
+
+
+
+Competition
+Finch (An AI Pet) and Habitica (Gamified Routine) Could Challenge this App. 
+
+
+* Finch, Habitica        
+* Unlike These Apps, Dragon Focus is designed to be more volatile in actions, which therefore can make completing tasks more urgent and more demanding.
+* Dragon Focus is Also Designed for Simplicity, with a customizable task sheet that should be easy to use
+* Dragon Focus utilizes streaks and its personality, alongside many notifications to keep users engaged.
+* Overall, this makes for a simple, and extremely engaging app that attempts to have longevity, similarly to the engagement/surveys of Duolingo, with idle aspects similar to cookie clicker, and the main point being to-do and habit checklists similar to Finch, Habitica, or the Reminders app
+
+
+________________
+App Layout
+App Layout
+The Layout of The Foolproof App
+
+
+________________
+
+
+
+
+Landing Page: Shows a Graphic of a Dragon, and has a “Enter Dragon Focus” Button. When Clicked, will animate a 2-door slide into the home page.
+
+
+All-Page Layouts:
+* Top Panel: Every Page Displays a Top Panel. From Left to Right, When a Stat is Clicked, a Bottom Popup will appear saying the name of the stat:
+   * Row 1:
+      * Menu Button, Containing: Take Check-In Survey, Take Check-Out Survey, View Goals, View Account Button, View Game-Modes Button, View Tutorial Button. (These can Be Hidden/Changed in Options Tab)
+      * Milestone Bar (Text: Milestone Name ~ Milestone # ~ Current Energy / Required Energy )
+      * Dragon’s Fury Bar (Yin/Yang) (Text: Fury # /Max Fury Before Catrostophe) 
+      * Dragon’s Age # (Current Dragon Age
+      * Total Crimson Streak # (Sum of All Survey, Bonus Pomodoro, and Goal Streaks, On a Fire, or Fire Emoji Beside)
+   * Row 2:
+      * Energy # (Energy Emoji. Boosted Heavily By Pomodoro.)
+      * Dark Energy # (Dark Energy Emoji. Exclusive to Surveys/Goals/Pomodoro)
+      * Crimson Shards # (Shards Emoji. Premium Currency)
+      * Plasma # (Prestige Currency 1. Only Shown in Armageddon Tab)
+      * Anomalies # (Prestige Currency 2. Only Shown in Transcension Tab)
+      * Population # (Equal to Max. Energy. Only Shown in World Tab)
+* Top Left (Not Home): In Every Page Besides the home page, the backpack icon is replaced with a small hide-able top left menu button that shows up if you haven’t taken the morning or evening survey. These show up as a popup to take the surveys.
+* Top Tabs: Below the Top Panel and beside the Top Left is the Top Tabs.
+
+
+The Hatchery - 4 Tabs: The Nexus (Dragon / Entrance), Incomplete (Goals), Completed (Goals), Pomodoro Cave (Timer)
+* The Nexus: View Your Dragon, Its Age, and Its Anger Level. Click to Gain 1 Tick of Energy! (Default)        
+   * Also Shows Check In and Check Out Surveys In the Bottom
+* Active Directives: Shows a List of All Goals Incompleted, Starting with Habitual Goals, Then To-Dos.
+   * Also Shows Check In and Check Out Surveys In the Bottom
+* Executed Protocols: Shows Completed Goals In Last 24 Hours. (And Harvest Rewards)
+   * Rewards Can Be Gotten From a Button Below ‘Harvest Rewards’, Or Automatically Within 24 hr
+* Pomodoro Cave: This Final Page Shows an Inactive Timer. 
+   * Either Click on the ‘Timer’ Button on an Incomplete Goal, or Get Directed By the Pomodoro Page
+   * The Pomodoro Timer When Active Will Hide all the Tabs, Including Bottom, To Ensure Pure Focus
+   * A Redirect Link Can Also Direct You to the “Pomodoro and To-Do Powers” In the World
+
+
+The World - 5 or 6 Tabs: The World, Energy Production, Upgrades / Dark Energy, Boosts / Plasma, Transcension / Deities, Black Market
+* The World: Displays Earth At the Center, and Population/Deaths on Top Panel
+* Energy Production: This is Where You Buy Sources of Energy, All From the Core Dragon.
+* Dark Energy Upgrades: Upgrade Your Energy Sources With Dark Energy!
+* Plasma Boosts / Armageddon: Cumulate Energy to Commit Armageddon to Earn Plasma! Boost Rewards With Plasma / Dark Energy!
+* Deities / Transcension: Transcend to Increase Population (Max. Energy) Threshold, and Get Anomalies To Unlock All-Powerful Deities!
+* Black Market: Convert Energy Shards to Pure Energy or Dark Energy!
+
+
+The Archives - 4 or 5 Tabs: The Dragon Pact/Account, Logs (Table), Achievements, Statistics, Dragon Graveyard
+* The Dragon Pact / Account: Shows Premium Pricing. Also Shows the Login to your Profile. (with google, or etc to allow for use in multiple devices with same account)
+* Logs (Table): Shows Everyday You did a Check-In or Check-Out and Goals Completed in that day (shows skipped days all in one row that it’s skipped)
+* Achievements: Shows Achievements, Giving Extra Shards
+* Statistics / Dragon Graveyard: Statistics Show Total Goals Completed, Total Energy, Energy This Ascension Etc, And Dragon Graveyard Shows Deceased 
+
+
+The Settings - 2 Tabs: General Options (+ Gamemodes), Check-In & Out Options
+   * General Options: Volume, Sound Effects Volume, Theme, Brightness, Gamemodes, (Cosmetics, Music, or Outfits to Be Added)
+   * Check In/Out Options: Change Order, Enable/Disable Questions, Enable/Disable Check-In Requirements.
+
+
+________________
+
+
+
+
+
+
+The Hatchery: Tabs
+The Hatchery
+Focus on Goals With a Pomodoro Timer, Complete Goals, Check In/Out, Mass Produce Energy, and Ultimately Grow Your Dragon!
+Trust the Process. Memento Mori.
+
+
+________________
+
+
+
+
+Layout
+* Sections: The Nexus (Dragon / Entrance), Incomplete (Goals), Completed (Goals), Pomodoro Cave (Timer)
+* The Nexus: View Your Dragon, Its Age, and Its Anger Level. Click to Gain 1 Tick of Energy! (Default)        
+   * Also Shows Check In and Check Out Surveys In the Bottom
+* Incomplete Goals: Shows a List of All Goals Incompleted, Starting with Habitual Goals, Then To-Dos.
+   * Also Shows Check In and Check Out Surveys In the Bottom
+* Completed Goals: Shows Completed Goals In Last 24 Hours. (And Harvest Rewards)
+   * Rewards Can Be Gotten From a Button Below ‘Harvest Rewards’, Or Automatically Within 24 hr
+* Pomodoro Cave: This Final Page Shows an Inactive Timer. 
+   * Either Click on the ‘Timer’ Button on an Incomplete Goal, or Get Directed By the Pomodoro Page
+   * The Pomodoro Timer When Active Will Hide all the Tabs, Including Bottom, To Ensure Pure Focus
+   * A Redirect Link Can Also Direct You to the “Pomodoro and To-Do Powers” In the World
+________________
+
+
+The Nexus & Dragon
+All of these are adjustable and can be toggled on / off based on the user’s desire!
+
+
+The Nexus:
+* At the very start of your journey, messages will pop-up to spawn the dragon, and give a little background info (keep the user guessing)
+* Displays Your Dragon at Center, it’s Name, Fury Bar, and Age (It Dies When World Pop ≤ 0)
+* Shows the Bottom Buffer In Bottom of Screen, Scroll to See Previews of:
+   1. The Check-In and Check-Out Survey (First, Always!)
+   2. Preview Incomplete Goals, Click for Full Page
+   3. Preview of Completed Goals, Click for Full Page
+   4. Preview of Pomodoro Timer and 4 Bonus Rewards, Click for Full Page
+* Click Dragon to Show Quote Texts Each Click!
+
+
+The Dragon Age & Stages
+* Design: A Mysterious (Default Red) Dragon You Must Keep In Touch. As it Ages, its Sprite Changes, and The Math for Population Destroyed Changes…
+* Age 0-10: Egg ~ The Dragon Starts off as An Egg, Which Isn’t Yet Hatched
+* Age 10-20: Hatchling ~ An Egg With a Baby Dragonet’s Head
+* Age 20-30: Dragonet ~ A Full Baby Dragon-Net
+* Age 30-90: Juvinelle  ~ A More Grown Dragon Teenager. If It’s a Juvinelle…It can fly
+* Age 90-180: Young Adult ~ A Small Dragon That Can Fly. And Breath Fire.
+* Age 180-270: Adult ~ A Dragon, Flying, and Breathing Tons of Fire. Fire has Tremors
+* Age 270-365: Elder Dragon ~ a Dragon, Flying, and Breaths Blue Fire. Scales are Large, and Tremors +
+* Age 365+: Great Wyrm (You Can Change the Name of the Dragon) (Max HP: 500) ~ a Massive Dragon, Small Wings, Breathing Red Fire With  Tremors++
+
+
+Dragon’s Fury / Anger Level (Milestone 1)
+* The Dragon gets furious when the user misses goals or neglects the app, as shown by a Fury Bar Displayed Below It (Goes up to Threshold)
+* Threshold: The Default Threshold is (100 + Dragon’s Age). When Anger Exceeds This Amount, the Population Starts to Decrease…
+* Min/Max: The Minimum Anger is 0, and the Default Maximum is 10 * Threshold (Increases in Hard and Hard+ Modes)
+* Shields: Buy Anger Shields In the Black Market. These shields from anger increase temporarily. 
+* When Dragon Gets Angry It Unleashes It on The Population. World Deaths/Day Are Below:
+   * +(Dragon’s Total Fury) * (Dragon’s Age)^2 (Max. 1 Billion / Day)
+   * +(Dragon’s Total Fury  * 0.002%) * (Current Population).
+* Hard Mode: In the options, Hard and Hard+ Modes Increases the Anger Gotten AND Max Anger Significantly, With Trade-Off of More Energy
+* Invincible and Lock-In Modes: Anger is Paused in These Modes, With Debuffs to Energy or a Change of Goals.
+* (Except for Hard and Hard+ Modes) Click Fury Bar to Decrease It (Price: 1 Fury = 1 Shard)
+
+
+The Dragon Death
+* The Dragon Will Succumbs to death when the Population Reaches 0. A series of messages pops up, revealing how the dragon gets energy from the population.
+* Containment Breach: Energy Cannot be Generated, Buffs are Disabled, and You Cannot Access World Tab When Dragon Is Dead
+* Mass Destruction: A THIRD of all Base Energy Production is Destroyed (Less is Destroyed with Dark Energy Upgrades and Hepheastus Levels)
+* Revive: Revive the Dragon By By Clicking The ‘Revive’ Button, Reviving Instantly
+* Revive Note: Population Increases By +1/Dark Energy, Alongside the Bonus Growth % Rate.
+* Revive Note: Your Dead Dragon Will Show Up on a Grave in The Dragon Graveyard
+* Note: (Regardless of If Dragon is Dead) You Get +3, +2, And Then +1 Random Single-Hour Snack For Every 7 Days Your Are Offline (See Black Market Page For Info)
+
+
+________________
+
+
+
+
+The Surveys
+There are two optional surveys: check-in (briefing) and check-out (debriefing) surveys, to guide your with getting rewards through goals
+
+
+The Survey Process:
+* First, Fill in Check-In Survey (Can be Required or Not, Take Again to Change Answers)
+* After, Check-Out Survey Will Be Available Until End of Day. (Also Can be Required or Not)
+* Once Check-Out is Filled, Check-Out is Disabled Until Another Check-In is Filled in Again
+
+
+Overview of Survey (Summary): 
+1. Survey Advice: Gives Advice About Survey or a Quote (Optional)
+2. Mood Question: How do you feel? (Optional, Recommended)
+3. Edit: Check In: Edit Your Goals OR Check-Out: Check Off Your Goals and Harvest Rewards.
+4. Results: Show the Results, and Rewards
+
+
+Overview of Survey (Detailed):
+1. Survey Advice: Gives Advice About Survey or Quotes
+   1. Gives Encouragement To Fill the Survey!
+2. Question: How Do You Feel? (Mood Question)
+   1. Survey: Optional Morning and Night
+   2. Mood: A Question about your mood, affecting the entity’s current character.
+      1. Description: Multiple Choice Question About Your Current Mood. Gives -5, -3, 0, +3, and +5 Fury depending on the answer.
+         1. High Energy: Excited, Surprised, Shocked, Enraged / Disgusted 
+         2. Medium Energy: Fulfilled, Calm / Content, Uneasy / Confused, Anxious
+         3. Low Energy: Serene, Sleepy, Bored / Drained, Despair
+         4. Basic: Great, Good, Okay, Meh, Down, Sad, Angry
+3. Question: Edit Goals / Check off Goals (Check in or Check Out Survey)
+   1. Show the Goal Editor in Its Entirety in Check In Survey
+   2. Shows the Complete Goals Entirely in Check Out Survey.
+4. Question: Harvest Goals! (Check Out Survey Only)
+   1. Shows All Completed Goals to Confirm A Harvest.
+5. Results: Show the Results
+   1. All Results will Show Up in a Table in the “Archives” Page (In a New Format!)
+
+
+________________
+
+
+Habit Goals, To-Do Goals, Harvesting Goals
+Goals That Help You Focus Enriches the Government, and Is the Best Way to Get Dark Energy.
+
+
+Goals: Information
+
+
+Goals Layout (Incomplete Goals Page)
+* Layout: Habit Goal Title On Top. Then, Habit Advice as Subheader. Top Right Has the Add Goals Button. Below, Will Be a List of Goals.
+* Goal Limit: 6 Habit Goals, 12 Tasks, No Crimson Challenge Without Premium, Unlimited of all With Premium.
+* Two Types - Habits and Tasks
+* Sorting: Time to Complete
+
+
+Individual Goals Layout
+* Individual Goal (Left to Right): Checkbox, Time Goal, Title (Subtitle Below), Category, Importance, Crimson Streak / Enable Challenge / Repair Streak, Detail-Edit Goal, Delete Goal, Move Goal.
+* Sub-Goals: Listed Below an Individual Goal (Left to Right): Checkbox, Title, (Left), Edit, Delete. 
+* Goal Categories: Personal, Mental, Physical, Career, Relationships, Contribution, Financial, Other, Custom
+* Goal Importance Levels: Important+, Important, Not Important (Default)
+* Goal Time Limits: (Habit) Days of Week Enabled (Default all Selected), Repeat Every _ Weeks (Default 1), (All) Add Sub-Goals, Title, Default Time Taken, and Time Goal is Due. 
+
+
+Crimson Streaks and Challenge
+* Crimson Streak: Repeating Habit Goals Get +1 Streak When Completed Within 24 Hours of Due Time. Between 24-48 Hours, It’s Dormant (Streak Stays Same When Earned). Between 48-72 Hours (Or Number Increased By a Deity) The Streak Cracks, and You Can Pay 5 Shards to Recover the Cracked Streak. After This, It Becomes a Broken Streak, Contributing Cumulative +(Days Broken) Dragon Anger Daily.
+   * Total Crimson Streak = Sum of All of The Non-Dormant Streaks. When 0, Dragon Gets Angry…
+* Crimson Challenge (Premium Only): Enabling Challenge Mode Give a Cumulative (Doubled) Dark Energy Reward When Accomplishing 3, 7, 14, 30, 90 Days of Streak, But if you Fail (Broken), You Get No Dark Energy and Cumulative (Doubled) Amounts of Dragon Anger!
+
+
+Check-In/Out Rewards, Harvesting Goals Rewards 
+Note: Premium Quadruples The Maximum Shards
+Note: Plasma Boosts Increase the Dark Energy Amounts Further!
+Note: Check-In and Check-Out Surveys are Optional, Except for Hard+ Mode!
+
+
+Goals Layout (Completed Goals Page)
+* Completion: Goals are added to the completed goals page, have their streaks added, and added to the archives!
+* Un-Complete: For goals completed within 24 hours, they can be re-added back to incomplete goals page, (removes added streak, potentially into late goals)
+* Finality: When harvested, rewards are calculated based on the day they were checked off, and your current upgrade multipliers. The goal is permanently archived.
+* Auto-Harvest: You can enable Auto-Harvest, which harvests goals every 24 hours at the end of the day!
+* Lock-In Exception: Goals cannot be harvested or auto-harvested during the lock-in modes.
+
+
+Anti-Cheat
+* Anti-Cheat: All incomplete goals count to the goal limit. All completed goals (harvested and un-harvested) count to the goal limit if it was created on the same day. Deleting a goal removes it from this limit. A goal not created on the same day and harvested does not count towards the limit.
+* Anti-Cheat: Goals Completed Within 15 minutes is an “Emergency Directive”. After 3 of These are Done In a Day, No Rewards are Collected.
+* Anti-Cheat: Due Date of Late Goals Cannot be Changed!
+* Anti-Cheat: Auto-Harvest Goals At the End of the Day, Showing the Rewards When User Comes Back
+
+
+Rewards
+* Check In Reward: +(20 + 10 * Streak) Dark Energy, +(1 + Streak, Up to 5) Shards (Max. 5 Shards/Day)
+* Check Out Reward: +(20 + 10 * Streak) Dark Energy, +(1 + Streak, Up to 5) Shards (Max. 5 Shards/Day)
+* Bonus Pomodoro Reward (Doing 15, 30, 45, 60 min / Day): +(15 Dark Energy + 7.5 * Streak) Dark Energy, +(Streak, Up to 4) Shards (Max. 16 Shards/Day)
+* Habit Reward: +(10 Dark Energy + 5 * Streak) Dark Energy, +(Streak, Up to 3) Shards (Max. 30 Shards/Day)
+* To-Do Reward: +(10 + # Days To Complete, up to 90), +1 Shards (Max. 10 Shards/Day)
+* Sub-Goal Reward: +2 Dark Energy
+
+
+* Late Reward (Both): +5 Dark Energy, (Repairs Streak automatically if <48 Hours, But No Reward)
+* During Challenge: No Dark Energy Reward (Doubled Cumulative When Completed Challenge), Keep Shard Reward
+* Repair Streak 48-72 +(Hestia Level * 24) Hours: 5 Shard Cost.
+
+
+* Fury Increase: Every Day Broken Streak = +(# Days Broken) Anger. Every To-Do Missed = +1 Anger. Miss Survey (Hard modes only)  = +2 Anger.
+* Fury Decrease: Every Shard Earned From Tasks and Surveys = -2 Anger/Shard.
+* Fury Decrease: Every To-Do or Habit Completed Also Contributes to -2 Anger.
+* Fury Decrease: Every Sub-Goal Completed Also Contributes to -1 Anger.
+
+
+________________
+
+
+The Pomodoro Cave / Timer / Other Rewards
+The Pomodoro Timer Enters “Containment” For The Dragon, Giving Rapid Increases in Rewards. This is the best way to get pure energy.
+All Other Rewards are Counted as Fractions of The Pomodoro Rewards, So They Also Get Buffed By The Plasma Upgrades!
+
+
+The Pomodoro Timer: Settings
+* Timer Type: Active, Short Break (5 min), Long Break (15+ min) (On Top, Timer Can be Paused or Continued)
+* Timer: Shows the Main Timer in a Circle. Also Shows the Energy Reward.
+* Intervals: 10 Min, 1 Min, 10 Seconds (+/-). In a Row Below the Timer.
+* Boosts: On Left Button, Choose a Boost to Activate (Cannot be Changed During Session)
+* Pause: On Center Button, Pause the Timer for Certain Time, Activating a Short or Long Break.
+* Break Containment (End): On Smaller Right Button, End the Timer, Stop Session, Show Rewards.
+* Goals: Choose Goal(s) to Be Listed on the Timer, Scrollable Below the 3 Buttons.
+   * When All Checked off, Shows the Remaining Goals
+* Bonus Rewards: Below Goals, There are 4 Bonus Optional Daily Streak-able Rewards for 15, 30, 45, and 60 minutes on timer.
+
+
+Pomodoro Rewards (Default):
+Cumulated Through Multiple Pomodoro Sessions. 
+
+
+* Energy: ×100 Energy Production
+* Population: ×10 Population Growth Ticks. 
+* Dark Energy: +1 Dark Energy/Minute. Paused During Break.
+* Shards: +1 Shard/Hour. +1 Shard/(Every 15 Minutes Un-Interrupted). Paused During Break.
+* Fury: -1 Anger/Minute. Paused During Break
+* Break: ×20 Energy During Break Time, ×2 Population Growth Ticks, +0.1 Dark Energy/Minute. No Shards.
+
+
+Rewards When Off Phone:
+* ×10 Energy, ×2 Population Growth Ticks, +0.05 Dark Energy/Minute. No Shards.
+* (Hard Mode Only): +1 Anger/Hour 
+* (Hard+ Mode Only): +2 Anger/Hour
+
+
+Rewards When Off App or Blocked Apps:
+* ×10 Energy, ×2 Population Growth Ticks, +0.05 Dark Energy/Minute. No Shards.
+* (Hard Mode Only): +1 Anger/Hour
+* (Hard+ Mode Only): +2 Anger/Hour
+
+
+Rewards On This App (Not On Pomodoro Session):
+* Normal Energy and Population. No Dark Energy. No Shards.
+* Normal Mode: +1 Anger/Hour
+* (Hard Mode Only): +2 Anger/Hour
+* (Hard+ Mode Only): +4 Anger/Hour
+
+
+Debuffs When Crimson Streak = 0:
+* Normal Energy and Population. No Dark Energy. No Shards.
+* Normal Mode: +1 Anger/Hour
+* (Hard Mode Only): +2 Anger/Hour
+* (Hard+ Mode Only): +4 Anger/Hour
+
+
+Debuffs When on a ‘Distraction’App:
+* Normal Population. No Energy, No Dark Energy. No Shards.
+* Normal Mode: +3 Anger/Hour
+* (Hard Mode Only): +6 Anger/Hour
+* (Hard+ Mode Only): +12 Anger/Hour
+
+
+Rewards When Locked In (Regardless of Apps):
+* Population is Paused, Energy is Paused, Dark Energy is Paused, Anger is Paused. Shards are Earned in Background.
+* Goal Bonus: Completed Goals Have Double Rewards When Completed While Locked In, But Can’t be Harvested Until Lock-In Mode is Disabled.
+* Everything Else: Same as Above.
+
+
+________________
+
+
+Lists of Pre-Filled Advice & Goals (Add In Another Page)
+
+
+________________
+
+
+
+
+The World: Tabs
+The World / Command Center
+The “Gamified” Section of the App. Control Your Energy Production, Boost Dark Energy, Prestige, and Ultimately Unlock New Secrets!
+
+
+________________
+
+
+
+
+Layout
+* Sections: The World, Energy Production, Dark Energy Upgrades, Plasma Boosts, Transcension, Black Market
+* The World: Displays Earth At the Center, and Population/Deaths on Top Panel. Milestones and (Future Missions) are Displayed at Bottom.
+* Energy Production: This is Where You Buy Sources of Energy, All From the Core Dragon.
+* Dark Energy Upgrades: Upgrade Your Energy Sources With Dark Energy!
+* Plasma Boosts / Armageddon: Cumulate Energy to Commit Armageddon to Earn Plasma! Boost Rewards With Plasma / Dark Energy!
+* Deities / Transcension: Transcend to Increase Population (Max. Energy) Threshold, and Get Anomalies To Unlock All-Powerful Deities!
+* Black Market: Convert Energy Shards to Pure Energy or Dark Energy!
+
+
+
+
+________________
+
+
+World Population
+The Population is Listed on Top of Earth in World Page
+When Population Reaches 0, the Dragon Passes Away From Pure Outrage.
+
+
+Purpose
+* When Energy Exceeds Population, It Gets Nerfed to a Massive 1% of Production.
+* The Max Energy in A Transcension is the Population Cap. When Reached, You Must Transcend.
+* When Population Reaches 0, The Dragon Must Be Revived; Energy Prod. Stopped 100% During this period
+* Default Energy Multiplier = 1 * log10(World Population)
+* Armageddon Increases Max Population and Population Growth!
+
+
+Growth
+* The Population Starts at 8 Billion, and Increases at a Default Rate of 1% / 100,000 Seconds. 
+* If Population is Below 1 Billion, Rate of Increase Is Increased to 1% / 10,000 Seconds
+* If Population is Below 100 Million, Rate of Increase Is Increased to 1% / 1,000 Seconds
+* If Population is Below 1 Million, Rate of Increase Is Increased to 1% / 100 Seconds
+* If Population is Below 1000, Rate of Increase Is Increased to 1% / 10 Seconds
+
+
+Max
+* Max World Population is 1 Trillion * 1000^(Armageddon Amount) * (Other Factors By Deities)
+
+
+Deaths
+* Deaths are Based on Dragon’s Anger Above Threshold (Default: 10 Times Maximum Anger Capacity)
+* World Deaths/Second is:
+* +(10 + Dragon’s Fury Above Threshold) * (Dragon’s Age)^2.
+* +(0.001% Dragon’s Fury Above Threshold) * (Current Population).
+
+
+________________
+
+
+Milestones
+Milestones are How You Track Progress Based on Total Energy. AMOUNTS TO BE CHANGED
+
+
+Summary
+* Milestones are obtained by total energy threshold throughout all transcensions.
+* Milestones earn you shards, and reveal the truths of the cosmic dragon, the government, and ultimately the universe
+* Milestones also unlock new features, which are introduced through pop ups as well
+
+
+Milestone Rewards:
+* 2^(Milestone #) Shards (Capped. Max 100 Shards / Milestone)
+
+
+Milestone Requirements:
+* Milestone 0: 0 Energy
+   * Reveals: Your dragon to spawn in as apart of the secret government 
+   * Reveals: Create an Account to Track Progress of the secret government agenda across multiple devices.
+   * Reveals: A Tutorial Page
+* Milestone 1: 1,000 Total Energy
+   * Reveals: Amplifiers to put on dragon, drastically multiplying energy production, and efficiency upgrades
+   * Reveals: A new invincible mode, showing how the dragon must be protected
+   * Reveals: Achievements and Statistics of Progress, and Past Secret Government Logs!
+* Milestone 2: 10,000 Total Energy 
+   * Reveals: Advertises the Dragon Pact, which the government reveals was secretly laid by the dragon for new benefits
+   * Reveals: More dark energy upgrades, and emphasizes the importance of the dragon for the secret plan.
+   * Reveals: Lock-In Modes, which are used to save the dragon, or to lock in when on an important real-life assignment
+   * Reveals: Logs in the Archives Page to Track Progress Further.
+* Milestone 3: 100 K Total Energy
+   * Reveals: Advertises the Black Market, where Shards are spent in Secret to for Benefits…
+   * Reveals: Pomodoro and To-Do Powers, which at higher levels require Plasma Energy, an unknown energy the government is trying to discover.
+   * Reveals: The Dragon Graveyard, showing the user that if they lay idle, the graveyard may be added…
+   * Reveals: Hard Mode, which can be used to further harvest energy, at the expense of a much more volatile dragon
+* Milestone 4: 1,000 K Total Energy
+   * Reveals: Armageddon, the Ultimate Secret Plan of the Government to Harvest Plasma Energy, at the expense of Population!
+   * Reveals: How the Energy is Soft-Capped By Population (If Not Discovered Already) to a Mere 1%!
+   * Reveals: Hard+ Mode, requiring undying consistency to maintain an extremely volatile dragon the user cannot step back from…
+* Milestone 5: 100 M Total Energy
+   * Reveals: Plasma Boosts, Which can Boost Production By Insane Amounts!
+   * Reveals: A Secret Message From the Dragon itself, of how it can Summon Deities, at a massive Price…
+* Milestone 6: 10,000 M Total Energy
+   * Reveals: Transcension, the Dragon’s Ultimate Plan that Wipes Our All Progress of Population, to Summon Personal Deities! 
+   * Reveals: When Reaching Threshold, How the Government Grieves, of how the Dragon has outsmarted them (Anger Temporarily Doubled)
+   * Reveals: Can the Government Keep Armageddons and Transcending Reality Without Consequence?
+* Milestone 7: 1,000 B Total Energy (Early-Game ⇒ Mid-Game)
+   * Reveals: How the Dragon continues to get exponentially more Powerful, and how the government continuously transcends all life.
+   * Reveals: The Final Anomaly Boosts, Giving Power to Plasma
+   * Reveals: As You Transcend More, the Population gets More and More Wary When You Start, Potentially Giving Missions or Anger Increases.
+   * (More Secret Logs are Unlocked As You Unlock Final Deities, Energy Amplifiers, and Once-Hidden Mass Upgrades)
+* Milestones 8+: 1000^(4 + (Milestone # - 7)) Total Energy
+
+
+________________
+
+
+Dragon-Transcension Missions
+This Feature is To Be Added After Transcending. Will Give Missions Based on Reaching Goal or Energy Thresholds in __ Time, or Survive High Anger, and Risk Massive Anger Levels
+Lock-In Modes Pause Missions Temporarily.
+
+
+________________
+
+
+Energy Production
+Default is +1 Energy Every Click, Energy is gotten from the core of the dragon.
+
+
+Solar Panels, Wind Turbine, Hydro Plant, Geothermal Plant, Nuclear Plant, and Energy Donation Center all have specific boosts to themselves, and can power all other generators.
+
+
+Base Producers: (Easily Destroyed By Legion, Upgrades Can Boost These): Each Also Costs 1/100 Their Cost to Dark Energy (Floored)!
+Note: Unlock Next One When Buying 1 of The Previous, for 1 Shard.
+Note: Sell These For 50% Energy, 100% Dark Energy,
+Default Energy Multiplier = (Energy Multiplier) * (Efficiency Multiplier) * (Any Other Upgrades If Any) * ((0.01 + DE Crimson Efficiency) * Crimson Shard Count *  1.5^(Athena Level))
+
+
+* Solar Panels | Produces +1 Energy Every 100 ticks. 100% Easier to Damage. | Costs: 10 Energy * 1.05/Upgrade
+* Wind Turbine | Produces +10 Energy and +1/Turbine Every 100 ticks. | Costs: 25 Energy * 1.05/Upgrade
+* Crimson Thermal Plant | Produces +50 Energy (+100 if Streak, +10/Point) Every 100 ticks | Costs: 50 Energy * 1.05/Upgrade
+* Hydro Plant | Produces +100 Energy Every 100 ticks, +5 Energy/Completed Goal. | Costs: 75 Energy * 1.06/Upgrade
+* Energy Donation Center | Produces +(Max (+100) - Current Fury) Energy Every 100 ticks | Costs: 100 Energy * 1.05/Upgrade
+* Dark Nuclear Plant | Produces +500 Energy Every 100 ticks, +10 For Every Dark Energy Unspent, Damages 5-10 other Structures At Random When Destroyed | Costs: 750 Energy * 1.05/Upgrade
+
+
+Energy Amplifiers : Unlock for 5 Shards or Milestone 1. 
+Multiplies Your Base Producers by the Amounts Shown, Using the Dragon’s Power. Doesn’t Cost Dark Energy. You Start with a Multiplier of 1.
+Note: Unlock Next One When Buying 10 of The Previous.
+After 100 are Bought, Every 25 increases the production of X generator by 2 Times. (that is not every 500)
+Every 500 that are Bought, increases the production of X generator by 1000 Times. 
+
+
+* Generator | Produces: +1 To Energy Multiplier | Costs: 5 Energy * 1.05/Upgrade 
+* Large Generator | Produces: +5 To Energy Multiplier | Costs: 15 Energy * 1.07/Upgrade 
+* Massive Generator | Produces: +10 To Energy Multiplier | Costs: 25 Energy * 1.08/Upgrade 
+* Mega-Generator | Produces: +25 To Energy Multiplier | Costs: 100 Energy * 1.06/Upgrade 
+* Colossal Generator | Produces: +300 To Energy Multiplier | Costs: 1,000 Energy * 1.06/Upgrade 
+* Titanic Generator | Produces: +5,000 To Energy Multiplier | Costs: 15,000 Energy * 1.06/Upgrade 
+* Gargantuan Generator | Produces: +10,000 To Energy Multiplier | Costs: 35,000 Energy * 1.06/Upgrade 
+* Impossible Generator | Produces: +25,000 To Energy Multiplier | Costs: 100,000 Energy * 1.06/Upgrade 
+* Infinity Generator | Produces: +50,000 To Energy Multiplier | Costs: 1,000,000 Energy * 1.06/Upgrade 
+* Mysterious Generator | Produces: +250,000 To Energy Multiplier | Costs: 100 M Energy * 1.06/Upgrade 
+* Ethearnal Generator | Produces: +1,000,000 To Energy Multiplier | Costs: 10,000 M Energy * 1.06/Upgrade 
+* Useless Generator? | Produces: +5,000,000 To Energy Multiplier | Costs: 1,000 B Energy * 1.02/Upgrade
+* Ultimate Generator! | Produces: +25,000,000 To Energy Multiplier | Costs: 2,500 B Energy * 1.04/Upgrade 
+
+
+________________
+
+
+
+
+Dark Energy Upgrades
+Boosts That are gotten with Dark Energy, and Energy. These are Multiplicative.
+Categories: Personal, Mental, Physical, Career, Relationships, Contribution, Financial, Other, Custom
+To Do Goal Categories: General, Pop Culture / Art / Music / Sports, History, Geography, Science
+Note: Boosts Can Be Gilded With Plasma Energy
+
+
+Efficiency Upgrades: Requires 5 Shards To Unlock or Milestone 1.
+* Dark Efficiency | ×5% Energy When Earning Dark Energy | Costs 10 Dark Energy * 1.05/Upgrade
+* Generator Efficiency | ×50% Energy For All Generators Energy | Costs 100 Dark Energy * 1.25/Upgrade
+* Crimson Efficiency | +1% Energy For Each Unspent Crimson Shards (Default 1%) | Costs 1,000 Dark Energy * 1.1/Upgrade
+* Age Efficiency | +1% Energy Gained For Each Dragon Age (Default 0%) | Costs 5,000 Dark Energy * 1.3/Upgrade
+
+
+Base Producer Upgrades: Requires 10 Shards To Unlock or Milestone 2.
+* Panel Upgrade | Gets +1 Additional Energy. ×10% Durability. | Costs 10 Dark Energy * 1.1/Upgrade
+* Wind Upgrade | Gets +1 Additional Energy for Each Turbine Bought. ×10% Durability. | Costs 10 Dark Energy * 1.1/Upgrade
+* Streak Upgrade | +50 Additional Base Energy Produced/Streak. ×10% Durability. | Costs 10 Dark Energy * 1.1/Upgrade
+* Hydro Upgrade | Gets +1 Additional Base Energy for Each Completed Goal of All Time. ×10% Durability. | Costs 10 Dark Energy * 1.1/Upgrade
+* Donation Center Upgrade | ×10% Energy Produced From Donation Centers. ×10% Durability. | Costs 10 Dark Energy * 1.1/Upgrade
+* Nuclear Upgrade | Gets +10 Additional Energy for Each Dark Energy Unspent. ×10% Durability. | Costs 10 Dark Energy * 1.1/Upgrade
+* Producer Discount | -50% Energy and -100% Discount of Dark Energy Cost Per Upgrade (Multiplicative)! | Costs 1,000 Dark Energy * 1.25/Upgrade
+
+
+________________
+
+
+Plasma Boosts, Powers, & Armageddon
+Armageddon Destroys the Planet, Halving the Population, But Drastically Increasing Population Growth While Increasing Population Cap, While Giving Plasma Energy
+
+
+Armageddon: Requires 20 Shards To Unlock or Milestone 4.
+* Armageddon Requires 100 * 1.5^(Armageddon Amount During Transcension) Dark Energy Earned Cumulative Per/Armageddon!
+* Each Armageddon Halves the Current Population, But Increases Population Growth By ×2, (This Stacks With Base, and Further Stacked with Transcension), and Increases the Population Cap By 10 Times! (Hera Increases this further).
+* Armageddon Resets All Producers, Generation, and Respecs Dark Energy Upgrades and Plasma Boosts.
+* Plasma Energy an Armageddon = +(All Energy Earned during Transcension^0.5)
+
+
+Plasma Boosts: Requires 30 Shards To Unlock or Milestone 5. 
+* For Each Base Producer, Use 10^(Plasma Boost #) Plasma to Double Its Production!
+* For Each Dark Energy Upgrade, Use 5^(Plasma Boosts #) Plasma to Double Its Effect!
+
+
+Pomodoro Powers: Requires 15 Shards To Unlock or Milestone 3. 
+(Only One Each for Pomodoro Timer, Shows Before Starting One)
+
+
+* Energy Boost | ×1.5 Regular Energy From Pomodoro Timers a Level | Unlock For 125 Dark Energy (Level 1) | Upgrade For 5 Plasma * 1.25/Upgrade
+* Dark Energy Boost | ×1.5 Dark Energy From Pomodoro Timer | Unlock For 125 Dark Energy (Level 1) | Upgrade For 5 Plasma * 1.25/Upgrade
+* Dual Energy Boost | ×1.25 Energy and Dark Energy From Pomodoro Timer | Unlock For 250 Dark Energy (Level 1) | Upgrade For 10 Plasma * 1.25/Upgrade
+* Pure Energy Boost | ×2 Regular Energy From Pomodoro Timers a Level, But No Dark Energy | Unlock For 250 Dark Energy (Level 1) | Upgrade For 10 Plasma * 1.25/Upgrade
+* Plasma Boost | Gain +0.1 Plasma/Dark Energy A Pomodoro Session a Level | Unlock For 1000 Dark Energy (Level 1) | Upgrade For 50 Plasma * 1.25/Upgrade
+* Calm Dragon Boost | Gain ×2/Dragon Anger Reduction A Pomodoro Session a Level, AND +1 Anger Shield/Minute/Level (Max Anger Shield = Max Anger) | Unlock For 500 Dark Energy (Level 1) | Upgrade For 25 Plasma * 1.25/Upgrade
+
+
+To-Do Goal Powers: Requires 15 Shards To Unlock or Milestone 3.
+Note: Every 10 Upgrades, You Can Spend 2^(Number Time Plasma Upgraded) To Double Its Effect!
+
+
+* Fitness Boost | +10% Dark Energy From Mental or Physical Goals | Costs 5 Dark Energy * 1.04/Upgrade 
+* Entrepreneur Boost | +10% Dark Energy From Career or Financials | Costs 5 Dark Energy * 1.04/Upgrade
+* Moral Boost | +10% Dark Energy From Rel. or Contribution Boosts | Costs 5 Dark Energy * 1.04/Upgrade
+* Self-Boost | +10% Dark Energy From Personal or Other Boosts | Costs 5 Dark Energy * 1.04/Upgrade
+* Survey Boost | +50% Dark Energy From Completing Surveys | Costs 50 Dark Energy * 1.25/Upgrade
+* Crimson Streak Boost | +50% Dark Energy From Streaks | Costs 100 Dark Energy * 1.25/Upgrade
+________________
+
+
+
+
+Dragon Deities & Transcension
+These Boosts Your Pomodoro Dragon Upgrades.
+
+
+Transcending: Requires 40 Shards To Unlock or Milestone 6.
+* Transcending Requires 25,000 * 2^(Transcension Amount, Up to 10) Dark Energy Cumulative During the Transcension!
+* If You Don’t Transcend when Threshold is met (Without the 10 power limit), Anger is Increased By a Factor of 2!
+* After Transcending, Planets Population is Reset to 8 Billion, and Population Cap is Reset to 1 Trillion.
+* After Transcending, All Energy, Dark Energy, Plasma, Structures, Dark Energy Upgrades, Plasma Upgrades are Reset. In Return, You Can Buy Dragon Deities With Newly Gained Anomalies. (Deities and Anomalies Aren’t Reset, But You Earn Less From the Anomaly Formula)
+* Anomalies a Transcension = +(All Plasma Energy Earned during Transcension^0.5) + (Total Dark Energy Earned During Transcension^0.75) - Anomalies Previously Earned.
+* Anomalies and Deities and Powers are Reset Each Transcension
+
+
+Anomaly Boosts and Special Powers: Requires 50 Shards To Unlock or Milestone 7
+* For Each Plasma Power, Use 2^(Anomalies #) Anomalies to Double Its Effect!
+* For Each Plasma Boost, Use 4^(Anomalies #) Anomalies to Double the Boost Effect! (Boosts of Boosts)
+* If the Dragon Dies, Use 10 Shards and 1 Anomaly To Age the Dragon +1 Age (Until The Past Age Max. Is Hit)
+* Warning: Spending Anomalies May Increase Anger Gained For Hours Depending on Anomalies Spent. 
+
+
+Respec Powers: Unlocked When Transcension is Unlocked. (40 Shards or Milestone 6)
+* Respec Dark Energy | Respec all Dark Energy Upgrades, Giving 90% Dark Energy and Plasma Back. | Unlock: Give 100% Back: 5 Anomalies
+* Respec Plasma Boosts | Respec all Plasma Boosts Upgrades, Giving 90% Dark Energy and Plasma Back. | Unlock: Give 100% Back: 5 Anomalies
+* Respec Plasma Powers | Respec all Plasma Power Upgrades, Giving 90% Dark Energy and Plasma Back. | Unlock: Give 100% Back: 5 Anomalies
+* Respec Deities | Respec all Deities Giving 100% Anomalies Back. | Unlock: 5 Anomalies
+
+
+Infernal Deities: Unlocked When Transcension is Unlocked. (40 Shards or Milestone 6)
+Note: Unlocking Each Deity Costs (2 ^ Deities Unlocked Anomalies)
+
+
+1. Infernal Zeus | ×10 To All Energy Earned | Costs 250 Anomalies *1.25/Upgrade
+2. Infernal Poseidon | ×2 to All Dark Energy Earned | Costs 100 Anomalies *1.25/Upgrade
+3. Infernal Hades | ×2 to All Plasma Earned | Costs 100 Anomalies *1.25/Upgrade
+4. Infernal Hera | Population Max Effect ×2 Population / Armageddon | Costs 25 Anomalies *1.15/Upgrade
+5. Infernal Demeter | Population Growth Effect ×1.25 / Level / Armageddon | Costs 25 Anomalies *1.25/Upgrade
+6. Infernal Athena | ×1.5 Effect to Crimson Shard Energy Production | Costs 50 Anomalies *1.1/Upgrade
+7. Infernal Apollo | ×2 Effect of All Pomodoro Boosts | Costs 10 Anomalies *1.5/Upgrade
+8. Infernal Artemis | ×2 Effect of All To-Do Boosts & Checking In/Out | Costs 10 Anomalies *1.5/Upgrade
+9. Infernal Ares | ×2 Resistance From Population Destroyed From Dragon | Costs 1 Anomalies *2/Upgrade
+10. Infernal Aphorodite | +1 Anger Threshold / Age of The Dragon (Warning: Maximum Increases Too) | Costs 1 Anomalies *2/Upgrade
+11. Infernal Hephaestus | -10% of Damage When Dragon Passes | Costs 1 Anomalies *2/Upgrade
+12. Infernal Hermes | ×2 Discount / and Discount Upgrades | Costs 50 Anomalies *2/Upgrade
+13. Infernal Dionysus | ×1.1 Effect of ALL Gods When Streak ≥ 1 | Costs 100 Anomalies *1.5/Upgrade
+14. Infernal Hestia | Crimson Streak Cracked Time +1 Day (Pay Shards) | Costs 10 Anomalies *10/Upgrade
+
+
+________________
+
+
+The Black Market (Advertised at Milestone 3)
+The Market has a “Black Market” Section, Allowing to Buy Dark Energy & Shards & Energy for Money
+Shopping, Not Gambling. There is no Gambling in Dragon Focus.
+Well, Some Gambling… (Values to Be Changed)
+
+
+List of Boosts
+* Energy Boost: ×4 Energy for 3 Hours On Use.
+* Dark Energy Boost: ×4 Dark Energy for 3 Hours On Use.
+* Calm Boost: ×4 Anger Management for 3 Hours On Use.
+* Mega Boost: ×2 of Energy, Dark Energy, and Calm Boost for 3 Hours On Use.
+
+
+Scale-Covered Lootboxes (10% Bonus with Dragon Pact)
+* 20 Shards ⇒ Basic Lootbox (25% Chance of Each Boost) + (10% Chance of Double) + (5% Chance of Triple) + (2% Chance of Quad) + (1% Chance of 5)
+* 50 Shards ⇒ Mega Lootbox (2-3 Basic Lootboxes With Doubled Chances) + (1% Chance of 10, Each Basic)
+* 100 Shards ⇒ Titanic Lootbox ⇒ (2-3 Mega Lootboxes With 1.5* Chances) + (0.5% Chance of Jackpot Each Basic, 100 Times Value)
+* 500 Shards ⇒ Impossible Lootbox ⇒ (4-6 Titanic Lootboxes With 1.33* Chances) + (1% Chance of Jackpot Each Basic, 100 Times Value)
+
+
+Fixed Purchases (10% Bonus with Dragon Pact)
+* Crimson Powers: 
+   * 50 * (Purchase Amount / Transcension) Shards ⇒ Free Armageddon!
+   * 250 * (Purchase Amount) Shards ⇒ Free Transcension!
+* Energy:
+   * 150 Shards ⇒ 10,000 Energy + 5 Energy Boosts
+   * 1,250 Shards ⇒ 100,000 Energy + 50 Energy Boosts (Recommended)
+   * 10,000 Shards ⇒ 1,000,000 Energy  + 500 Energy Boosts (Best Value)
+* Dark Energy:
+   * 150 Shards ⇒ 30 Dark Energy + 5 Dark Energy Boosts 
+   * 1,250 Shards ⇒ 300 Dark Energy + 50 Dark Energy Boosts (Recommended)
+   * 10,000 Shards ⇒ 3,000 Dark Energy + 500 Dark Energy Boosts (Best Value)
+* Dragon Fury:
+   * 150 Shards ⇒ 50 Anger Shield + 5 Anger Management Boosts
+   * 1,250 Shards ⇒ 500 Anger Shield + 50 Anger Management Boosts (Recommended)
+   * 10,000 Shards ⇒ 5,000 Anger Shield + 500 Anger Management Boosts (Best Value)
+* Mega Boosts:
+   * 150 Shards ⇒ 6 Mega Boosts 
+   * 1,250 Shards ⇒ 60 Mega Boosts (Recommended)
+   * 10,000 Shards ⇒ 600 Mega Boosts (Best Value)
+
+
+Buy Extra Shards! (10% Bonus with Dragon Pact)
+* Shards: 
+   * $0.99 ⇒ 80 Shards
+   * $4.99 ⇒ 500 Shards
+   * $9.99 ⇒ 1200 Shards 
+   * $19.99 ⇒ 2500 Shards (Recommended)
+   * $49.99 ⇒ 6500 Shards (Great Value)
+   * $99.99 ⇒ 14000 Shards (Best Value)
+
+
+________________
+
+
+
+
+The Archives: Tabs
+The Archives
+The Page for the Dragonic Archives, which contains Journal Entries, Logs, Statistics, Achievements, and a Graveyard, and Ascension
+The Header Switches Through the Following Pages
+
+
+________________
+
+
+
+
+Layout
+* Sections: The Dragon Pact (Account, Premium), Logs (Table), Achievements, Statistics, Dragon’s Graveyard.
+* The Dragon Pact / Account: Shows Premium Pricing. Also Shows the Login to your Profile. (with google, or etc to allow for use in multiple devices with same account)
+* Logs (Table): Shows Everyday You did a Check-In or Check-Out and All Goals Completed in that day (shows skipped days all in one row that it’s skipped)
+* Achievements: Shows Achievements, Giving Extra Shards
+* Statistics / Dragon Graveyard: Statistics Show Total Goals Completed, Total Energy, Energy This Ascension Etc, And Dragon Graveyard Shows Deceased 
+
+
+________________
+
+
+The Dragon Pact / Account (Advertised at Milestone 2)
+Summary
+* You Can Login With Google, or With Username/Password, In Profile/Dragon Pact Page
+* (This allows you to transfer data to different devices - highly recommended)
+* Signing Up Rewards you With 50 Crimson Shards
+
+
+Premium - The Dragon Pact
+* Dragon Pact Benefits:
+   * Allows Unlimited Habit and To-Do Goals!
+   * Allows You to Do Crimson Challenges!
+   * Doubles ALL Energy and Dark Energy Production.
+   * Quadruples Shards Cap. Earned From Goals.
+   * 10% Bonuses In the Black Market (Including Shard Purchases)
+* Scroll Below the Account to View Dragon Pact Pricing - Choose Pricing C
+   * Pricing A: $1.99 / Month, $7.99 / Year, $14.99 / Permanent (Not Planned)
+   * Pricing B: $1.99 / Month, $4.99 / Year, $14.99 / Permanent (Normal Pricing)
+   * Pricing C: $1.99 / Month, $4.99 / Year, $9.99 / Permanent (Normal Pricing)
+   * Pricing D: $1.49 / Month, $3.99 / Year, $7.99 / Permanent (0-3 Months of Launch and Yearly Launch Special)
+   * Pricing E: $0.99 / Month, $4.99 / Year, $9.99 / Permanent  (Not Planned)
+
+
+(View Black Market in ‘Stats & Market’ Section)
+________________
+
+
+The Logs / Chronicles (Table View): Unlock at Milestone 2, or For 10 Shards
+* The Table View of the Logs will have: A Header Row with a stat, and Each Row Would Have A day of statistics from the check in/out surveys.
+* Columns: Date | Mood Check-In | Mood Check-Out | Goals Complete # (Late #) | Goals Late # | Goals Remain (Not Late) # | View All / Journal
+* Note 1: Should be Scrollable Vertically (and Horizontally if needed).
+* Note 2: Rows With Nothing Done Are Compacted in One Row.
+* Note 3: Add an Option To Hide Certain Columns  
+
+
+________________
+
+
+Achievements: Unlock at Milestone 1, or For 5 Shards
+All the Achievements will Show below these, in 4 columns. Each Info Box Will Be:
+* The title of the achievement
+* An Image/Emoji of the Achievement
+* Then lastly, the Completion % or Completion _ / _
+* The Buttons are Clickable, For Which they Popup a Menu showing the expanded achievement
+
+
+________________
+
+
+Statistic: Unlock at Milestone 1, or For 5 Shards
+The Top of the Page will Contain Varying Statistics Based on the Surveys Taken. These will be in an organized, decorated box on top of the achievements. (maybe have each of the stats in boxes as well, and decorated, some with emojis):
+* Surveys Header, Then: All-Time Habit Goals Incompleted, All-Time Day Goals Completed, All-Time Day Goals Incompleted, Average Morning Mood, Average Evening Mood, Best Day Goal Streak, Total Prompts Answered, Total Trivia Questions Answered, Trivia Accuracy Rate, Total Journal Entries Written
+* Rewards Header, Then: Total Coins Earned, Total Shards Earned, Total XP Earned, Total Fury Earned, Average Rewards Per Day, Highest Reward Day Ever
+* Also Shows all the Previous Secret Government Logs!
+
+
+________________
+
+
+Secret Government Logs: Unlock at Milestone 1, or For 5 Shards
+TOP SECRET
+
+
+* Also Shows all the Previous Secret Government Logs!
+________________
+
+
+
+
+Dragon Graveyard: Unlock at Milestone 3, or For 15 Shards.
+Reveals Past Mishaps…
+* The Dragon Graveyard contains info of all passed dragons.
+* Each Graveyard contains the Dragon Name, Age, and Stage, and Cause of Death (Randomized?)
+
+
+________________
+
+
+
+
+The Options: Tabs
+Settings Page
+Layout of the Settings Page
+There’s a Slider on the top switching the survey and general settings and the tutorial
+Each will have a relevant emoji beside it.
+
+
+________________
+
+
+Layout
+The Settings - 2 Tabs: General Options (+ Gamemodes), Check-In & Out Options
+   * General Options: Volume, Sound Effects Volume, Theme, Brightness, Gamemodes, (Cosmetics, Music, or Outfits to Be Added)
+   * Check In/Out Options: Change Order, Enable/Disable Questions, Enable/Disable Check-In Requirements.
+
+
+________________
+
+
+
+
+General Options (First)
+Main Settings
+* Volume Slider (0 to 100)
+* Sound Effects Slider (0 to 100)
+
+
+Theme Settings
+* Change the Theme
+* Change the Background
+* Change the Dragon’s Cosmetic (This is also in the Home/Main Page)
+* Enable Weather Effect: Rain
+* Enable Weather Effect: Tremors
+* Enable Weather Effect: Brightness Change
+
+
+Gamemodes - Note: You Can Set a Timer For _ Days For it to be Active, Before Returning to Normal Mode (Except Hard+)
+* Normal Mode - Normal Energy Generation, Normal Anger.
+* (Milestone 1) Invincible / Vacation Mode - Energy & Dark Energy Generation ×1/2, Anger is Paused.
+* (Milestone 2) Lock In Mode - Energy is Paused, Anger is Paused, Harvesting Goals is Paused, World Tab is Hidden. Double Non-Shard Harvest Rewards When Exit.
+* (Milestone 2) Lock In+ Mode - Energy is Paused, Anger is Paused, Harvesting Goals is Paused, World Tab is Hidden. Double Non-Shard Harvest Rewards When Exit. Sprites are Hidden, Tabs Renamed to be Simpler. Minimum 30 Minutes Nuclear Option When Entering.
+* (Milestone 3) Hard Mode - Energy & Dark Energy Generation ×2, Anger and Anger Cap is ×2. Cannot Use Shards to Reduce Anger. Anger Increases Slightly When Off App.
+* (Milestone 4) Hard+ Mode - Energy & Dark Energy Generation ×4, Anger and Anger Cap is ×4. Cannot Use Shards to Reduce Anger. Anger Increases Slightly When Off App. Check-In/Out are Required. Cannot Switch to Hard, Normal, or Invincible Modes Until Dragon Dies. 
+
+
+* Time Limit - You Can Set a Timer For _ Days For it to be Active, Before Returning to Normal Mode (Or Hard+ in That Mode.). You Can Stop This Timer.
+* Nuclear Time Limit - You Can Set a Timer For _ Days For it to be Active, Before Returning to Normal Mode (Or Hard+ in That Mode.) This Timer is Absolutely Unstoppable Until the Dragon Dies.
+
+
+App Blocking
+* Enable App Blocking - Allow Dragon Focus to Connect to Screentime to Track Blocked Apps, in 3 Mode: No Debuffs, Debuffs When Exceed Limit (Hard Default), or Debuffs Always On App (Hard+ Default). If needed, add app blocking options here.
+
+
+Reset All Data Option
+* Reset All Data - Wipes All Stats, Progress, and Everything Else From the Account. Will have 4+ Warnings before you reset everything!
+
+
+
+
+Cheats
+* Enable Dev Mode (Not in Final Version of App)
+* (Any Cheat Buttons, which are un-grayed out with dev mode enabled)
+   * +1, 10, 100, 1000, 10000000, *2, *10 Energy
+   * +1, 10, 100, 1000, 10000000, *2, *10 Dark Energy
+   * +1, 10, 100, 1000, 10000000, *2, *10 Crimson Shards
+   * +1, 10, 100, 1000, 10000000, *2, *10 Crimson Streak
+   * +1, 10, 100, 1000, 10000000, *2, *10 Plasma
+   * +1, 10, 100, 1000, 10000000, *2, *10 Anomalies
+   * -1000000, -1000, -100, -10, -1, +1, 10, 100, 1000, 10000000, *2, *10 Dragon Age (Cannot go Over/Under)
+   * -100, -10, -1, +1, +10, +100 Dragon’s Fury (Cannot go Over/Under)
+   * Simulate 1 Day Passing (Change Date in App Somehow By +1)
+   * Enable Premium Dragon Pact Toggle
+
+
+________________
+
+
+
+
+Survey Options (Second)
+There will be Settings in the surveys for what you want and do not want in the surveys.
+
+
+First: Edit Menu Button on Top Right (Expand)
+* Allows you to edit the order and enable/disable togglable options in the top right quick-menu button
+* List of Options: Go to Home Page (Disabled Default) Take Check-In Survey, Take Check-Out Survey, View Incomplete Goals, View Completed Goals/Harvest (Disabled Default), View Pomodoro Cave (Disabled Default), View World Tab (Disabled Default) View Account Button (Disabled Default), View Logs Button (Disabled Default), View Stats Button (Disabled Default), View Achievements Button (Disabled Default), View Basic Options Button (Disabled Default), View Game-Modes Button, View Tutorial Button. (These can Be Hidden/Changed in Options Tab)
+First: Edit Survey Order & Requirements (Expand)
+* Allows you to edit the order of the survey in two columns (one for morning in one for night)in draggable flatlists and boxes!
+* Each box has the name of the question,and to the very right a toggle of whether to toggle this question (only questions with ‘toggle’ are toggable
+* Below this, will be a setting for each question, which also has this same toggle to the right of the specified question.
+Toggle: Give Survey Advice / Quotes / Fun Facts? 
+* In this Section, you can add Custom Advice in a ‘Custom Category’, or Check the “Random’ Category (Only One Category).
+* This shows up at the start of the survey
+Toggle: Ask a Mood Question?
+* In this Section, you can add custom emoji and mood, and the amount of fury earned/lost (max +8, min -8)
+Toggle: See / Edit Incomplete Goals (Enabled Check-In Default)
+* In this Section, you can add Custom Advice in a ‘Custom Category’, or Check the “Random’ Category (Only One Category).
+* This shows up at as a subheader to habit and to-do goals
+Toggle: See / Edit Completed Goals and Harvest! (Enabled Check-Out Default)
+* In this Section, select if to see the Harvest Goals
+* This shows up at as a subheader to habit and to-do goals
+Habit AND To-Do Goals Unlocks (Applies for Both Morning/Evening Surveys)
+* Unlock Categories (Unlock for 10 Energy)
+* Unlock Importance (Unlock for 10 Energy)
+* Unlock Custom Categories (Unlock for 5 Energy) - You’ll be able to add Custom Categories
+* Unlock Challenges (Unlock for 20 Energy)
+Toggle: Enable Journal
+* Unlock Journal, Where You Can Write Any Size Prompt. Choose Between Morning, Evening, Both, None.
+* Unlocking the Journal Allows For Unlocking Short Answers and Trivia
+Slider/Edit Categories/Add Custom Category Short Answer Prompts (Unlock for 10 Energy)
+* For this Section, you can have 0 to Up to 3 Short Answer Prompts. (Slider for Morning, Another for Evening)
+* For Each Short Answer Prompt, You Can:
+   * Have a Random Short Answer Based on Category(s) (Default)
+   * Have ‘Custom’ Categories That Randomizes the Prompt Based on Those Typed Below (Unlock for 5 Coins)
+Toggle: Show a Quote?
+* For this Section, you can have 0 to Up to 3 Quotes. 
+* In this Section, you can add Custom Quotes in a ‘Custom Category’, or Check the Categories.
+
+
+________________
+Tutorial (Last)
+
+
+Create a Tutorial With:
+* Advice on Goals and Editing Them
+* Advice on Pomodoro Timers
+* What are Energy, Dark Energy, Plasma (When Unlocked), Anomalies (When Unlocked), Milestones, and Dragon Fury?
+________________
+
+
+
+
+
+
+List of Data
+List of Data
+This Section Will List all the Data Needed to be Added To App, if not already added
+
+
+________________
+
+
+Survey - Quotes & Prompts & Advice & Suggested Goals
+Generate These with AI and put in a Data Script
+
+
+1. 100+ Survey Advice
+2. 100+ Habit/To-Do Goal Advice
+3. 200+ Quotes For Each Topic
+4. 1000+ Random Fun Facts
+5. 100+ Short Answer Prompts For Each Topic
+6. 100+ Suggested To-Do Goals For Each Goal Category
+7. 100+ Suggested Habit Goals For Each Goal Category
+
+
+________________
+
+
+Achievements
+Achievements Reward Significant Amounts of Crimson Shards, Which are all shown. Put these in a data script.
+Secret Achievements Earn Even More of All 3 These Rewards 
+
+
+* Achievements for Completing Check-In and Check-Out Surveys
+* Achievements for Completing Certain Amount of Total Goals
+* Achievements for Completing Certain Amount of Time in Pomodoro Sessions
+* Achievements related to Getting Energy (Reaching Certain Milestones)
+* Achievements related to Getting Dark Energy
+* Achievements related to Getting Plasma and Anomalies
+* Achievements related to Getting Crimson Streak / Shards
+* Achievements related to Getting Times Armageddon/Trascended
+* Secret Achievement(s) in Each Category That are Extremely Hard to Get
+* More Achievements! (80+)
+
+
+________________
+
+
+
+
+Collaboration
+Collaboration
+Everyone gets a share of money…we do not yet know…
+
+
+________________
+
+
+
+
+Project assignments
+	 People 
+ Name
+	Email
+	 Dropdowns 
+ Role(s)
+	 Dropdowns 
+ Availability
+	 Dropdowns 
+ Contributions
+	Jonathan Dawson
+	jonafunny6@gmail.com 
+	Project Management
+	Very High
+	Prototyping
+	Person
+	
+
+	Coding
+	High
+	Specifications
+	Person
+	
+
+	Art
+	High
+	Research
+	Person
+	
+
+	Millionare Marketing
+	High
+	Project planning
+	Person
+	
+
+	Design / Planning
+	High
+	Prototyping
+	Person
+	
+
+	Millionare Marketing
+	High
+	Prototyping
+	Person
+	
+
+	*Other Promo*
+	High
+	Prototyping
+	Person
+	
+
+	*Other Promo*
+	High
+	Prototyping
+	Person
+	
+
+	*Other Promo*
+	High
+	Prototyping

@@ -4,7 +4,7 @@ import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider'
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface QuoteSectionState {
 	quoteIndex: number | null;
@@ -34,6 +34,7 @@ const pickRandomIndices = (len: number, count: number) => {
 export function useQuoteSection({ surveyType, questionSettings, enableQuote, showInMorning, currentScarLevel }: UseQuoteSectionParams): SectionHookResult<QuoteSectionState> {
 	const { questionSettings: contextSettings } = useQuestions();
 	const scarLevel = useScarLevel();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enableQuote ?? true;
 	const resolvedShowInMorning = showInMorning ?? true;
@@ -86,7 +87,7 @@ export function useQuoteSection({ surveyType, questionSettings, enableQuote, sho
 						</Text>
 					</>
 				) : (
-					<Text style={{ marginBottom: 12 }}>An inspiring thought for you.</Text>
+					<Text style={[sectionStyles.bodyText, { marginBottom: 12 }]}>An inspiring thought for you.</Text>
 				)}
 			</View>
 		);

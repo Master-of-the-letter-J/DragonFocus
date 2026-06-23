@@ -8,10 +8,12 @@ import dragonElder from '../assets/images/dragon-elder-test.png';
 import dragonWyrm from '../assets/images/great-wyrm-test.png';
 import dragonHeart from '../assets/images/dragon-heart.png';
 import grave from '../assets/images/grave-placeholder.png';
+import earth from '../assets/images/planet-earth-test.png';
 
 const images = {
 	dragon: dragonAdult,
 	dragonHeart,
+	earth,
 	grave,
 	stages: {
 		Egg: dragonEgg,

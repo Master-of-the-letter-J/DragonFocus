@@ -1,5 +1,5 @@
-import HomePage from './pages/home';
+import HatcheryPage from './pages/hatchery';
 
 export default function Index() {
-	return <HomePage />;
+	return <HatcheryPage />;
 }

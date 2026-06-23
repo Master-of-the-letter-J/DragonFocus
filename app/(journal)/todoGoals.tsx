@@ -10,16 +10,20 @@ import { useItemEconomy } from '@/context/ItemEconomyProvider';
 import { usePremium } from '@/context/PremiumProvider';
 import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';
+import { useTheme } from '@/context/ThemeProvider';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useResultsSection, type SurveyResultsData } from '../(survey)/surveySections/results';
-import { sectionStyles } from '../(survey)/surveySections/sectionStyles';
+import { useSectionStyles } from '../(survey)/surveySections/sectionStyles';
 import { useTodoChecklistEditSection } from '../(survey)/surveySections/todoChecklistEdit';
 import { useTodoChecklistFillSection } from '../(survey)/surveySections/todoChecklistFill';
 
 export default function TodoGoalsPage() {
-  const [mode, setMode] = useState<'edit' | 'complete'>('complete');
+	const [mode, setMode] = useState<'edit' | 'complete'>('complete');
 	const [results, setResults] = useState<SurveyResultsData | null>(null);
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
+	const sectionStyles = useSectionStyles();
 	const goals = useGoals();
 	const survey = useSurvey();
 	const coins = useDragonCoins();
@@ -103,10 +107,10 @@ export default function TodoGoalsPage() {
 	}
 
 	return (
-		<View style={{ flex: 1 }}>
+		<View style={styles.container}>
 			<View style={styles.modeRow}>
-          <ModeButton label="Check" selected={mode === 'complete'} onPress={() => setMode('complete')} />
-          <ModeButton label="Edit" selected={mode === 'edit'} onPress={() => setMode('edit')} />
+				<ModeButton label="Check" selected={mode === 'complete'} onPress={() => setMode('complete')} />
+				<ModeButton label="Edit" selected={mode === 'edit'} onPress={() => setMode('edit')} />
 			</View>
 
 			{mode === 'edit' ? editSection.section.render() : fillSection.section.render()}
@@ -123,6 +127,8 @@ export default function TodoGoalsPage() {
 }
 
 function ModeButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
 	return (
 		<Pressable style={[styles.modeButton, selected ? styles.modeButtonActive : null]} onPress={onPress}>
 			<Text style={[styles.modeButtonText, selected ? styles.modeButtonTextActive : null]}>{label}</Text>
@@ -130,11 +136,12 @@ function ModeButton({ label, selected, onPress }: { label: string; selected: boo
 	);
 }
 
-const styles = StyleSheet.create({
-	modeRow: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 0 },
-	modeButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#fff' },
-	modeButtonActive: { borderColor: '#166534', backgroundColor: '#E8F5E9' },
-	modeButtonText: { fontSize: 12, fontWeight: '700', color: '#4B5563' },
-	modeButtonTextActive: { color: '#166534' },
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+	container: { flex: 1, backgroundColor: colors.background },
+	modeRow: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 0, backgroundColor: colors.background },
+	modeButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.secondaryBackground },
+	modeButtonActive: { borderColor: colors.success, backgroundColor: colors.tertiaryBackground },
+	modeButtonText: { fontSize: 12, fontWeight: '700', color: colors.secondaryText },
+	modeButtonTextActive: { color: colors.headerText },
 	submitRow: { paddingHorizontal: 16, paddingBottom: 16 },
 });

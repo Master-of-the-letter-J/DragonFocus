@@ -4,7 +4,7 @@ import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, TextInput } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface ExtraPromptItem {
 	id: string;
@@ -42,6 +42,7 @@ export function useExtraPromptsSection({
 }: UseExtraPromptsParams): SectionHookResult<ExtraPromptsState> {
 	const { questionSettings: contextSettings } = useQuestions();
 	const survey = useSurvey();
+	const sectionStyles = useSectionStyles();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enablePrompts ?? true;
@@ -98,7 +99,7 @@ export function useExtraPromptsSection({
 			return (
 				<View>
 					<Text style={sectionStyles.question}>Create Extra Prompts for Night</Text>
-					<Text style={{ marginBottom: 12 }}>
+					<Text style={[sectionStyles.bodyText, { marginBottom: 12 }]}>
 						{readOnly ? lockedMessage ?? 'Extra prompts are locked on refill surveys.' : `Add any custom prompts you want to answer in tonight's survey. Each prompt needs ${minPromptLength}+ characters.`}
 					</Text>
 

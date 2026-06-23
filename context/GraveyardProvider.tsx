@@ -1,5 +1,6 @@
 // context/GraveyardProvider.tsx
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
 
 export interface GraveyardEntry {
 	id: string;
@@ -24,7 +25,9 @@ interface GraveyardContextType {
 const GraveyardContext = createContext<GraveyardContextType | undefined>(undefined);
 
 export function GraveyardProvider({ children }: { children: ReactNode }) {
-	const [graveyard, setGraveyard] = useState<GraveyardEntry[]>([]);
+	const { state: graveyard, setState: setGraveyard } = usePersistedState(APP_STORAGE_KEYS.graveyard, [] as GraveyardEntry[], {
+		normalize: storedValue => (Array.isArray(storedValue) ? storedValue : []),
+	});
 
 	const addEntry = (entry: GraveyardEntry) => {
 		setGraveyard(prev => [entry, ...prev]); // newest first

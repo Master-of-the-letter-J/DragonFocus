@@ -8,7 +8,7 @@ import Checkbox from 'expo-checkbox';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, TextInput } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface HabitChecklistFillState {
 	checked: Record<string, boolean>;
@@ -23,6 +23,7 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 	const goals = useGoals();
 	const questions = useQuestions();
 	const survey = useSurvey();
+	const sectionStyles = useSectionStyles();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 	const isRefill = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
 	const rewardedHabitIds = survey.getRewardedGoals(today).habitIds ?? [];
@@ -61,7 +62,7 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 		return (
 			<View>
 				<Text style={sectionStyles.question}>Day / Habit Goals</Text>
-				<Text style={{ marginBottom: 8 }}>Check off completed goals today. Refill mode only allows new progress to count.</Text>
+				<Text style={[sectionStyles.bodyText, { marginBottom: 8 }]}>Check off completed goals today. Refill mode only allows new progress to count.</Text>
 
 				<ScrollView style={sectionStyles.goalsScrollView} nestedScrollEnabled>
 					{(goals.habits ?? [])
@@ -114,14 +115,14 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 													Goal Streak {habit.streak ?? 0} | Normal reward {normalReward.coins} coins
 												</Text>
 												{hasActiveChallenge && habit.challengeLength && (
-													<Text selectable={false} style={{ fontSize: 11, color: '#1565C0', marginTop: 4 }}>
+													<Text selectable={false} style={sectionStyles.infoText}>
 														Challenge Streak {habit.streak ?? 0}/{habit.challengeLength}
 														{challengeTier ? ` | Reward ${challengeTier.rewardCoins} coins | ${challengeTier.rewardShards} shards` : ''}
 													</Text>
 												)}
 												{rewardWarning && !hasActiveChallenge ? <Text style={sectionStyles.warningText}>{rewardWarning}</Text> : null}
 												{isLockedByRefill && (
-													<Text selectable={false} style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>
+													<Text selectable={false} style={sectionStyles.lockedText}>
 														Already rewarded earlier today. Refill mode keeps this goal locked.
 													</Text>
 												)}
@@ -142,7 +143,7 @@ export function useHabitChecklistFillSection(): SectionHookResult<HabitChecklist
 
 									{missedStreak && !isCompleted && !isLockedByRefill && (
 										<View style={{ marginTop: 6 }}>
-											<Text selectable={false} style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+											<Text selectable={false} style={[sectionStyles.helperText, { marginBottom: 6 }]}>
 												Why did this streak break?
 											</Text>
 											<TextInput

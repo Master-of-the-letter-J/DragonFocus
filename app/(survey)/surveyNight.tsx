@@ -1,547 +1,232 @@
-import { Text, View } from '@/components/Themed';
-import ProgressBar from '@/components/ProgressBar';
+import { ActionButton, EmptyState, Panel, StatTile } from '@/components/DragonFocusUI';
 import TopHeader from '@/components/TopHeader';
-import { getHabitCompletionReward, getTodoCompletionReward } from '@/data/goal-reward-utils';
-import { GOAL_CHALLENGE_TIERS, getHabitChallengeFailureDate, isGoalChallengeActive } from '@/data/goal-utils';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
+import { useDragonFocus } from '@/context/DragonFocusProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
 import { useGoals } from '@/context/GoalsProvider';
-import { useItemEconomy } from '@/context/ItemEconomyProvider';
-import { useItemSnacks } from '@/context/ItemSnacksProvider';
 import { useJournal } from '@/context/JournalProvider';
-import { usePremium } from '@/context/PremiumProvider';
-import { useQuestions } from '@/context/QuestionProvider';
-import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useStreak } from '@/context/StreakProvider';
-import { useSurvey, type SurveyProgressState } from '@/context/SurveyProvider';
-import { useTranscension } from '@/context/TranscensionProvider';
+import { useSurvey } from '@/context/SurveyProvider';
+import { useTheme } from '@/context/ThemeProvider';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView } from 'react-native';
-import { useExtraPromptsSection } from './surveySections/createExtraPrompts';
-import { useFunFactSection } from './surveySections/funFactSection';
-import { useHabitChecklistFillSection } from './surveySections/habitChecklistFill';
-import { useJournalEntrySection } from './surveySections/journalEntry';
-import { useMoodQuestionSection } from './surveySections/moodQuestion';
-import { useShortAnswersSection } from './surveySections/prompts';
-import { useQuoteSection } from './surveySections/quoteSection';
-import { useResultsSection, type SurveyResultsData } from './surveySections/results';
-import { useSurveyAdviceSection } from './surveySections/surveyAdvice';
-import { sectionStyles } from './surveySections/sectionStyles';
-import { orderSurveySections } from './surveySections/orderSections';
-import { useTodoChecklistFillSection } from './surveySections/todoChecklistFill';
-import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-const countWords = (value: string) =>
-	value
-		.trim()
-		.split(/\s+/)
-		.filter(Boolean).length;
+const MOODS = [
+	{ label: 'Fulfilled', fury: -5 },
+	{ label: 'Calm', fury: -3 },
+	{ label: 'Okay', fury: 0 },
+	{ label: 'Uneasy', fury: 3 },
+	{ label: 'Drained', fury: 5 },
+];
+
+const todayKey = () => new Date().toISOString().split('T')[0];
 
 export default function SurveyNightPage() {
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
+	const router = useRouter();
+	const focus = useDragonFocus();
 	const survey = useSurvey();
+	const goals = useGoals();
 	const coins = useDragonCoins();
 	const shards = useShards();
-	const dragon = useDragon();
-	const scarLevel = useScarLevel();
 	const fury = useFury();
-	const streakCtx = useStreak();
-	const itemEconomy = useItemEconomy();
-	const itemSnacks = useItemSnacks();
-	const premium = usePremium();
-	const questions = useQuestions();
+	const dragon = useDragon();
 	const journal = useJournal();
-	const goals = useGoals();
-	const transcension = useTranscension();
-	const router = useRouter();
+	const streak = useStreak();
 
-	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+	const today = todayKey();
 	const isRetake = survey.lastNightSurveyDate === today && survey.nightSurveyCompleted;
+	const [mood, setMood] = useState(MOODS[2]);
+	const [selectedHabitIds, setSelectedHabitIds] = useState<string[]>([]);
+	const [selectedTodoIds, setSelectedTodoIds] = useState<string[]>([]);
+	const [journalText, setJournalText] = useState('');
+	const [results, setResults] = useState<string | null>(null);
 
-	const [currentSection, setCurrentSection] = useState(0);
-	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
-	const [showResults, setShowResults] = useState(false);
-	const [results, setResults] = useState<SurveyResultsData | null>(null);
-	const slideAnim = useRef(new Animated.Value(-100)).current;
+	const openHabits = goals.habits.filter(goal => goal.lastCompletedDate !== today);
+	const openTodos = goals.todos.filter(goal => !goal.completedDate && !goal.failed);
+	const completedToday = [
+		...goals.habits.filter(goal => goal.lastCompletedDate === today).map(goal => `habit:${goal.id}`),
+		...goals.todos.filter(goal => goal.completedDate === today).map(goal => `todo:${goal.id}`),
+	];
+	const selectedCount = selectedHabitIds.length + selectedTodoIds.length;
 
-	const advice = useSurveyAdviceSection();
-	const mood = useMoodQuestionSection({
-		readOnly: isRetake,
-		lockedMessage: 'Mood is visible for refills, but it stays locked after your first night submission of the day.',
-	});
-	const habitFill = useHabitChecklistFillSection();
-	const todoFill = useTodoChecklistFillSection();
-	const shortAnswers = useShortAnswersSection({
-		surveyType: 'night',
-		readOnly: isRetake,
-		lockedMessage: 'Short answers are locked on night refills and keep your original responses for today.',
-	});
-	const trivia = useTriviaQuestionsSection({ surveyType: 'night' });
-	const funFacts = useFunFactSection({ surveyType: 'night' });
-	const journalEntry = useJournalEntrySection({ surveyType: 'night' });
-	const extraPrompts = useExtraPromptsSection({
-		mode: 'answer',
-		readOnly: isRetake,
-		lockedMessage: 'Extra prompt answers are locked on night refills and keep your original responses for today.',
-	});
-	const quote = useQuoteSection({ surveyType: 'night' });
-
-	const resultsSection = useResultsSection({
-		title: 'Night Survey Complete!',
-		results,
-		onFinish: () => router.back(),
-	});
-
-	const sections = useMemo(() => {
-		const fullSurveySections = [
-			advice.section,
-			mood.section,
-			habitFill.section,
-			todoFill.section,
-			shortAnswers.section,
-			extraPrompts.section,
-			trivia.section,
-			funFacts.section,
-			journalEntry.section,
-			quote.section,
-		];
-
-		return orderSurveySections(fullSurveySections.filter(section => section.isEnabled), questions.questionSettings.nightOrder);
-	}, [advice.section, extraPrompts.section, funFacts.section, habitFill.section, journalEntry.section, mood.section, questions.questionSettings.nightOrder, quote.section, shortAnswers.section, todoFill.section, trivia.section]);
-
-	const totalSections = sections.length;
-	const section = sections[currentSection];
-	const canProceed = section?.enableNext ? section.isNextEnabled : true;
-
-	useEffect(() => {
-		if (currentSection > totalSections - 1) {
-			setCurrentSection(Math.max(0, totalSections - 1));
-		}
-	}, [currentSection, totalSections]);
-
-	useEffect(() => {
-		if (showSurveyLabel) {
-			Animated.sequence([
-				Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-				Animated.delay(1400),
-				Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: true }),
-			]).start(() => setShowSurveyLabel(false));
-		}
-	}, [showSurveyLabel, slideAnim]);
-
-	useEffect(() => {
-		const saved = survey.loadProgress?.('night');
-		if (saved && saved.savedAt === today) {
-			if (typeof saved.section === 'number') setCurrentSection(saved.section);
-			const data = saved.sectionData ?? {};
-			advice.restoreState(data.advice);
-			mood.restoreState(data.mood);
-			habitFill.restoreState(data.habitFill);
-			todoFill.restoreState(data.todoFill);
-			shortAnswers.restoreState(data.shortAnswers);
-			trivia.restoreState(data.trivia);
-			funFacts.restoreState(data.funFacts);
-			journalEntry.restoreState(data.journal);
-			extraPrompts.restoreState(data.extraPrompts);
-			quote.restoreState(data.quote);
-		}
-		setShowSurveyLabel(true);
-	}, [survey, today]);
-
-	const buildSaveState = (overrides: Partial<SurveyProgressState> = {}): SurveyProgressState => ({
-		savedAt: today,
-		section: currentSection,
-		sectionData: {
-			advice: advice.saveState(),
-			mood: mood.saveState(),
-			habitFill: habitFill.saveState(),
-			todoFill: todoFill.saveState(),
-			shortAnswers: shortAnswers.saveState(),
-			trivia: trivia.saveState(),
-			funFacts: funFacts.saveState(),
-			journal: journalEntry.saveState(),
-			extraPrompts: extraPrompts.saveState(),
-			quote: quote.saveState(),
-		},
-		progressPercent: totalSections ? Math.floor(((currentSection + 1) / totalSections) * 100) : 0,
-		...overrides,
-	});
-
-	const handleExitSurvey = () => {
-		const saveState = buildSaveState();
-		survey.saveProgress?.('night', saveState);
-		router.back();
+	const toggle = (id: string, type: 'habit' | 'todo') => {
+		const setter = type === 'habit' ? setSelectedHabitIds : setSelectedTodoIds;
+		setter(current => (current.includes(id) ? current.filter(item => item !== id) : [...current, id]));
 	};
 
-	const submitSurvey = () => {
-		const alreadyDoneToday = isRetake;
-		let totalCoinsEarned = 0;
-		let totalShardsEarned = 0;
-		let furyDelta = 0;
+	const submit = () => {
+		let energy = 0;
+		let shardReward = 0;
+		let furyDelta = isRetake ? 0 : mood.fury;
 
-		const moodIndex = mood.state.selectedIndex;
-		const moodOptions = mood.moodOptions;
-		const moodLabel = typeof moodIndex === 'number' && moodOptions[moodIndex] ? moodOptions[moodIndex].label : '';
-		if (typeof moodIndex === 'number' && moodOptions[moodIndex]) furyDelta = moodOptions[moodIndex].fury || 0;
+		selectedHabitIds.forEach(id => goals.completeHabitToday(id));
+		selectedTodoIds.forEach(id => goals.completeTodo(id));
 
-		const streakVal = typeof streakCtx?.getStreak === 'function' ? streakCtx.getStreak() : streakCtx?.streak ?? 0;
-		const yangValue = fury?.furyMeter ?? 0;
-		const dragonShardsCount = shards?.shards ?? 0;
-		const scar = scarLevel?.currentScarLevel ?? 0;
-		const snackMult = itemEconomy.getActiveCoinMultiplier();
-		const jeopardyMultiplier = Math.max(1, itemEconomy.getActiveJeopardyMultiplier?.() ?? 1);
-		const isPremiumFlag = premium?.isPremium ?? false;
-		const coinMultiplier = typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1;
-		const surveyDuplicationMultiplier = transcension.getSurveyDuplicationMultiplier();
+		const harvestIds = [
+			...selectedHabitIds.map(id => `habit:${id}`),
+			...selectedTodoIds.map(id => `todo:${id}`),
+			...completedToday,
+		].filter(id => !focus.isGoalHarvested(today, id));
 
-		if (!alreadyDoneToday) {
-			const nightCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(false, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
-			totalCoinsEarned += nightCoins;
-			coins.addCoins?.(nightCoins);
-			totalShardsEarned += 1;
-			shards.addShards?.(1);
-		}
-
-		const habitSnapshot = habitFill.getCompletionSnapshot();
-		const todoSnapshot = todoFill.getCompletionSnapshot();
-
-		habitSnapshot.completedHabitIds.forEach(id => goals.completeHabitToday?.(id));
-		todoSnapshot.completedTodoIds.forEach(id => goals.completeTodo?.(id));
-
-		let rewardHabitIds = habitSnapshot.completedHabitIds;
-		let rewardTodoIds = todoSnapshot.completedTodoIds;
-
-		if (alreadyDoneToday) {
-			const snap = survey.getNightSnapshot?.() || { habitIds: [], todoIds: [] };
-			rewardHabitIds = habitSnapshot.completedHabitIds.filter(id => !snap.habitIds.includes(id));
-			rewardTodoIds = todoSnapshot.completedTodoIds.filter(id => !snap.todoIds.includes(id));
-		}
-
-		const rewardSnapshot = { habitIds: rewardHabitIds, todoIds: rewardTodoIds };
-
-		const totalGoalsCompleted = habitSnapshot.completedHabitIds.length + todoSnapshot.completedTodoIds.length;
-
-		if (rewardHabitIds.length > 0) {
-			const habitRewards = habitSnapshot.updatedHabits
-				.filter(habit => rewardHabitIds.includes(habit.id))
-				.map(habit => getHabitCompletionReward(habit));
-			const awarded = Math.floor(habitRewards.reduce((sum, reward) => sum + reward.coins, 0) * coinMultiplier);
-			const furyReward = habitRewards.reduce((sum, reward) => sum + reward.fury, 0);
-			totalCoinsEarned += awarded;
-			coins.addCoins?.(awarded);
-			furyDelta += furyReward;
-			dragon?.addHealthFromGoal?.(rewardHabitIds.length * 2);
-		}
-
-		if (rewardTodoIds.length > 0) {
-			const todoRewards = todoSnapshot.updatedTodos.filter(todo => rewardTodoIds.includes(todo.id)).map(todo => getTodoCompletionReward(todo));
-			const awarded = Math.floor(todoRewards.reduce((sum, reward) => sum + reward.coins, 0) * coinMultiplier);
-			const furyReward = todoRewards.reduce((sum, reward) => sum + reward.fury, 0);
-			totalCoinsEarned += awarded;
-			coins.addCoins?.(awarded);
-			furyDelta += furyReward;
-			dragon?.addHealthFromGoal?.(rewardTodoIds.length * 2);
-		}
-
-		const todoChallengeFinishers = todoSnapshot.updatedTodos.filter(
-			todo => todo.isChallenge && !!todo.dueDate && rewardTodoIds.includes(todo.id) && !todo.challengeRewardClaimed && !!todo.completedDate && todo.completedDate <= todo.dueDate,
-		);
-		if (todoChallengeFinishers.length > 0) {
-			todoChallengeFinishers.forEach(todo => {
-				if ((todo.rewardCoins ?? 0) > 0) {
-					coins?.addCoins?.(todo.rewardCoins ?? 0);
-					totalCoinsEarned += todo.rewardCoins ?? 0;
-				}
-				if ((todo.rewardShards ?? 0) > 0) {
-					shards?.addShards?.(todo.rewardShards ?? 0);
-					totalShardsEarned += todo.rewardShards ?? 0;
-				}
-				goals?.editTodo?.(todo.id, { challengeRewardClaimed: true, challengeStatus: 'completed' });
-			});
-		}
-
-		const lateCompletedChallengeTodos = todoSnapshot.updatedTodos.filter(
-			todo => todo.isChallenge && !!todo.dueDate && rewardTodoIds.includes(todo.id) && !!todo.completedDate && todo.completedDate > todo.dueDate,
-		);
-		lateCompletedChallengeTodos.forEach(todo => goals?.editTodo?.(todo.id, { challengeStatus: 'failed' }));
-
-		const challengeFinishers = habitSnapshot.updatedHabits.filter(h => isGoalChallengeActive(h) && h.challengeLength && h.challengeStartDate && (h.streak ?? 0) >= (h.challengeLength ?? 0));
-		if (challengeFinishers.length > 0) {
-			challengeFinishers.forEach(h => {
-				const reward = GOAL_CHALLENGE_TIERS.find(tier => tier.days === Number(h.challengeLength)) ?? { rewardCoins: 0, rewardShards: 0 };
-				if (reward.rewardCoins > 0) {
-					coins?.addCoins?.(reward.rewardCoins);
-					totalCoinsEarned += reward.rewardCoins;
-				}
-				if (reward.rewardShards > 0) {
-					shards?.addShards?.(reward.rewardShards);
-					totalShardsEarned += reward.rewardShards;
-				}
-				goals?.editHabit?.(h.id, { challengeRewardClaimed: true, challengeStatus: 'completed' });
-			});
-		}
-
-		goals.habits.forEach(habit => {
-			const completedToday = habitSnapshot.completedHabitIds.includes(habit.id);
-			const failureDate = getHabitChallengeFailureDate(habit, today, completedToday);
-			if (!failureDate) return;
-
-			goals.editHabit?.(habit.id, {
-				challengeStatus: 'failed',
-				challengeFailedDate: failureDate,
-			});
-		});
-
-		const overdueIncompleteTodoIds = todoSnapshot.updatedTodos
-			.filter(todo => !!todo.dueDate && today > todo.dueDate && !todo.completedDate)
-			.map(todo => todo.id);
-		overdueIncompleteTodoIds.forEach(id => goals.failTodo?.(id, true));
-
-		if (dragon?.hp <= 0) {
-			dragon?.die?.();
-		}
-
-		if (!alreadyDoneToday) {
-			const promptRewardCount = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses }).filter(text => countWords(text) >= 25).length;
-			if (promptRewardCount > 0) {
-				const extra = Math.floor(5 * promptRewardCount * coinMultiplier);
-				coins.addCoins?.(extra);
-				totalCoinsEarned += extra;
-			}
-
-			if (trivia.section.isEnabled) {
-				const correctTriviaCount = trivia.correctCount();
-				const incorrectTriviaCount = Math.max(0, trivia.state.items.length - correctTriviaCount);
-				const triviaCoins = Math.floor(correctTriviaCount * 5 * jeopardyMultiplier * coinMultiplier);
-				if (triviaCoins > 0) {
-					coins.addCoins?.(triviaCoins);
-					totalCoinsEarned += triviaCoins;
-				}
-				if (jeopardyMultiplier > 1 && incorrectTriviaCount > 0) {
-					const penalty = Math.min(coins.getCoins?.() ?? 0, Math.floor(incorrectTriviaCount * 5 * jeopardyMultiplier));
-					if (penalty > 0) {
-						coins.spendCoins?.(penalty);
-						totalCoinsEarned -= penalty;
-					}
-				}
-			}
-
-			if (survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted) {
-				const bothBonusCoins = Math.floor((10 + Math.max(0, streakVal)) * coinMultiplier);
-				coins.addCoins?.(bothBonusCoins);
-				totalCoinsEarned += bothBonusCoins;
-				shards.addShards?.(1);
-				totalShardsEarned += 1;
-				furyDelta -= Math.max(0, streakVal);
-				streakCtx.incrementStreak?.();
-			}
-
-			const surveyBonus = itemSnacks.getSurveyCompletionBonus?.(Math.max(0, totalCoinsEarned), totalShardsEarned, scar);
-			if (surveyBonus) {
-				const bonusCoins = Math.max(0, surveyBonus.finalCoins - Math.max(0, totalCoinsEarned));
-				const bonusShards = Math.max(0, surveyBonus.finalShards - totalShardsEarned);
-				if (bonusCoins > 0) {
-					coins.addCoins?.(bonusCoins);
-					totalCoinsEarned += bonusCoins;
-				}
-				if (bonusShards > 0) {
-					shards.addShards?.(bonusShards);
-					totalShardsEarned += bonusShards;
-				}
-				if ((surveyBonus.snackDrops ?? 0) > 0) {
-					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops * surveyDuplicationMultiplier, scar);
-				}
-			}
-
-			if (surveyDuplicationMultiplier > 1) {
-				const duplicatedCoins = Math.max(0, totalCoinsEarned * (surveyDuplicationMultiplier - 1));
-				const duplicatedShards = Math.max(0, totalShardsEarned * (surveyDuplicationMultiplier - 1));
-				if (duplicatedCoins > 0) {
-					coins.addCoins?.(duplicatedCoins);
-					totalCoinsEarned += duplicatedCoins;
-				}
-				if (duplicatedShards > 0) {
-					shards.addShards?.(duplicatedShards);
-					totalShardsEarned += duplicatedShards;
-				}
-			}
-		}
-
-		if (!alreadyDoneToday && typeof fury?.addFury === 'function') {
+		if (!isRetake) {
+			energy += 10 + selectedCount * 20;
+			shardReward += 1 + Math.floor(selectedCount / 3);
+			coins.addCoins(energy);
+			shards.addShards(shardReward);
+			furyDelta -= selectedCount * 2;
 			fury.addFury(furyDelta);
-			const healthDelta = 2 - furyDelta;
-			if (healthDelta > 0) dragon.healHp?.(healthDelta);
-			if (healthDelta < 0) dragon.damageHp?.(Math.abs(healthDelta));
+			dragon.addHealthFromGoal(selectedCount * 2);
+			if (survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted) streak.incrementStreak();
 		}
 
-		const totalCoins = totalCoinsEarned;
-		if (!alreadyDoneToday) {
-			coins.registerSurveyCoins?.(Math.max(0, totalCoins));
+		if (focus.settings.showHarvestInCheckOut) {
+			focus.markGoalsHarvested(today, harvestIds);
 		}
-		const xpEarned = alreadyDoneToday ? 0 : scarLevel?.addSurveyXP?.(Math.max(0, totalCoins), dragon.age, isPremiumFlag) ?? 0;
-		const effectiveFury = alreadyDoneToday ? 0 : furyDelta;
 
-		const completedSaveState = buildSaveState({
+		survey.completeNightSurvey({
+			savedAt: today,
 			section: 0,
 			progressPercent: 100,
 			completed: true,
-			lastSnapshot: rewardSnapshot,
+			sectionData: { mood: mood.label, journalText, selectedHabitIds, selectedTodoIds },
+			lastSnapshot: {
+				habitIds: selectedHabitIds,
+				todoIds: selectedTodoIds,
+			},
 		});
-		survey.completeNightSurvey?.(completedSaveState);
-		survey.recordNightSnapshot?.(rewardSnapshot);
-		survey.clearEveningPrompts?.(today);
 
-		const promptText = Object.values({ ...shortAnswers.state.responses, ...extraPrompts.state.responses })
-			.map(text => text.trim())
-			.filter(Boolean)
-			.join('\n\n');
-		const completedHabitTitles = habitSnapshot.updatedHabits.filter(habit => habitSnapshot.completedHabitIds.includes(habit.id)).map(habit => habit.title);
-		const remainingHabitTitles = habitSnapshot.updatedHabits.filter(habit => !habitSnapshot.completedHabitIds.includes(habit.id)).map(habit => habit.title);
-		const completedTodoTitles = todoSnapshot.updatedTodos.filter(todo => todoSnapshot.completedTodoIds.includes(todo.id)).map(todo => todo.title);
-		const pendingTodoTitles = todoSnapshot.updatedTodos
-			.filter(todo => !todoSnapshot.completedTodoIds.includes(todo.id) && !todo.completedDate)
-			.map(todo => todo.title);
-		const failedTodoTitles = todoSnapshot.updatedTodos
-			.filter(todo => (!!todo.dueDate && today > todo.dueDate && !todo.completedDate) || !!todo.failed || (!!todo.completedDate && !!todo.dueDate && todo.completedDate > todo.dueDate))
-			.map(todo => todo.title);
-		const blockedHabitRewards = habitSnapshot.updatedHabits.filter(habit => rewardHabitIds.includes(habit.id) && getHabitCompletionReward(habit).rewardBlocked).map(habit => habit.title);
-		const blockedTodoRewards = todoSnapshot.updatedTodos.filter(todo => rewardTodoIds.includes(todo.id) && getTodoCompletionReward(todo).rewardBlocked).map(todo => todo.title);
+		survey.recordGoalRewards(today, {
+			habitIds: selectedHabitIds,
+			todoIds: selectedTodoIds,
+		});
 
-		journal.addEntry?.({
-			id: `entry_${today}_night_${Date.now()}`,
+		journal.addEntry({
+			id: `night-${today}-${Date.now()}`,
 			date: today,
 			surveyType: 'night',
-			goalsCompleted: totalGoalsCompleted,
-			goalsIncomplete: Math.max(0, goals.habits.length - habitSnapshot.completedHabitIds.length),
-			text: journalEntry.section.isEnabled ? journalEntry.state.text : undefined,
-			promptText: promptText || undefined,
-			moodEvening: moodLabel,
-			rewards: { coins: totalCoins, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: totalShardsEarned },
-			triviaResult: trivia.section.isEnabled ? `${trivia.correctCount()}/${trivia.state.items.length}` : undefined,
-			triviaCorrect: trivia.section.isEnabled ? trivia.correctCount() > 0 : undefined,
+			goalsCompleted: selectedCount,
+			goalsIncomplete: Math.max(0, openHabits.length + openTodos.length - selectedCount),
+			rewards: { coins: energy, fireXp: energy * 10, fury: furyDelta, shards: shardReward },
+			text: focus.settings.showJournal ? journalText : undefined,
+			moodEvening: mood.label,
 			todoCount: goals.todos.length,
-			todoCompleted: todoSnapshot.completedTodoIds.length,
-			todoFailed: failedTodoTitles.length,
-			completedHabitTitles,
-			remainingHabitTitles,
-			completedTodoTitles,
-			pendingTodoTitles,
-			failedTodoTitles,
+			todoCompleted: selectedTodoIds.length,
+			todoFailed: goals.todos.filter(goal => goal.failed).length,
+			completedHabitTitles: goals.habits.filter(goal => selectedHabitIds.includes(goal.id)).map(goal => goal.title),
+			completedTodoTitles: goals.todos.filter(goal => selectedTodoIds.includes(goal.id)).map(goal => goal.title),
+			pendingTodoTitles: goals.todos.filter(goal => !selectedTodoIds.includes(goal.id) && !goal.completedDate).map(goal => goal.title),
 		});
 
-		setResults({
-			coinsEarned: totalCoins,
-			shardsEarned: totalShardsEarned,
-			xpEarned: xpEarned,
-			furyDelta: effectiveFury,
-			goalsCompleted: totalGoalsCompleted,
-			groups: [
-				...(alreadyDoneToday ? [{ title: 'Retake Notes', entries: ['This was a refill survey, so locked answers stayed visible and only still-open goal progress could change.'] }] : []),
-				{
-					title: 'Survey Answers',
-					entries: [
-						moodLabel ? `Mood: ${moodLabel}` : 'Mood question skipped',
-						trivia.section.isEnabled ? `Trivia score: ${trivia.correctCount()}/${trivia.state.items.length}` : 'Trivia skipped',
-						journalEntry.section.isEnabled ? `Journal entry length: ${journalEntry.state.text.trim().length} characters` : 'Journal entry skipped',
-					],
-				},
-				{
-					title: 'Habit Goals',
-					entries: completedHabitTitles.length > 0 ? completedHabitTitles.map(title => `Completed: ${title}`) : ['No habit goals completed'],
-				},
-				{
-					title: 'To-Do Goals',
-					entries:
-						completedTodoTitles.length > 0
-							? completedTodoTitles.map(title => `Completed: ${title}`)
-							: pendingTodoTitles.length > 0
-								? pendingTodoTitles.map(title => `Still open: ${title}`)
-								: ['No to-do goals completed'],
-				},
-				{
-					title: 'Reward Notes',
-					entries: [
-						...(failedTodoTitles.length > 0 ? failedTodoTitles.map(title => `Late or failed: ${title}`) : ['No late or failed to-dos']),
-						...(blockedHabitRewards.length > 0 ? blockedHabitRewards.map(title => `No normal habit reward yet: ${title}`) : []),
-						...(blockedTodoRewards.length > 0 ? blockedTodoRewards.map(title => `No normal to-do reward yet: ${title}`) : []),
-					],
-				},
-			],
-		});
-		setShowResults(true);
+		setResults(isRetake ? 'Check-out updated. Rewards were locked because this is a retake.' : `Check-out complete: ${selectedCount} goals, +${energy} energy, +${shardReward} shards, ${furyDelta >= 0 ? '+' : ''}${furyDelta} fury.`);
 	};
 
-	const goNext = () => {
-		if (!canProceed) return;
-		if (currentSection >= totalSections - 1) {
-			submitSurvey();
-		} else {
-			setCurrentSection(prev => Math.min(prev + 1, totalSections - 1));
-		}
-	};
-
-	const goBack = () => {
-		setCurrentSection(prev => Math.max(prev - 1, 0));
-	};
-
-	if (showResults && results) {
+	if (results) {
 		return (
-			<View style={sectionStyles.container}>
+			<View style={styles.container}>
 				<TopHeader isHomePage={false} />
-				{resultsSection.section.render()}
+				<ScrollView contentContainerStyle={styles.content}>
+					<Panel>
+						<Text style={styles.sectionTitle}>Check-Out Results</Text>
+						<Text style={styles.bodyText}>{results}</Text>
+						<ActionButton label="Return" onPress={() => router.back()} />
+					</Panel>
+				</ScrollView>
 			</View>
 		);
 	}
 
 	return (
-		<View style={sectionStyles.container}>
+		<View style={styles.container}>
 			<TopHeader isHomePage={false} />
-
-			<Animated.View style={[sectionStyles.surveyLabelContainer, { transform: [{ translateY: slideAnim }] }]}>
-				<Text style={sectionStyles.surveyLabelText}>Night Survey</Text>
-			</Animated.View>
-
-			<View style={sectionStyles.progressContainer}>
-				<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-					<View style={{ flex: 1 }}>
-						<ProgressBar progress={Math.round(((currentSection + 1) / Math.max(1, totalSections)) * 100)} />
-						<Text style={sectionStyles.progressText}>
-							Question {currentSection + 1} of {totalSections}
-						</Text>
-					</View>
-					<Pressable onPress={handleExitSurvey} style={sectionStyles.closeButton}>
-						<Text style={sectionStyles.closeButtonText}>X</Text>
-					</Pressable>
+			<ScrollView contentContainerStyle={styles.content}>
+				<View style={styles.statGrid}>
+					<StatTile label="Selectable Goals" value={String(openHabits.length + openTodos.length)} />
+					<StatTile label="Selected" value={String(selectedCount)} />
 				</View>
-			</View>
-
-			<ScrollView style={sectionStyles.contentArea}>
-				<View style={sectionStyles.surveyContent}>
-					<View style={sectionStyles.surveyContentInner}>{section?.render()}</View>
-				</View>
+				{focus.settings.showSurveyAdvice ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Debrief Advice</Text>
+						<Text style={styles.bodyText}>Mark only what truly happened. The dragon is volatile, not stupid.</Text>
+					</Panel>
+				) : null}
+				{focus.settings.showMoodQuestion ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Mood</Text>
+						<View style={styles.actionRow}>
+							{MOODS.map(option => (
+								<ActionButton key={option.label} label={option.label} variant={mood.label === option.label ? 'primary' : 'secondary'} onPress={() => setMood(option)} />
+							))}
+						</View>
+					</Panel>
+				) : null}
+				<Panel>
+					<Text style={styles.sectionTitle}>Complete Goals</Text>
+					{openHabits.length + openTodos.length === 0 ? <EmptyState title="No open goals" body="Completed or harvested goals will still be logged when you submit." /> : null}
+					{openHabits.map(goal => <GoalCheck key={`habit-${goal.id}`} label={goal.title} meta="Habit" selected={selectedHabitIds.includes(goal.id)} onPress={() => toggle(goal.id, 'habit')} />)}
+					{openTodos.map(goal => <GoalCheck key={`todo-${goal.id}`} label={goal.title} meta={goal.dueDate ? `To-Do due ${goal.dueDate}` : 'To-Do'} selected={selectedTodoIds.includes(goal.id)} onPress={() => toggle(goal.id, 'todo')} />)}
+				</Panel>
+				{focus.settings.showHarvestInCheckOut ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Harvest Preview</Text>
+						<Text style={styles.bodyText}>{selectedCount} selected goals will be harvested with this debrief. Already harvested goals are skipped automatically.</Text>
+					</Panel>
+				) : null}
+				{focus.settings.showJournal ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Journal</Text>
+						<TextInput value={journalText} onChangeText={setJournalText} multiline placeholder="Optional debrief note" placeholderTextColor={theme.colors.secondaryText} style={[styles.input, styles.journalInput]} />
+					</Panel>
+				) : null}
+				<ActionButton label={isRetake ? 'Update Check-Out' : 'Submit Check-Out'} onPress={submit} />
 			</ScrollView>
-
-			<View style={sectionStyles.buttonContainer}>
-				<Pressable style={[sectionStyles.buttonSmall, currentSection === 0 ? { opacity: 0.6 } : null]} onPress={goBack} disabled={currentSection === 0}>
-					<Text selectable={false} style={sectionStyles.buttonText}>
-						Previous
-					</Text>
-				</Pressable>
-
-				<Pressable style={[sectionStyles.buttonNext, { flex: 2 }, !canProceed && sectionStyles.buttonDisabled]} onPress={goNext} disabled={!canProceed}>
-					<Text selectable={false} style={sectionStyles.buttonTextPrimary}>
-						{currentSection === totalSections - 1 ? 'Submit' : 'Next'}
-					</Text>
-				</Pressable>
-			</View>
 		</View>
 	);
 }
 
+function GoalCheck({ label, meta, selected, onPress }: { label: string; meta: string; selected: boolean; onPress: () => void }) {
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
+	return (
+		<PressableShim selected={selected} onPress={onPress}>
+			<View style={styles.goalText}>
+				<Text style={styles.goalTitle}>{label}</Text>
+				<Text style={styles.goalMeta}>{meta}</Text>
+			</View>
+			<Text style={[styles.checkText, selected && styles.checkTextSelected]}>{selected ? 'Done' : 'Open'}</Text>
+		</PressableShim>
+	);
+}
 
+function PressableShim({ selected, onPress, children }: { selected: boolean; onPress: () => void; children: React.ReactNode }) {
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
+	return (
+		<Pressable style={[styles.goalLine, selected && styles.goalLineSelected]} onPress={onPress}>
+			{children}
+		</Pressable>
+	);
+}
 
-
-
-
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+	StyleSheet.create({
+		container: { flex: 1, backgroundColor: colors.background },
+		content: { padding: 14, paddingBottom: 36 },
+		statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+		sectionTitle: { color: colors.headerText, fontSize: 18, fontWeight: '900', marginBottom: 8 },
+		bodyText: { color: colors.text, fontSize: 13, lineHeight: 20, marginBottom: 12 },
+		actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+		input: { borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.text, paddingHorizontal: 12, paddingVertical: 10, fontWeight: '700' },
+		journalInput: { minHeight: 110, textAlignVertical: 'top' },
+		goalLine: { flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingVertical: 10 },
+		goalLineSelected: { backgroundColor: colors.tertiaryBackground },
+		goalText: { flex: 1 },
+		goalTitle: { color: colors.titleText, fontSize: 14, fontWeight: '900' },
+		goalMeta: { color: colors.secondaryText, fontSize: 12, marginTop: 3 },
+		checkText: { color: colors.secondaryText, fontSize: 12, fontWeight: '900' },
+		checkTextSelected: { color: colors.success },
+	});

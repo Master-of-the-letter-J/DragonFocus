@@ -1,6 +1,7 @@
 import { roundToDecimalPlaces } from '@/constants/number-abbreviation';
-import React, { createContext, ReactNode, useContext, useState } from 'react';
-import { useGraveyard } from '../context/GraveyardProvider';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
+import { useGraveyard } from './GraveyardProvider';
 
 export type DragonAge = 'Egg' | 'Hatchling' | 'Dragonet' | 'Juvenile' | 'Young Adult' | 'Adult' | 'Elder Dragon' | 'Wyrm';
 
@@ -22,6 +23,9 @@ const DRAGON_STAGES: DragonStage[] = [
 	{ name: 'Wyrm', minAge: 365, maxAge: Infinity, maxHP: 500 },
 ];
 
+type DragonLifeState = 'unspawned' | 'alive' | 'dead' | 'awaiting revival';
+type DragonLifecycleEvent = { id: number; type: 'spawned' | 'died' | 'revived' } | null;
+
 interface DragonContextType {
 	age: number;
 	hp: number;
@@ -31,8 +35,8 @@ interface DragonContextType {
 	dragonJrCount: number;
 	deathDebuffDays: number;
 	invincible?: boolean;
-	dragonState: 'unspawned' | 'alive' | 'dead' | 'awaiting revival';
-	lastLifecycleEvent: { id: number; type: 'spawned' | 'died' | 'revived' } | null;
+	dragonState: DragonLifeState;
+	lastLifecycleEvent: DragonLifecycleEvent;
 	spawnDragon: () => void;
 	clearLifecycleEvent: () => void;
 	incrementAge: () => void;
@@ -53,183 +57,160 @@ interface DragonContextType {
 	setAge?: (v: number) => void;
 }
 
+interface DragonStoreState {
+	age: number;
+	hp: number;
+	dragonName: string;
+	dragonJrCount: number;
+	deathDebuffDays: number;
+	invincible: boolean;
+	dragonState: DragonLifeState;
+	lastLifecycleEvent: DragonLifecycleEvent;
+}
+
+const INITIAL_DRAGON_STATE: DragonStoreState = {
+	age: 0,
+	hp: DRAGON_STAGES[0].maxHP,
+	dragonName: 'My Dragon',
+	dragonJrCount: 0,
+	deathDebuffDays: 0,
+	invincible: false,
+	dragonState: 'unspawned',
+	lastLifecycleEvent: null,
+};
+
+const getStageForAgeValue = (ageValue: number): DragonStage =>
+	DRAGON_STAGES.find(stage => ageValue >= stage.minAge && ageValue < stage.maxAge) ?? DRAGON_STAGES[DRAGON_STAGES.length - 1];
+
+const normalizeDragonState = (storedState: DragonStoreState | null, initialState: DragonStoreState): DragonStoreState => {
+	if (!storedState) return initialState;
+	const safeAge = Math.max(0, Math.floor(storedState.age ?? initialState.age));
+	const safeMaxHp = getStageForAgeValue(safeAge).maxHP;
+
+	return {
+		...initialState,
+		...storedState,
+		age: safeAge,
+		hp: Math.max(0, Math.min(safeMaxHp, Number(storedState.hp ?? safeMaxHp))),
+		dragonName: typeof storedState.dragonName === 'string' && storedState.dragonName.trim() ? storedState.dragonName.trim() : initialState.dragonName,
+		dragonJrCount: Math.max(0, Math.floor(storedState.dragonJrCount ?? 0)),
+		deathDebuffDays: Math.max(0, Math.floor(storedState.deathDebuffDays ?? 0)),
+		invincible: !!storedState.invincible,
+		dragonState: ['unspawned', 'alive', 'dead', 'awaiting revival'].includes(storedState.dragonState) ? storedState.dragonState : initialState.dragonState,
+		lastLifecycleEvent: null,
+	};
+};
+
 const DragonContext = createContext<DragonContextType | undefined>(undefined);
 
-/**@requires GraveyardProvider */
 export function DragonProvider({ children }: { children: ReactNode }) {
-	const graveyard = useGraveyard(); // <-- NEW
+	const graveyard = useGraveyard();
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.dragon, INITIAL_DRAGON_STATE, { normalize: normalizeDragonState });
 
-	const getStageForAge = (ageValue: number): DragonStage => {
-		return DRAGON_STAGES.find(stage => ageValue >= stage.minAge && ageValue < stage.maxAge) || DRAGON_STAGES[DRAGON_STAGES.length - 1];
-	};
-
-	const [age, setAge] = useState(0);
-	const initialStage = getStageForAge(0);
-	const [hp, setHp] = useState(initialStage.maxHP);
-	const [dragonName, setDragonName] = useState('My Dragon');
-	const [dragonJrCount, setDragonJrCount] = useState(0);
-	const [deathDebuffDays, setDeathDebuffDays] = useState(0);
-	const [invincible, setInvincible] = useState(false);
-	const [dragonState, setDragonState] = useState<'unspawned' | 'alive' | 'dead' | 'awaiting revival'>('unspawned');
-	const [lastLifecycleEvent, setLastLifecycleEvent] = useState<{ id: number; type: 'spawned' | 'died' | 'revived' } | null>(null);
-
-	const currentStage = getStageForAge(age);
+	const currentStage = getStageForAgeValue(state.age);
 	const maxHP = currentStage.maxHP;
 
-	const incrementAge = () => {
-		if (dragonState !== 'alive') return;
-		setAge(prev => prev + 1);
-		const newStage = getStageForAge(age + 1);
-		if (newStage.maxHP > maxHP) {
-			setHp(prev => Math.min(prev + 5, newStage.maxHP));
-		}
-	};
-
-	const setAgeValue = (v: number) => {
-		setAge(Math.max(0, Math.floor(v)));
-	};
-
-	const spawnDragon = () => {
-		setDragonState('alive');
-		setLastLifecycleEvent({ id: Date.now(), type: 'spawned' });
-	};
-
-	const markDead = () => {
-		setDragonState(prev => {
-			if (prev === 'dead') return prev;
-			return 'dead';
-		});
-		setLastLifecycleEvent({ id: Date.now(), type: 'died' });
-		setDeathDebuffDays(3);
-	};
-
-	const damageHp = (amount: number) => {
-		setHp(prev => {
-			const nextHp = roundToDecimalPlaces(Math.max(0, prev - amount), 3);
-			if (nextHp <= 0 && dragonState === 'alive' && !invincible) {
-				markDead();
-			}
-			return nextHp;
-		});
-	};
-
-	const healHp = (amount: number) => {
-		setHp(prev => roundToDecimalPlaces(Math.min(maxHP, prev + amount), 3));
-	};
-
-	const setHpValue = (amount: number) => {
+	const updateHp = (amount: number) => {
 		const nextHp = roundToDecimalPlaces(Math.max(0, Math.min(maxHP, amount)), 3);
-		setHp(nextHp);
-		if (nextHp <= 0 && dragonState === 'alive' && !invincible) {
+		setState(current => ({ ...current, hp: nextHp }));
+		if (nextHp <= 0 && state.dragonState === 'alive' && !state.invincible) {
 			markDead();
 		}
 	};
 
-	const regenerateHP = (yinValue: number) => {
-		const regenerationAmount = Math.floor(yinValue / 10);
-		healHp(regenerationAmount);
+	const markDead = () => {
+		if (state.invincible) return;
+		setState(current => ({
+			...current,
+			dragonState: current.dragonState === 'dead' ? 'dead' : 'dead',
+			deathDebuffDays: 3,
+			lastLifecycleEvent: { id: Date.now(), type: 'died' },
+		}));
 	};
 
-	const addHealthFromSurvey = () => {
-		healHp(2);
-	};
-
-	const addHealthFromGoal = (amount: number = 2) => {
-		healHp(amount);
-	};
-
-	const dailyHealthPenalty = (yinValue: number) => {
-		if (yinValue < 50) {
-			damageHp(10);
-		}
+	const incrementAge = () => {
+		if (state.dragonState !== 'alive') return;
+		setState(current => {
+			const nextAge = current.age + 1;
+			const nextMaxHp = getStageForAgeValue(nextAge).maxHP;
+			return {
+				...current,
+				age: nextAge,
+				hp: nextMaxHp > maxHP ? Math.min(current.hp + 5, nextMaxHp) : current.hp,
+			};
+		});
 	};
 
 	const getHealthStage = (): 'Depression' | 'Mediocre' | 'Jolly' => {
-		const healthPercent = (hp / maxHP) * 100;
+		const healthPercent = (state.hp / maxHP) * 100;
 		if (healthPercent < 33) return 'Depression';
 		if (healthPercent < 67) return 'Mediocre';
 		return 'Jolly';
 	};
 
-	// -------------------------------------------------------
-	// 🪦 DEATH LOGIC — TRANSITION TO 'dead' STATE
-	// -------------------------------------------------------
-	const die = () => {
-		if (invincible) return;
-		markDead();
-	};
-
-	// -------------------------------------------------------
-	// ✨ REVIVE LOGIC — ADD TO GRAVEYARD & RESET
-	// -------------------------------------------------------
 	const revive = () => {
-		// 1. Log graveyard entry
 		graveyard.addEntry({
 			id: `grave_${Date.now()}`,
-			name: dragonName,
-			age,
+			name: state.dragonName,
+			age: state.age,
 			stage: currentStage.name,
-			hp,
+			hp: state.hp,
 			maxHP,
 			healthState: getHealthStage(),
-			generation: dragonJrCount + 1,
+			generation: state.dragonJrCount + 1,
 			date: new Date().toISOString().split('T')[0],
-			cause: 'Health reached 0',
+			cause: state.hp <= 0 ? 'Health reached 0' : 'Containment breach',
 		});
 
-		// 2. Reset dragon (new generation)
-		setAge(0);
-		setDragonJrCount(prev => prev + 1);
-		setDragonName(`Dragon Jr. ${dragonJrCount + 1}`);
-		const newStage = getStageForAge(0);
-		setHp(newStage.maxHP);
-		setDeathDebuffDays(3);
-		setDragonState('alive');
-		setLastLifecycleEvent({ id: Date.now(), type: 'revived' });
-	};
-
-	const resetDragon = () => {
-		setAge(0);
-		setHp(getStageForAge(0).maxHP);
-		setDragonName('My Dragon');
-		setDragonJrCount(0);
-		setDeathDebuffDays(0);
-		setInvincible(false);
-		setDragonState('unspawned');
-		setLastLifecycleEvent(null);
+		setState(current => ({
+			...current,
+			age: 0,
+			hp: DRAGON_STAGES[0].maxHP,
+			dragonName: `Dragon Jr. ${current.dragonJrCount + 1}`,
+			dragonJrCount: current.dragonJrCount + 1,
+			deathDebuffDays: 3,
+			dragonState: 'alive',
+			lastLifecycleEvent: { id: Date.now(), type: 'revived' },
+		}));
 	};
 
 	return (
 		<DragonContext.Provider
 			value={{
-				age,
-				hp,
+				age: state.age,
+				hp: state.hp,
 				maxHP,
 				currentStage,
-				dragonName,
-				dragonJrCount,
-				deathDebuffDays,
-				invincible,
-				dragonState,
-				lastLifecycleEvent,
-				spawnDragon,
-				clearLifecycleEvent: () => setLastLifecycleEvent(null),
-				setInvincible,
+				dragonName: state.dragonName,
+				dragonJrCount: state.dragonJrCount,
+				deathDebuffDays: state.deathDebuffDays,
+				invincible: state.invincible,
+				dragonState: state.dragonState,
+				lastLifecycleEvent: state.lastLifecycleEvent,
+				spawnDragon: () => setState(current => ({ ...current, dragonState: 'alive', lastLifecycleEvent: { id: Date.now(), type: 'spawned' } })),
+				clearLifecycleEvent: () => setState(current => ({ ...current, lastLifecycleEvent: null })),
 				incrementAge,
-				damageHp,
-				healHp,
-				setHp: setHpValue,
-				regenerateHP,
-				addHealthFromSurvey,
-				addHealthFromGoal,
-				dailyHealthPenalty,
-				getStageForAge,
-				setDragonName,
-				setAge: setAgeValue,
-				die,
+				damageHp: amount => updateHp(state.hp - amount),
+				healHp: amount => updateHp(state.hp + amount),
+				setHp: updateHp,
+				regenerateHP: yinValue => updateHp(state.hp + Math.floor(yinValue / 10)),
+				addHealthFromSurvey: () => updateHp(state.hp + 2),
+				addHealthFromGoal: (amount = 2) => updateHp(state.hp + amount),
+				dailyHealthPenalty: yinValue => {
+					if (yinValue < 50) updateHp(state.hp - 10);
+				},
+				getStageForAge: getStageForAgeValue,
+				setDragonName: name => setState(current => ({ ...current, dragonName: name.trim() || current.dragonName })),
+				die: markDead,
 				revive,
-				resetDragon,
+				resetDragon: () => setState(INITIAL_DRAGON_STATE),
 				getHealthStage,
+				setInvincible: invincible => setState(current => ({ ...current, invincible })),
+				setAge: age => {
+					const nextAge = Math.max(0, Math.floor(age));
+					const nextMaxHp = getStageForAgeValue(nextAge).maxHP;
+					setState(current => ({ ...current, age: nextAge, hp: Math.min(current.hp, nextMaxHp) }));
+				},
 			}}>
 			{children}
 		</DragonContext.Provider>

@@ -5,7 +5,7 @@ import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TextInput } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface PromptItem {
 	id: string;
@@ -74,6 +74,7 @@ export function useShortAnswersSection({
 }: UseShortAnswersParams): SectionHookResult<ShortAnswersState> & { promptItems: PromptItem[] } {
 	const { questionSettings: contextSettings } = useQuestions();
 	const survey = useSurvey();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enablePrompts ?? true;
 	const resolvedRandomCount =
@@ -140,7 +141,7 @@ export function useShortAnswersSection({
 			return (
 				<View>
 					<Text style={sectionStyles.question}>Short Answers</Text>
-					<Text style={{ marginBottom: 12 }}>No prompts are enabled in settings.</Text>
+					<Text style={[sectionStyles.bodyText, { marginBottom: 12 }]}>No prompts are enabled in settings.</Text>
 				</View>
 			);
 		}

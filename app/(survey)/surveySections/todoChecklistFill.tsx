@@ -8,7 +8,7 @@ import Checkbox from 'expo-checkbox';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface TodoChecklistFillState {
 	checked: Record<string, boolean>;
@@ -23,6 +23,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 	const goals = useGoals();
 	const questions = useQuestions();
 	const survey = useSurvey();
+	const sectionStyles = useSectionStyles();
 	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 	const isRefill = survey.nightSurveyCompleted && survey.lastNightSurveyDate === today;
 	const rewardedTodoIds = survey.getRewardedGoals(today).todoIds ?? [];
@@ -92,7 +93,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 		return (
 			<View>
 				<Text style={sectionStyles.question}>To-Do Goals</Text>
-				<Text style={{ marginBottom: 8 }}>Check off completed to-dos and sub-goals. Refill mode only shows to-dos that were not already rewarded.</Text>
+				<Text style={[sectionStyles.bodyText, { marginBottom: 8 }]}>Check off completed to-dos and sub-goals. Refill mode only shows to-dos that were not already rewarded.</Text>
 
 				<ScrollView style={sectionStyles.goalsScrollView} nestedScrollEnabled>
 					{visibleTodos.map(todo => {
@@ -156,18 +157,18 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 									))}
 								</View>
 
-								<Text style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
+								<Text style={sectionStyles.habitMeta}>
 									{todo.dueDate ? `Due ${todo.dueDate}` : 'No due date'} | Normal reward {normalReward.coins} coins
 								</Text>
 
 								{hasActiveChallenge ? (
-									<Text style={{ fontSize: 11, color: '#1565C0', marginTop: 4 }}>
+									<Text style={sectionStyles.infoText}>
 										Challenge reward: {todo.rewardCoins ?? 0} coins | {todo.rewardShards ?? 0} shards
 									</Text>
 								) : null}
 
 								{rewardWarning && !hasActiveChallenge ? <Text style={sectionStyles.warningText}>{rewardWarning}</Text> : null}
-								{lockReason ? <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 6 }}>{lockReason}</Text> : null}
+								{lockReason ? <Text style={sectionStyles.lockedText}>{lockReason}</Text> : null}
 
 								{todo.subGoals.length > 0 ? (
 									<View style={{ marginTop: 5 }}>
@@ -186,7 +187,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 													}))
 												}>
 												<Checkbox disabled={isLockedByRefill} value={state.subGoalChecked[subGoal.id] ?? subGoal.completed} />
-												<Text selectable={false} style={{ flex: 1, marginLeft: 8, textDecorationLine: (state.subGoalChecked[subGoal.id] ?? subGoal.completed) ? 'line-through' : 'none' }}>
+												<Text selectable={false} style={[sectionStyles.bodyText, { flex: 1, marginLeft: 8, textDecorationLine: (state.subGoalChecked[subGoal.id] ?? subGoal.completed) ? 'line-through' : 'none' }]}>
 													{subGoal.title}
 												</Text>
 											</Pressable>
@@ -197,7 +198,7 @@ export function useTodoChecklistFillSection(): SectionHookResult<TodoChecklistFi
 						);
 					})}
 
-					{visibleTodos.length === 0 ? <Text style={{ color: '#6B7280' }}>No to-do goals are available right now.</Text> : null}
+					{visibleTodos.length === 0 ? <Text style={sectionStyles.helperText}>No to-do goals are available right now.</Text> : null}
 				</ScrollView>
 			</View>
 		);

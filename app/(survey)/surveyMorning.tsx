@@ -1,424 +1,191 @@
-import { Text, View } from '@/components/Themed';
+import { ActionButton, EmptyState, Panel, StatTile } from '@/components/DragonFocusUI';
 import TopHeader from '@/components/TopHeader';
 import { useDragonCoins } from '@/context/DragonCoinsProvider';
+import { useDragonFocus } from '@/context/DragonFocusProvider';
 import { useDragon } from '@/context/DragonProvider';
 import { useShards } from '@/context/DragonShardsProvider';
 import { useFury } from '@/context/FuryProvider';
-import { useItemEconomy } from '@/context/ItemEconomyProvider';
-import { useItemSnacks } from '@/context/ItemSnacksProvider';
+import { useGoals, type TodoGoal } from '@/context/GoalsProvider';
 import { useJournal } from '@/context/JournalProvider';
-import { usePremium } from '@/context/PremiumProvider';
-import { useQuestions } from '@/context/QuestionProvider';
-import { useScarLevel } from '@/context/ScarLevelProvider';
-import { useStreak } from '@/context/StreakProvider';
-import { useSurvey, type SurveyProgressState } from '@/context/SurveyProvider';
-import { useTranscension } from '@/context/TranscensionProvider';
+import { useSurvey } from '@/context/SurveyProvider';
+import { useTheme } from '@/context/ThemeProvider';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useExtraPromptsSection } from './surveySections/createExtraPrompts';
-import { useFunFactSection } from './surveySections/funFactSection';
-import { useHabitChecklistEditSection } from './surveySections/habitChecklistEdit';
-import { useJournalEntrySection } from './surveySections/journalEntry';
-import { useMoodQuestionSection } from './surveySections/moodQuestion';
-import { useShortAnswersSection } from './surveySections/prompts';
-import { useQuoteSection } from './surveySections/quoteSection';
-import { useResultsSection, type SurveyResultsData } from './surveySections/results';
-import { useSurveyAdviceSection } from './surveySections/surveyAdvice';
-import { sectionStyles } from './surveySections/sectionStyles';
-import { orderSurveySections } from './surveySections/orderSections';
-import { useTodoChecklistEditSection } from './surveySections/todoChecklistEdit';
-import { useTriviaQuestionsSection } from './surveySections/triviaQuestions';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-const countWords = (value: string) =>
-	value
-		.trim()
-		.split(/\s+/)
-		.filter(Boolean).length;
+const MOODS = [
+	{ label: 'Great', fury: -5 },
+	{ label: 'Good', fury: -3 },
+	{ label: 'Okay', fury: 0 },
+	{ label: 'Meh', fury: 3 },
+	{ label: 'Down', fury: 5 },
+];
+
+const todayKey = () => new Date().toISOString().split('T')[0];
 
 export default function SurveyMorningPage() {
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
+	const router = useRouter();
+	const focus = useDragonFocus();
 	const survey = useSurvey();
+	const goals = useGoals();
 	const coins = useDragonCoins();
 	const shards = useShards();
-	const dragon = useDragon();
-	const scarLevel = useScarLevel();
 	const fury = useFury();
-	const streakCtx = useStreak();
-	const itemEconomy = useItemEconomy();
-	const itemSnacks = useItemSnacks();
-	const premium = usePremium();
-	const questions = useQuestions();
+	const dragon = useDragon();
 	const journal = useJournal();
-	const transcension = useTranscension();
-	const router = useRouter();
 
-	const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+	const today = todayKey();
 	const isRetake = survey.lastMorningSurveyDate === today && survey.morningSurveyCompleted;
+	const [mood, setMood] = useState(MOODS[2]);
+	const [todoTitle, setTodoTitle] = useState('');
+	const [habitTitle, setHabitTitle] = useState('');
+	const [journalText, setJournalText] = useState('');
+	const [results, setResults] = useState<string | null>(null);
 
-	const [currentSection, setCurrentSection] = useState(0);
-	const [showSurveyLabel, setShowSurveyLabel] = useState(false);
-	const [showIntroModal, setShowIntroModal] = useState(true);
-	const [showResults, setShowResults] = useState(false);
-	const [results, setResults] = useState<SurveyResultsData | null>(null);
-	const slideAnim = useRef(new Animated.Value(-100)).current;
-
-	const advice = useSurveyAdviceSection();
-	const mood = useMoodQuestionSection({
-		readOnly: isRetake,
-		lockedMessage: 'Mood is visible for refills, but it stays locked after your first morning submission of the day.',
-	});
-	const habitEdit = useHabitChecklistEditSection();
-	const todoEdit = useTodoChecklistEditSection();
-	const shortAnswers = useShortAnswersSection({
-		surveyType: 'morning',
-		readOnly: isRetake,
-		lockedMessage: 'Short answers are locked on morning refills and keep your original responses for today.',
-	});
-	const trivia = useTriviaQuestionsSection({ surveyType: 'morning' });
-	const funFacts = useFunFactSection({ surveyType: 'morning' });
-	const journalEntry = useJournalEntrySection({ surveyType: 'morning' });
-	const extraPrompts = useExtraPromptsSection({
-		mode: 'create',
-		readOnly: isRetake,
-		lockedMessage: 'Extra prompts are locked on morning refills and keep the prompts you already set for tonight.',
-	});
-	const quote = useQuoteSection({ surveyType: 'morning' });
-
-	const resultsSection = useResultsSection({
-		title: 'Morning Survey Complete!',
-		results,
-		onFinish: () => router.back(),
-	});
-
-	const sections = useMemo(() => {
-		const surveySections = [
-			advice.section,
-			mood.section,
-			habitEdit.section,
-			todoEdit.section,
-			shortAnswers.section,
-			extraPrompts.section,
-			trivia.section,
-			funFacts.section,
-			journalEntry.section,
-			quote.section,
-		];
-
-		return orderSurveySections(surveySections.filter((section): section is typeof advice.section => !!section && section.isEnabled), questions.questionSettings.morningOrder);
-	}, [advice.section, extraPrompts.section, funFacts.section, habitEdit.section, journalEntry.section, mood.section, questions.questionSettings.morningOrder, quote.section, shortAnswers.section, todoEdit.section, trivia.section]);
-
-	const totalSections = sections.length;
-	const section = sections[currentSection];
-	const canProceed = section?.enableNext ? section.isNextEnabled : true;
-
-	useEffect(() => {
-		if (currentSection > totalSections - 1) {
-			setCurrentSection(Math.max(0, totalSections - 1));
-		}
-	}, [currentSection, totalSections]);
-
-	useEffect(() => {
-		const t = setTimeout(() => setShowIntroModal(false), 1000);
-		return () => clearTimeout(t);
-	}, []);
-
-	useEffect(() => {
-		if (showSurveyLabel) {
-			Animated.sequence([
-				Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-				Animated.delay(1400),
-				Animated.timing(slideAnim, { toValue: -100, duration: 300, useNativeDriver: true }),
-			]).start(() => setShowSurveyLabel(false));
-		}
-	}, [showSurveyLabel, slideAnim]);
-
-	useEffect(() => {
-		const saved = survey.loadProgress?.('morning');
-		if (saved && saved.savedAt === today) {
-			if (typeof saved.section === 'number') setCurrentSection(saved.section);
-			const data = saved.sectionData ?? {};
-			advice.restoreState(data.advice);
-			mood.restoreState(data.mood);
-			habitEdit.restoreState(data.habitEdit);
-			todoEdit.restoreState(data.todoEdit);
-			shortAnswers.restoreState(data.shortAnswers);
-			trivia.restoreState(data.trivia);
-			funFacts.restoreState(data.funFacts);
-			journalEntry.restoreState(data.journal);
-			extraPrompts.restoreState(data.extraPrompts);
-			quote.restoreState(data.quote);
-		}
-
-		setShowSurveyLabel(true);
-	}, [survey, today]);
-
-	const buildSaveState = (overrides: Partial<SurveyProgressState> = {}): SurveyProgressState => ({
-		savedAt: today,
-		section: currentSection,
-		sectionData: {
-			advice: advice.saveState(),
-			mood: mood.saveState(),
-			habitEdit: habitEdit.saveState(),
-			todoEdit: todoEdit.saveState(),
-			shortAnswers: shortAnswers.saveState(),
-			trivia: trivia.saveState(),
-			funFacts: funFacts.saveState(),
-			journal: journalEntry.saveState(),
-			extraPrompts: extraPrompts.saveState(),
-			quote: quote.saveState(),
-		},
-		progressPercent: totalSections ? Math.floor(((currentSection + 1) / totalSections) * 100) : 0,
-		...overrides,
-	});
-
-	const handleExitSurvey = () => {
-		const saveState = buildSaveState();
-		survey.saveProgress?.('morning', saveState);
-		router.back();
+	const addTodo = () => {
+		const title = todoTitle.trim();
+		if (!title) return;
+		goals.addTodo({ title, dueDate: today, category: 'Focus', importance: 'default' });
+		setTodoTitle('');
 	};
 
-	const submitSurvey = () => {
-		const alreadyDoneToday = isRetake;
-		let totalCoinsEarned = 0;
-		let rewardShards = 0;
-		let furyDelta = 0;
+	const addHabit = () => {
+		const title = habitTitle.trim();
+		if (!title) return;
+		goals.addHabit({ title, category: 'Habit', importance: 'default' });
+		setHabitTitle('');
+	};
 
-		const moodIndex = mood.state.selectedIndex;
-		const moodOptions = mood.moodOptions;
-		const moodLabel = typeof moodIndex === 'number' && moodOptions[moodIndex] ? moodOptions[moodIndex].label : '';
-		if (typeof moodIndex === 'number' && moodOptions[moodIndex]) furyDelta = moodOptions[moodIndex].fury || 0;
+	const submit = () => {
+		let energy = 0;
+		let shardReward = 0;
+		const furyDelta = isRetake ? 0 : mood.fury;
 
-		const streakVal = typeof streakCtx?.getStreak === 'function' ? streakCtx.getStreak() : streakCtx?.streak ?? 0;
-		const yangValue = fury?.furyMeter ?? 0;
-		const dragonShardsCount = shards?.shards ?? 0;
-		const scar = scarLevel?.currentScarLevel ?? 0;
-		const snackMult = itemEconomy.getActiveCoinMultiplier();
-		const jeopardyMultiplier = Math.max(1, itemEconomy.getActiveJeopardyMultiplier?.() ?? 1);
-		const isPremiumFlag = premium?.isPremium ?? false;
-		const coinMultiplier = typeof coins?.calculateCoinMultiplier === 'function' ? coins.calculateCoinMultiplier(yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 1;
-		const surveyDuplicationMultiplier = transcension.getSurveyDuplicationMultiplier();
-
-		if (!alreadyDoneToday) {
-			const morningCoins = typeof coins?.calculateSurveyCoins === 'function' ? coins.calculateSurveyCoins(true, streakVal, yangValue, dragonShardsCount, scar, snackMult, isPremiumFlag) : 0;
-			totalCoinsEarned += morningCoins;
-			coins.addCoins?.(morningCoins);
-			rewardShards += 1;
-			shards.addShards?.(1);
-
-			const promptRewardCount = Object.values(shortAnswers.state.responses).filter(text => countWords(text) >= 25).length;
-			if (promptRewardCount > 0) {
-				const extra = Math.floor(5 * promptRewardCount * coinMultiplier);
-				coins.addCoins?.(extra);
-				totalCoinsEarned += extra;
-			}
-
-			if (trivia.section.isEnabled) {
-				const correctCount = trivia.correctCount();
-				const incorrectCount = Math.max(0, trivia.state.items.length - correctCount);
-				const triviaCoins = Math.floor(correctCount * 5 * jeopardyMultiplier * coinMultiplier);
-				if (triviaCoins > 0) {
-					coins.addCoins?.(triviaCoins);
-					totalCoinsEarned += triviaCoins;
-				}
-				if (jeopardyMultiplier > 1 && incorrectCount > 0) {
-					const penalty = Math.min(coins.getCoins?.() ?? 0, Math.floor(incorrectCount * 5 * jeopardyMultiplier));
-					if (penalty > 0) {
-						coins.spendCoins?.(penalty);
-						totalCoinsEarned -= penalty;
-					}
-				}
-			}
-
-			const surveyBonus = itemSnacks.getSurveyCompletionBonus?.(Math.max(0, totalCoinsEarned), rewardShards, scar);
-			if (surveyBonus) {
-				const bonusCoins = Math.max(0, surveyBonus.finalCoins - Math.max(0, totalCoinsEarned));
-				const bonusShards = Math.max(0, surveyBonus.finalShards - rewardShards);
-				if (bonusCoins > 0) {
-					coins.addCoins?.(bonusCoins);
-					totalCoinsEarned += bonusCoins;
-				}
-				if (bonusShards > 0) {
-					shards.addShards?.(bonusShards);
-					rewardShards += bonusShards;
-				}
-				if ((surveyBonus.snackDrops ?? 0) > 0) {
-					itemSnacks.grantRandomUnlockedSnacks?.(surveyBonus.snackDrops * surveyDuplicationMultiplier, scar);
-				}
-			}
-
-			if (surveyDuplicationMultiplier > 1) {
-				const duplicatedCoins = Math.max(0, totalCoinsEarned * (surveyDuplicationMultiplier - 1));
-				const duplicatedShards = Math.max(0, rewardShards * (surveyDuplicationMultiplier - 1));
-				if (duplicatedCoins > 0) {
-					coins.addCoins?.(duplicatedCoins);
-					totalCoinsEarned += duplicatedCoins;
-				}
-				if (duplicatedShards > 0) {
-					shards.addShards?.(duplicatedShards);
-					rewardShards += duplicatedShards;
-				}
-			}
-		}
-
-		if (!alreadyDoneToday && typeof fury.addFury === 'function') {
+		if (!isRetake) {
+			energy = 10;
+			shardReward = 1;
+			coins.addCoins(energy);
+			shards.addShards(shardReward);
 			fury.addFury(furyDelta);
-			const healthDelta = 2 - furyDelta;
-			if (healthDelta > 0) dragon.healHp?.(healthDelta);
-			if (healthDelta < 0) dragon.damageHp?.(Math.abs(healthDelta));
+			if (furyDelta <= 0) dragon.healHp(2);
+			else dragon.damageHp(Math.max(1, furyDelta));
 		}
 
-		if (!alreadyDoneToday) {
-			coins.registerSurveyCoins?.(Math.max(0, totalCoinsEarned));
-		}
-		const xpEarned = alreadyDoneToday ? 0 : scarLevel.addSurveyXP?.(Math.max(0, totalCoinsEarned), dragon.age, isPremiumFlag) ?? 0;
-		const effectiveFury = alreadyDoneToday ? 0 : furyDelta;
-
-		const completedSaveState = buildSaveState({
+		survey.completeMorningSurvey({
+			savedAt: today,
 			section: 0,
 			progressPercent: 100,
 			completed: true,
+			sectionData: { mood: mood.label, journalText },
 		});
-		survey.completeMorningSurvey?.(completedSaveState);
 
-		const promptText = Object.values(shortAnswers.state.responses)
-			.map(text => text.trim())
-			.filter(Boolean)
-			.join('\n\n');
-
-		journal.addEntry?.({
+		journal.addEntry({
 			id: `morning-${today}-${Date.now()}`,
 			date: today,
 			surveyType: 'morning',
-			goalsCompleted: habitEdit.state.localHabits.length,
-			goalsIncomplete: 0,
-			rewards: { coins: totalCoinsEarned, fireXp: xpEarned, xp: xpEarned, fury: effectiveFury, shards: rewardShards },
-			text: journalEntry.section.isEnabled ? journalEntry.state.text : undefined,
-			promptText: promptText || undefined,
-			moodMorning: moodLabel,
-			todoCount: todoEdit.state.localTodos.length,
-			todoCompleted: 0,
-			todoFailed: 0,
-			plannedHabitTitles: habitEdit.state.localHabits.map(habit => habit.title).filter(Boolean),
-			plannedTodoTitles: todoEdit.state.localTodos.map(todo => todo.title).filter(Boolean),
+			goalsCompleted: 0,
+			goalsIncomplete: goals.habits.length + goals.todos.filter(goal => !goal.completedDate).length,
+			rewards: { coins: energy, fireXp: energy * 10, fury: furyDelta, shards: shardReward },
+			text: focus.settings.showJournal ? journalText : undefined,
+			moodMorning: mood.label,
+			plannedHabitTitles: goals.habits.map(goal => goal.title),
+			plannedTodoTitles: goals.todos.filter(goal => !goal.completedDate).map(goal => goal.title),
 		});
 
-		const resultGroups = [
-			{
-				title: 'Survey Answers',
-				entries: [
-					moodLabel ? `Mood: ${moodLabel}` : 'Mood question skipped',
-					'Habit editor reviewed',
-					'To-do editor reviewed',
-					`Short answers written: ${Object.values(shortAnswers.state.responses).filter(text => text.trim().length > 0).length}`,
-					trivia.section.isEnabled ? `Trivia answered: ${trivia.state.items.length}` : 'Trivia skipped',
-					journalEntry.section.isEnabled ? `Journal entry length: ${journalEntry.state.text.trim().length} characters` : 'Journal entry skipped',
-				],
-			},
-			{
-				title: 'Habit Goals',
-				entries: habitEdit.state.localHabits.length > 0 ? habitEdit.state.localHabits.map(habit => habit.title) : ['No habit goals planned'],
-			},
-			{
-				title: 'To-Do Goals',
-				entries: todoEdit.state.localTodos.length > 0 ? todoEdit.state.localTodos.map(todo => todo.title) : ['No to-do goals planned'],
-			},
-		];
-
-		setResults({
-			coinsEarned: totalCoinsEarned,
-			shardsEarned: rewardShards,
-			xpEarned: xpEarned,
-			furyDelta: effectiveFury,
-			groups: alreadyDoneToday ? [{ title: 'Retake Notes', entries: ['This was a refill survey, so rewards stayed locked while editable planning sections remained available.'] }, ...resultGroups] : resultGroups,
-		});
-		setShowResults(true);
+		setResults(isRetake ? 'Check-in updated. Rewards were locked because this is a retake.' : `Check-in complete: +${energy} energy, +${shardReward} shard, ${furyDelta >= 0 ? '+' : ''}${furyDelta} fury.`);
 	};
 
-	const goNext = () => {
-		if (!canProceed) return;
-		if (currentSection >= totalSections - 1) {
-			submitSurvey();
-		} else {
-			setCurrentSection(prev => Math.min(prev + 1, totalSections - 1));
-		}
-	};
-
-	const goBack = () => {
-		setCurrentSection(prev => Math.max(prev - 1, 0));
-	};
-
-	if (showResults && results) {
+	if (results) {
 		return (
-			<View style={sectionStyles.container}>
+			<View style={styles.container}>
 				<TopHeader isHomePage={false} />
-				{resultsSection.section.render()}
+				<ScrollView contentContainerStyle={styles.content}>
+					<Panel>
+						<Text style={styles.sectionTitle}>Check-In Results</Text>
+						<Text style={styles.bodyText}>{results}</Text>
+						<ActionButton label="Return" onPress={() => router.back()} />
+					</Panel>
+				</ScrollView>
 			</View>
 		);
 	}
 
 	return (
-		<GestureHandlerRootView style={{ flex: 1 }}>
-			<View style={sectionStyles.container}>
-				<TopHeader isHomePage={false} />
-
-				<Modal visible={showIntroModal} transparent animationType="fade">
-					<View style={sectionStyles.fullscreenIntro}>
-						<View style={sectionStyles.introInner}>
-							<Text style={sectionStyles.introTitle}>Morning Survey</Text>
-							<Text style={{ marginTop: 8, textAlign: 'center' }}>Preparing your questions...</Text>
-						</View>
-					</View>
-				</Modal>
-
-				<Animated.View style={[sectionStyles.surveyLabelContainer, { transform: [{ translateY: slideAnim }] }]}>
-					<Text style={sectionStyles.surveyLabelText}>Morning Survey</Text>
-				</Animated.View>
-
-				<View style={sectionStyles.progressContainer}>
-					<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-						<View style={{ flex: 1 }}>
-							<View style={sectionStyles.progressBar}>
-								<View style={[sectionStyles.progressFill, { width: `${((currentSection + 1) / Math.max(1, totalSections)) * 100}%` }]} />
-							</View>
-							<Text style={sectionStyles.progressText}>
-								Question {currentSection + 1} of {totalSections}
-							</Text>
-						</View>
-						<Pressable onPress={handleExitSurvey} style={sectionStyles.closeButton}>
-							<Text style={sectionStyles.closeButtonText}>X</Text>
-						</Pressable>
-					</View>
+		<View style={styles.container}>
+			<TopHeader isHomePage={false} />
+			<ScrollView contentContainerStyle={styles.content}>
+				<View style={styles.statGrid}>
+					<StatTile label="Open Habits" value={String(goals.habits.length)} />
+					<StatTile label="Open To-Dos" value={String(goals.todos.filter(goal => !goal.completedDate).length)} />
 				</View>
-
-				<ScrollView style={sectionStyles.contentArea}>
-					<View style={sectionStyles.surveyContent}>
-						<View style={sectionStyles.surveyContentInner}>{section?.render()}</View>
-					</View>
-				</ScrollView>
-
-				<View style={sectionStyles.buttonContainer}>
-					{currentSection > 0 && (
-						<Pressable style={sectionStyles.buttonPrevious} onPress={goBack}>
-							<Text selectable={false} style={sectionStyles.buttonText}>
-								Previous
-							</Text>
-						</Pressable>
-					)}
-
-					<Pressable style={[sectionStyles.buttonNext, !canProceed && sectionStyles.buttonDisabled]} onPress={goNext} disabled={!canProceed}>
-						<Text selectable={false} style={sectionStyles.buttonTextPrimary}>
-							{currentSection === totalSections - 1 ? 'Submit' : 'Next'}
-						</Text>
-					</Pressable>
-				</View>
-			</View>
-		</GestureHandlerRootView>
+				{focus.settings.showSurveyAdvice ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Briefing Advice</Text>
+						<Text style={styles.bodyText}>Pick a small number of directives, make the first step obvious, and leave the dragon fewer excuses to get dramatic.</Text>
+					</Panel>
+				) : null}
+				{focus.settings.showMoodQuestion ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Mood</Text>
+						<View style={styles.actionRow}>
+							{MOODS.map(option => (
+								<ActionButton key={option.label} label={option.label} variant={mood.label === option.label ? 'primary' : 'secondary'} onPress={() => setMood(option)} />
+							))}
+						</View>
+					</Panel>
+				) : null}
+				{focus.settings.showGoalEditorInCheckIn ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Edit Directives</Text>
+						<TextInput value={todoTitle} onChangeText={setTodoTitle} placeholder="New to-do for today" placeholderTextColor={theme.colors.secondaryText} style={styles.input} />
+						<ActionButton label="Add To-Do" onPress={addTodo} disabled={!todoTitle.trim()} />
+						<TextInput value={habitTitle} onChangeText={setHabitTitle} placeholder="New repeating habit" placeholderTextColor={theme.colors.secondaryText} style={styles.inputWithTop} />
+						<ActionButton label="Add Habit" onPress={addHabit} disabled={!habitTitle.trim()} />
+					</Panel>
+				) : null}
+				<Panel>
+					<Text style={styles.sectionTitle}>Today&apos;s Directives</Text>
+					{goals.habits.length + goals.todos.length === 0 ? <EmptyState title="No directives" body="Add one above or skip this section." /> : null}
+					{goals.habits.map(goal => <GoalLine key={`habit-${goal.id}`} label={goal.title} meta="Habit" />)}
+					{goals.todos.filter((goal: TodoGoal) => !goal.completedDate).map(goal => <GoalLine key={`todo-${goal.id}`} label={goal.title} meta={goal.dueDate ? `To-Do due ${goal.dueDate}` : 'To-Do'} />)}
+				</Panel>
+				{focus.settings.showJournal ? (
+					<Panel>
+						<Text style={styles.sectionTitle}>Journal</Text>
+						<TextInput value={journalText} onChangeText={setJournalText} multiline placeholder="Optional briefing note" placeholderTextColor={theme.colors.secondaryText} style={[styles.input, styles.journalInput]} />
+					</Panel>
+				) : null}
+				<ActionButton label={isRetake ? 'Update Check-In' : 'Submit Check-In'} onPress={submit} />
+			</ScrollView>
+		</View>
 	);
 }
 
+function GoalLine({ label, meta }: { label: string; meta: string }) {
+	const theme = useTheme();
+	const styles = useMemo(() => createStyles(theme.colors), [theme.colors]);
+	return (
+		<View style={styles.goalLine}>
+			<Text style={styles.goalTitle}>{label}</Text>
+			<Text style={styles.goalMeta}>{meta}</Text>
+		</View>
+	);
+}
 
-
-
-
-
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+	StyleSheet.create({
+		container: { flex: 1, backgroundColor: colors.background },
+		content: { padding: 14, paddingBottom: 36 },
+		statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+		sectionTitle: { color: colors.headerText, fontSize: 18, fontWeight: '900', marginBottom: 8 },
+		bodyText: { color: colors.text, fontSize: 13, lineHeight: 20, marginBottom: 12 },
+		actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+		input: { borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.text, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10, fontWeight: '700' },
+		inputWithTop: { borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.text, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12, marginBottom: 10, fontWeight: '700' },
+		journalInput: { minHeight: 110, textAlignVertical: 'top' },
+		goalLine: { borderTopWidth: 1, borderTopColor: colors.border, paddingVertical: 10 },
+		goalTitle: { color: colors.titleText, fontSize: 14, fontWeight: '900' },
+		goalMeta: { color: colors.secondaryText, fontSize: 12, marginTop: 3 },
+	});

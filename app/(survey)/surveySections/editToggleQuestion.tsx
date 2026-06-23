@@ -2,7 +2,7 @@ import { Text, View } from '@/components/Themed';
 import React, { useCallback, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 interface EditToggleQuestionState {
 	selected: boolean | null;
@@ -16,6 +16,7 @@ interface UseEditToggleQuestionParams {
 }
 
 export function useEditToggleQuestionSection({ key, label, question, description }: UseEditToggleQuestionParams): SectionHookResult<EditToggleQuestionState> {
+	const sectionStyles = useSectionStyles();
 	const [state, setState] = useState<EditToggleQuestionState>({ selected: null });
 
 	const render = useCallback(() => {

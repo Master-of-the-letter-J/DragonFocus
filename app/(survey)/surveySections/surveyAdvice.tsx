@@ -5,7 +5,7 @@ import { useScarLevel } from '@/context/ScarLevelProvider';
 import { useSurvey } from '@/context/SurveyProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface AdviceSectionState {
 	adviceIndex: number | null;
@@ -27,6 +27,7 @@ export function useSurveyAdviceSection({ questionSettings, enableAdvice, minScar
 	const { questionSettings: contextSettings } = useQuestions();
 	const survey = useSurvey();
 	const scarLevel = useScarLevel();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enableAdvice ?? true;
 	const resolvedMinScar = minScarLevel ?? survey.options.adviceScarLevel ?? 0;
@@ -65,7 +66,7 @@ export function useSurveyAdviceSection({ questionSettings, enableAdvice, minScar
 						<Text style={sectionStyles.adviceLabel}>— Advice for today</Text>
 					</>
 				) : (
-					<Text style={{ marginBottom: 12 }}>A piece of wisdom for your journey.</Text>
+					<Text style={[sectionStyles.bodyText, { marginBottom: 12 }]}>A piece of wisdom for your journey.</Text>
 				)}
 			</View>
 		);

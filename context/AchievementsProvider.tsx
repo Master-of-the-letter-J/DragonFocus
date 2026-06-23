@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useDragonAttacks } from './DragonAttacksProvider';
 import { useDragonCoins } from './DragonCoinsProvider';
 import { useDragonOrbs } from './DragonOrbsProvider';
@@ -31,7 +32,23 @@ interface AchievementsContextType {
 
 const AchievementsContext = createContext<AchievementsContextType | undefined>(undefined);
 
+const tieredAchievements = (
+	prefix: string,
+	titlePrefix: string,
+	descriptionPrefix: string,
+	thresholds: number[],
+	icon: string,
+) =>
+	thresholds.map(threshold => ({
+		id: `${prefix}_${threshold}`,
+		emoji: icon,
+		title: `${titlePrefix} ${threshold.toLocaleString()}`,
+		description: `${descriptionPrefix} ${threshold.toLocaleString()}.`,
+	}));
+
 const DEFAULT_ACHIEVEMENTS: Achievement[] = [
+	{ id: 'check_in_1', emoji: 'IN', title: 'First Briefing', description: 'Complete 1 check-in survey' },
+	{ id: 'check_out_1', emoji: 'OUT', title: 'First Debrief', description: 'Complete 1 check-out survey' },
 	{ id: 'first_habit', emoji: '\uD83C\uDF31', title: 'Seed Planted', description: 'Add your first habit' },
 	{ id: 'five_habits', emoji: '\uD83C\uDF3F', title: 'Growing Garden', description: 'Create 5 unique habits' },
 	{ id: 'ten_habits', emoji: '\uD83C\uDF33', title: 'Forest of Discipline', description: 'Create 10 unique habits' },
@@ -73,7 +90,26 @@ const DEFAULT_ACHIEVEMENTS: Achievement[] = [
 
 	{ id: 'surveys_7', emoji: '\uD83D\uDCCB', title: 'Survey Enthusiast', description: 'Complete 7 surveys' },
 	{ id: 'surveys_30', emoji: '\uD83D\uDCCA', title: 'Daily Tracker', description: 'Complete 30 surveys' },
+	...tieredAchievements('check_ins', 'Briefings Filed', 'Complete check-in surveys:', [5, 10, 25, 50, 100, 250, 500], 'CI'),
+	...tieredAchievements('check_outs', 'Debriefs Filed', 'Complete check-out surveys:', [5, 10, 25, 50, 100, 250, 500], 'CO'),
+	...tieredAchievements('goals_total', 'Directives Executed', 'Complete total goals:', [5, 25, 100, 250, 500, 1000, 2500], 'G'),
+	...tieredAchievements('focus_minutes', 'Pomodoro Reactor', 'Complete focus minutes:', [25, 100, 500, 1000, 2500, 5000, 10000], 'POM'),
+	...tieredAchievements('energy_total', 'Energy Mandate', 'Earn total energy:', [100, 1000, 10000, 100000, 1000000, 10000000, 100000000], 'EN'),
+	...tieredAchievements('dark_energy_total', 'Dark Energy Mandate', 'Earn dark energy:', [10, 50, 100, 500, 1000, 5000, 10000], 'DE'),
+	...tieredAchievements('plasma_total', 'Plasma Weather', 'Earn plasma:', [1, 5, 10, 25, 50, 100, 250], 'PL'),
+	...tieredAchievements('anomalies_total', 'Anomaly Registry', 'Earn anomalies:', [1, 3, 10, 25, 50, 100, 250], 'AN'),
+	...tieredAchievements('crimson_streak', 'Crimson Continuity', 'Reach crimson streak:', [3, 7, 14, 30, 60, 100, 365], 'CS'),
+	...tieredAchievements('armageddon_count', 'Armageddon Protocol', 'Complete Armageddon count:', [1, 2, 5, 10, 25, 50], 'ARM'),
+	...tieredAchievements('transcension_count', 'Transcension Protocol', 'Complete Transcension count:', [1, 2, 5, 10, 25], 'TR'),
+	{ id: 'secret_stillness', emoji: '???', title: '??? Secret Achievement', description: 'Keep the dragon perfectly calm through a full cycle.', secret: true, points: 25 },
+	{ id: 'secret_overclock', emoji: '???', title: '??? Secret Achievement', description: 'Create an absurd energy spike in one day.', secret: true, points: 50 },
+	{ id: 'secret_last_light', emoji: '???', title: '??? Secret Achievement', description: 'Recover from a catastrophic breach.', secret: true, points: 50 },
 ];
+
+const normalizeAchievements = (storedValue: Achievement[] | null, initialValue: Achievement[]) => {
+	const storedById = new Map((storedValue ?? []).map(item => [item.id, item]));
+	return initialValue.map(item => ({ ...item, unlockedAt: storedById.get(item.id)?.unlockedAt ?? item.unlockedAt ?? null }));
+};
 
 export function AchievementsProvider({ children }: { children: ReactNode }) {
 	const dragon = useDragon();
@@ -87,7 +123,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 	const orbs = useDragonOrbs();
 	const attacks = useDragonAttacks();
 
-	const [achievements, setAchievements] = useState<Achievement[]>(DEFAULT_ACHIEVEMENTS);
+	const { state: achievements, setState: setAchievements } = usePersistedState(APP_STORAGE_KEYS.achievements, DEFAULT_ACHIEVEMENTS, { normalize: normalizeAchievements });
 
 	useEffect(() => {
 		const unlockIfMissing = (id: string) => {

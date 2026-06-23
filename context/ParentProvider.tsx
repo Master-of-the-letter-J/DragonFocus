@@ -4,6 +4,7 @@ import { DragonClickingProvider } from './DragonClickingProvider';
 import { DragonAttacksProvider } from './DragonAttacksProvider';
 import { DragonCoinsProvider } from './DragonCoinsProvider';
 import { DragonEmbersProvider } from './DragonEmbersProvider';
+import { DragonFocusProvider } from './DragonFocusProvider';
 import { DragonOrbsProvider } from './DragonOrbsProvider';
 import { DragonProvider } from './DragonProvider';
 import { DragonShardsProvider } from './DragonShardsProvider';
@@ -32,7 +33,8 @@ export default function ParentProvider({ children }: { children: React.ReactNode
 				<DragonProvider>
 					<DragonThemeProvider>
 						<PremiumProvider>
-							<FuryProvider>
+							<DragonFocusProvider>
+								<FuryProvider>
 								<StreakProvider>
 								<DragonCoinsProvider>
 									<DragonOrbsProvider>
@@ -75,7 +77,8 @@ export default function ParentProvider({ children }: { children: React.ReactNode
 									</DragonOrbsProvider>
 								</DragonCoinsProvider>
 								</StreakProvider>
-							</FuryProvider>
+								</FuryProvider>
+							</DragonFocusProvider>
 						</PremiumProvider>
 					</DragonThemeProvider>
 				</DragonProvider>

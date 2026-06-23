@@ -1,5 +1,6 @@
 import { roundToDecimalPlaces } from '@/constants/number-abbreviation';
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
 
 interface FuryContextType {
 	furyMeter: number; // 0 = Yin (passive), 100 = Yang (aggressive)
@@ -18,26 +19,46 @@ interface FuryContextType {
 
 const FuryContext = createContext<FuryContextType | undefined>(undefined);
 
-export function FuryProvider({ children }: { children: ReactNode }) {
-	const [furyMeter, setFuryMeter] = useState(50); // Start at neutral
-	const [maxFuryBonus, setMaxFuryBonusState] = useState(0);
+interface FuryState {
+	furyMeter: number;
+	maxFuryBonus: number;
+}
 
-	const maxFury = 100 + Math.max(0, maxFuryBonus);
+const INITIAL_FURY_STATE: FuryState = {
+	furyMeter: 50,
+	maxFuryBonus: 0,
+};
+
+export function FuryProvider({ children }: { children: ReactNode }) {
+	const { state, setState } = usePersistedState(APP_STORAGE_KEYS.fury, INITIAL_FURY_STATE, {
+		normalize: (storedValue, initialValue) => ({ ...initialValue, ...(storedValue ?? {}) }),
+	});
+
+	const furyMeter = state.furyMeter;
+	const maxFury = 100 + Math.max(0, state.maxFuryBonus);
 	const absoluteFuryLimit = maxFury * 2;
 
 	const addFury = (amount: number) => {
-		setFuryMeter(prev => roundToDecimalPlaces(Math.max(0, Math.min(absoluteFuryLimit, prev + amount)), 3));
+		setState(prev => ({
+			...prev,
+			furyMeter: roundToDecimalPlaces(Math.max(0, Math.min(absoluteFuryLimit, prev.furyMeter + amount)), 3),
+		}));
 	};
 
 	const setFury = (value: number) => {
-		setFuryMeter(roundToDecimalPlaces(Math.max(0, Math.min(absoluteFuryLimit, value)), 3));
+		setState(prev => ({
+			...prev,
+			furyMeter: roundToDecimalPlaces(Math.max(0, Math.min(absoluteFuryLimit, value)), 3),
+		}));
 	};
 
-	const resetFury = () => setFuryMeter(50);
+	const resetFury = () => setState(INITIAL_FURY_STATE);
 	const setMaxFuryBonus = (bonus: number) => {
 		const nextBonus = Math.max(0, Math.floor(bonus));
-		setMaxFuryBonusState(nextBonus);
-		setFuryMeter(prev => roundToDecimalPlaces(Math.max(0, Math.min((100 + nextBonus) * 2, prev)), 3));
+		setState(prev => ({
+			maxFuryBonus: nextBonus,
+			furyMeter: roundToDecimalPlaces(Math.max(0, Math.min((100 + nextBonus) * 2, prev.furyMeter)), 3),
+		}));
 	};
 	const getMaxFury = () => maxFury;
 

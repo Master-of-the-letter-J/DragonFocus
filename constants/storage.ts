@@ -16,6 +16,13 @@ export const APP_STORAGE_KEYS = {
 	transcension: 'dragonfocus:transcension',
 	goals: 'dragonfocus:goals',
 	journal: 'dragonfocus:journal',
+	dragon: 'dragonfocus:dragon',
+	fury: 'dragonfocus:fury',
+	streak: 'dragonfocus:streak',
+	premium: 'dragonfocus:premium',
+	graveyard: 'dragonfocus:graveyard',
+	achievements: 'dragonfocus:achievements',
+	dragonFocus2: 'dragonfocus:2-0-state',
 } as const;
 
 type StateInitializer<T> = T | (() => T);

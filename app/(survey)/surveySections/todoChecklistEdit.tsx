@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface TodoChecklistEditState {
 	localTodos: TodoGoal[];
@@ -24,6 +24,7 @@ export function useTodoChecklistEditSection(): SectionHookResult<TodoChecklistEd
 	const premium = usePremium();
 	const questions = useQuestions();
 	const scarLevel = useScarLevel();
+	const sectionStyles = useSectionStyles();
 
 	const [state, setState] = useState<TodoChecklistEditState>({
 		localTodos: [],

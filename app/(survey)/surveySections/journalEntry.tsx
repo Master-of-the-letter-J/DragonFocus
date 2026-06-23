@@ -3,7 +3,7 @@ import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider'
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TextInput } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface JournalEntryState {
 	text: string;
@@ -21,6 +21,7 @@ export interface UseJournalEntryParams {
 
 export function useJournalEntrySection({ surveyType, questionSettings, initialText = '', enableJournal }: UseJournalEntryParams): SectionHookResult<JournalEntryState> {
 	const { questionSettings: contextSettings } = useQuestions();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enableJournal ?? true;
 

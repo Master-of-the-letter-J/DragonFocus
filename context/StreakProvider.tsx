@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
 
 interface StreakContextType {
   streak: number; // Current streak count
@@ -13,9 +14,23 @@ interface StreakContextType {
 
 const StreakContext = createContext<StreakContextType | undefined>(undefined);
 
+interface StreakState {
+  streak: number;
+  lastSurveyDate: string | null;
+}
+
+const INITIAL_STREAK_STATE: StreakState = {
+  streak: 0,
+  lastSurveyDate: null,
+};
+
 export function StreakProvider({ children }: { children: ReactNode }) {
-  const [streak, setStreak] = useState(0);
-  const [lastSurveyDate, setLastSurveyDate] = useState<string | null>(null);
+  const { state, setState } = usePersistedState(APP_STORAGE_KEYS.streak, INITIAL_STREAK_STATE, {
+    normalize: (storedValue, initialValue) => ({ ...initialValue, ...(storedValue ?? {}) }),
+  });
+
+  const streak = state.streak;
+  const lastSurveyDate = state.lastSurveyDate;
 
   const incrementStreak = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -34,30 +49,29 @@ export function StreakProvider({ children }: { children: ReactNode }) {
 
       if (diffDays === 1) {
         // Consecutive day
-        setStreak(prev => prev + 1);
+        setState(prev => ({ ...prev, streak: prev.streak + 1 }));
       } else if (diffDays > 1) {
         // Streak broken, restart
-        setStreak(1);
+        setState(prev => ({ ...prev, streak: 1 }));
       }
     } else {
       // First survey
-      setStreak(1);
+      setState(prev => ({ ...prev, streak: 1 }));
     }
 
-    setLastSurveyDate(today);
+    setState(prev => ({ ...prev, lastSurveyDate: today }));
   };
 
   const resetStreak = () => {
-    setStreak(0);
-    setLastSurveyDate(null);
+    setState(INITIAL_STREAK_STATE);
   };
 
   const setStreakValue = (value: number) => {
-    setStreak(Math.max(0, Math.floor(value)));
+    setState(prev => ({ ...prev, streak: Math.max(0, Math.floor(value)) }));
   };
 
   const adjustStreak = (delta: number) => {
-    setStreak(prev => Math.max(0, Math.floor(prev + delta)));
+    setState(prev => ({ ...prev, streak: Math.max(0, Math.floor(prev.streak + delta)) }));
   };
 
   const getStreak = () => streak;
@@ -72,7 +86,7 @@ export function StreakProvider({ children }: { children: ReactNode }) {
         setStreak: setStreakValue,
         adjustStreak,
         getStreak,
-        setLastSurveyDate,
+        setLastSurveyDate: date => setState(prev => ({ ...prev, lastSurveyDate: date })),
       }}
     >
       {children}

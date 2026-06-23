@@ -3,66 +3,59 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import { useTheme } from '@/context/ThemeProvider';
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: { name: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
-	return <FontAwesome size={28} style={{ marginBottom: 3 }} {...props} />;
+	return <FontAwesome size={25} style={{ marginBottom: 2 }} {...props} />;
 }
 
 export default function TabLayout() {
-	const colorScheme = useColorScheme();
+	const theme = useTheme();
 
 	return (
 		<Tabs
 			screenOptions={{
-				tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-				// Disable the static render of the header on web
-				// to prevent a hydration error in React Navigation v6.
+				tabBarActiveTintColor: theme.colors.tabIconSelected,
+				tabBarInactiveTintColor: theme.colors.tabIconDefault,
+				tabBarStyle: {
+					backgroundColor: theme.colors.secondaryBackground,
+					borderTopColor: theme.colors.border,
+				},
+				headerStyle: { backgroundColor: theme.colors.secondaryBackground },
+				headerTintColor: theme.colors.headerText,
 				headerShown: useClientOnlyValue(false, true),
 			}}>
 			<Tabs.Screen
-				name="pages/home"
+				name="pages/hatchery"
+				options={{
+					title: 'Hatchery',
+					tabBarIcon: ({ color }) => <TabBarIcon name="fire" color={color} />,
+				}}
+			/>
+			<Tabs.Screen
+				name="pages/world"
 				options={{
 					title: 'World',
-					tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+					tabBarIcon: ({ color }) => <TabBarIcon name="globe" color={color} />,
 				}}
 			/>
 			<Tabs.Screen
-				name="pages/market"
+				name="pages/archives"
 				options={{
-					title: 'Market',
-					tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} />,
-				}}
-			/>
-			<Tabs.Screen
-				name="pages/journal"
-				options={{
-					title: 'The Lair',
+					title: 'Archives',
 					tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
 				}}
 			/>
 			<Tabs.Screen
-				name="pages/premium"
+				name="pages/options"
 				options={{
-					title: 'Dragon Pact',
-					tabBarIcon: ({ color }) => <TabBarIcon name="star" color={color} />,
+					title: 'Options',
+					tabBarIcon: ({ color }) => <TabBarIcon name="sliders" color={color} />,
 				}}
 			/>
-			<Tabs.Screen
-				name="pages/settings"
-				options={{
-					title: 'Settings',
-					tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} />,
-				}}
-			/>
-			<Tabs.Screen
-				name="index"
-				options={{
-					href: null,
-				}}
-			/>
+			{['index', 'pages/home', 'pages/market', 'pages/journal', 'pages/goals', 'pages/premium', 'pages/settings'].map(name => (
+				<Tabs.Screen key={name} name={name} options={{ href: null }} />
+			))}
 		</Tabs>
 	);
 }

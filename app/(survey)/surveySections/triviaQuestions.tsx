@@ -4,7 +4,7 @@ import { useQuestions, type QuestionSettings } from '@/context/QuestionProvider'
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { SectionHookResult } from './sectionTypes';
-import { sectionStyles } from './sectionStyles';
+import { useSectionStyles } from './sectionStyles';
 
 export interface TriviaItem {
 	id: string;
@@ -59,6 +59,7 @@ const shuffleAnswers = (question: TriviaQuestion) => {
 
 export function useTriviaQuestionsSection({ surveyType, questionSettings, enableTrivia }: UseTriviaQuestionsParams): SectionHookResult<TriviaQuestionsState> & { correctCount: () => number } {
 	const { questionSettings: contextSettings } = useQuestions();
+	const sectionStyles = useSectionStyles();
 	const resolvedSettings = questionSettings ?? contextSettings;
 	const resolvedEnable = enableTrivia ?? true;
 
@@ -116,10 +117,10 @@ export function useTriviaQuestionsSection({ surveyType, questionSettings, enable
 					const response = state.responses[item.id] || { selectedIndex: null, submitted: false };
 					return (
 						<View key={item.id} style={{ marginBottom: 16 }}>
-							<Text selectable={false} style={{ marginBottom: 12 }}>
+							<Text selectable={false} style={[sectionStyles.bodyText, { marginBottom: 12 }]}>
 								{item.question.text}
 							</Text>
-							<Text selectable={false} style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
+							<Text selectable={false} style={[sectionStyles.helperText, { marginBottom: 8 }]}>
 								Select your answer:
 							</Text>
 							{item.answers.map((answer, i) => {
@@ -138,14 +139,14 @@ export function useTriviaQuestionsSection({ surveyType, questionSettings, enable
 												responses: { ...prev.responses, [item.id]: { ...response, selectedIndex: i } },
 											}))
 										}>
-										<Text selectable={false}>{answer}</Text>
+										<Text selectable={false} style={sectionStyles.bodyText}>{answer}</Text>
 										{submitted && isCorrect && (
-											<Text selectable={false} style={{ marginLeft: 8 }}>
+											<Text selectable={false} style={[sectionStyles.bodyText, { marginLeft: 8 }]}>
 												OK
 											</Text>
 										)}
 										{submitted && isSelected && !isCorrect && (
-											<Text selectable={false} style={{ marginLeft: 8 }}>
+											<Text selectable={false} style={[sectionStyles.bodyText, { marginLeft: 8 }]}>
 												X
 											</Text>
 										)}
@@ -169,7 +170,7 @@ export function useTriviaQuestionsSection({ surveyType, questionSettings, enable
 							)}
 
 							{response.submitted && (
-								<Text selectable={false} style={{ marginTop: 12, fontSize: 13, color: '#666' }}>
+								<Text selectable={false} style={[sectionStyles.helperText, { marginTop: 12, fontSize: 13 }]}>
 									Correct answer: {item.answers[item.correctLocalIndex]}
 								</Text>
 							)}

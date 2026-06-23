@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { APP_STORAGE_KEYS, usePersistedState } from '@/constants/storage';
+import React, { createContext, ReactNode, useContext } from 'react';
 
 interface PremiumContextType {
 	isPremium: boolean;
@@ -9,7 +10,7 @@ interface PremiumContextType {
 const PremiumContext = createContext<PremiumContextType | undefined>(undefined);
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-	const [isPremium, setIsPremiumState] = useState(false);
+	const { state: isPremium, setState: setIsPremiumState } = usePersistedState(APP_STORAGE_KEYS.premium, false);
 
 	const setPremium = (isPremium: boolean) => {
 		setIsPremiumState(isPremium);
